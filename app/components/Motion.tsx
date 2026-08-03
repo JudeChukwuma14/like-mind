@@ -45,7 +45,7 @@ const staggerContainerVariant: Variants = {
 };
 
 /* ── Shared options ─────────────────────────────────────────── */
-const defaultTransition = { duration: 0.6, ease: [0.22, 1, 0.36, 1] };
+const defaultTransition = { duration: 0.6, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] };
 
 /* ── Props shared across wrappers ───────────────────────────── */
 interface WrapperProps {
@@ -74,11 +74,11 @@ export function FadeUp({
 }: WrapperProps) {
   const ref = useRef<HTMLElement>(null);
   const inView = useInView(ref, { once, amount });
-  const Tag = (motion as Record<string, React.ElementType>)[as] ?? motion.div;
+  const Tag = (motion as unknown as Record<string, React.ElementType>)[as] ?? motion.div;
 
   return (
     <Tag
-      ref={ref}
+      ref={ref as any}
       className={className}
       style={style}
       variants={fadeUpVariant}
@@ -101,7 +101,7 @@ export function FadeIn({
   once = true,
   amount = 0.15,
 }: WrapperProps) {
-  const ref = useRef<HTMLElement>(null);
+  const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once, amount });
 
   return (
@@ -129,7 +129,7 @@ export function ScaleIn({
   once = true,
   amount = 0.2,
 }: WrapperProps) {
-  const ref = useRef<HTMLElement>(null);
+  const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once, amount });
 
   return (
@@ -156,7 +156,7 @@ export function StaggerChildren({
   once = true,
   amount = 0.15,
 }: WrapperProps) {
-  const ref = useRef<HTMLElement>(null);
+  const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once, amount });
 
   return (

@@ -345,3 +345,23 @@ html {
   box-shadow: 0 4px 16px rgba(0,0,0,0.08);
 }
 
+/* ── Hover Utilities (replaces onMouseEnter/onMouseLeave JS) ─── */
+.hover-dash-border-mix:hover {
+  background-color: color-mix(in srgb, var(--dash-border) 60%, transparent) !important;
+}
+.hover-dash-border-mix-50:not(.active):hover {
+  background-color: color-mix(in srgb, var(--dash-border) 50%, transparent) !important;
+}
+.hover-dash-bg:hover {
+  background-color: var(--dash-bg) !important;
+}
+.hover-dash-text:hover {
+  color: var(--dash-text) !important;
+}
+.hover-admin-border:not(.active):hover {
+  background-color: var(--admin-border) !important;
+}
+.hover-mkt-text:hover {
+  color: var(--mkt-text) !important;
+}
+

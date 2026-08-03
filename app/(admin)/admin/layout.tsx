@@ -194,24 +194,17 @@ function AdminSidebar({
                   <li key={item.href}>
                     <Link
                       href={item.href}
-                      title={collapsed ? item.label : undefined}
-                      className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150"
+                      className={`hover-admin-border flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${active ? "active" : ""}`}
                       style={
                         active
                           ? {
-                              background: "rgba(0,0,0,0.05)",
-                              color: "var(--admin-text)",
-                              fontWeight: 600,
+                              background: "rgba(245,158,11,0.15)",
+                              color: "#f59e0b",
                             }
-                          : { color: "var(--admin-muted)", fontWeight: 500 }
+                          : {
+                              color: "var(--admin-muted)",
+                            }
                       }
-                      onMouseEnter={(e) => {
-                        if (!active)
-                          e.currentTarget.style.background = "rgba(0,0,0,0.03)";
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!active) e.currentTarget.style.background = "";
-                      }}
                     >
                       <span className="text-base shrink-0 w-5 text-center">
                         {item.icon}

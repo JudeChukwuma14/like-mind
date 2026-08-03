@@ -144,10 +144,8 @@ function Sidebar({
           <button
             id="user-sidebar-collapse"
             onClick={onToggle}
-            className="ml-auto shrink-0 hidden lg:flex items-center justify-center w-7 h-7 rounded-md transition-colors"
+            className="hover-dash-border-mix ml-auto shrink-0 hidden lg:flex items-center justify-center w-7 h-7 rounded-md transition-colors"
             style={{ color: "var(--dash-muted)", background: "transparent" }}
-            onMouseEnter={e => (e.currentTarget.style.background = "color-mix(in srgb, var(--dash-border) 60%, transparent)")}
-            onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
             aria-label="Collapse sidebar"
           >
             <IconChevron />
@@ -178,7 +176,7 @@ function Sidebar({
                     <Link
                       href={item.href}
                       title={collapsed ? item.label : undefined}
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150"
+                      className={`hover-dash-border-mix-50 flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${active ? "active" : ""}`}
                       style={
                         active
                           ? {
@@ -189,14 +187,6 @@ function Sidebar({
                               color: "var(--dash-muted)",
                             }
                       }
-                      onMouseEnter={(e) => {
-                        if (!active)
-                          e.currentTarget.style.background =
-                            "color-mix(in srgb, var(--dash-border) 50%, transparent)";
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!active) e.currentTarget.style.background = "";
-                      }}
                     >
                       <span className="text-base shrink-0 w-5 text-center">
                         {item.icon}
@@ -272,10 +262,8 @@ function Sidebar({
       {collapsed && (
         <button
           onClick={onToggle}
-          className="mx-auto mb-3 w-8 h-8 hidden lg:flex items-center justify-center rounded-md transition-colors"
+          className="hover-dash-border-mix mx-auto mb-3 w-8 h-8 hidden lg:flex items-center justify-center rounded-md transition-colors"
           style={{ color: "var(--dash-muted)" }}
-          onMouseEnter={e => (e.currentTarget.style.background = "color-mix(in srgb, var(--dash-border) 60%, transparent)")}
-          onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
           aria-label="Expand sidebar"
         >
           <IconChevron right />
@@ -369,10 +357,8 @@ function Topbar({
       <div className="flex items-center gap-4">
         <button
           id="user-mobile-menu-toggle"
-          className="lg:hidden flex items-center justify-center w-10 h-10 rounded-full border shadow-sm transition-colors"
+          className="hover-dash-bg lg:hidden flex items-center justify-center w-10 h-10 rounded-full border shadow-sm transition-colors"
           style={{ color: "var(--dash-text)", background: "var(--dash-surface)", borderColor: "var(--dash-border)" }}
-          onMouseEnter={e => (e.currentTarget.style.background = "var(--dash-bg)")}
-          onMouseLeave={e => (e.currentTarget.style.background = "var(--dash-surface)")}
           onClick={onMobileToggle}
           aria-label={mobileOpen ? "Close menu" : "Open menu"}
         >
@@ -417,14 +403,11 @@ function Topbar({
           <span className="text-[10px] font-medium" style={{ color: "var(--dash-muted)" }}>⌘K</span>
         </div>
 
-        {/* Notifications bell */}
         <Link
           href="/dashboard/notifications"
           id="user-topbar-notifications"
-          className="relative w-10 h-10 rounded-full border shadow-sm flex items-center justify-center transition-colors"
+          className="hover-dash-text relative w-10 h-10 rounded-full border shadow-sm flex items-center justify-center transition-colors"
           style={{ background: "var(--dash-surface)", borderColor: "var(--dash-border)", color: "var(--dash-muted)" }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--dash-text)"; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--dash-muted)"; }}
         >
           <svg
             width="18"

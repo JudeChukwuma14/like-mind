@@ -187,10 +187,8 @@ function Footer() {
                   <Link
                     key={link.href}
                     href={link.href}
-                    className="text-sm transition-colors duration-200"
+                    className="hover-mkt-text text-sm transition-colors duration-200"
                     style={{ color: "var(--mkt-muted)" }}
-                    onMouseEnter={(e) => (e.currentTarget.style.color = "var(--mkt-text)")}
-                    onMouseLeave={(e) => (e.currentTarget.style.color = "var(--mkt-muted)")}
                   >
                     {link.label}
                   </Link>
@@ -210,10 +208,8 @@ function Footer() {
                   <Link
                     key={l.label}
                     href={l.href}
-                    className="text-sm transition-colors duration-200"
+                    className="hover-mkt-text text-sm transition-colors duration-200"
                     style={{ color: "var(--mkt-muted)" }}
-                    onMouseEnter={(e) => (e.currentTarget.style.color = "var(--mkt-text)")}
-                    onMouseLeave={(e) => (e.currentTarget.style.color = "var(--mkt-muted)")}
                   >
                     {l.label}
                   </Link>
