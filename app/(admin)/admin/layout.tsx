@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
+import { ThemeToggle } from "@/app/components/ThemeToggle";
+import Image from "next/image";
 
 /* ─── Nav items matching image: Overview, Applications, Members,
        Contributions, Loans, Investment, Withdrawals, Reports,
@@ -139,7 +141,7 @@ function AdminSidebar({
         }}
       >
         <Link href="/" className="flex items-center gap-3 min-w-0">
-          <div
+          {/* <div
             className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold shrink-0 text-black"
             style={{ background: "var(--admin-primary)" }}
           >
@@ -152,7 +154,8 @@ function AdminSidebar({
             >
               LikeMind
             </span>
-          )}
+          )} */}
+          <Image src="/Likemind.png" alt="Logo" width={50} height={50} style={{ width: "auto", height: "auto" }} />
         </Link>
 
         {/* Collapse toggle — desktop only */}
@@ -302,8 +305,8 @@ function AdminSidebar({
 
           {/* Drawer */}
           <div
-            className="relative z-10 flex flex-col h-full bg-white"
-            style={{ width: "260px" }}
+            className="relative z-10 flex flex-col h-full"
+            style={{ width: "260px", background: "var(--admin-bg)" }}
             onClick={(e) => e.stopPropagation()}
           >
             {sidebarContent}
@@ -348,10 +351,11 @@ function AdminTopbar({
 
         {/* Search bar */}
         <div
-          className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-full text-sm border bg-white"
+          className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-full text-sm border"
           style={{
             borderColor: "var(--admin-border)",
             color: "var(--admin-muted)",
+            background: "var(--admin-surface)",
             width: "320px",
           }}
         >
@@ -378,10 +382,14 @@ function AdminTopbar({
 
       {/* Right */}
       <div className="flex items-center gap-4">
+        {/* Theme toggle */}
+        <ThemeToggle variant="default" />
+
         {/* Notification bell */}
         <button
-          className="relative w-9 h-9 rounded-full flex items-center justify-center transition-colors hover:bg-black/5 border bg-white"
+          className="relative w-9 h-9 rounded-full flex items-center justify-center transition-colors hover:bg-black/5 border"
           style={{
+            background: "var(--admin-surface)",
             borderColor: "var(--admin-border)",
             color: "var(--admin-text)",
           }}

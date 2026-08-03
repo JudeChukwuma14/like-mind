@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Users, Building2, ClipboardCheck, Clock } from "lucide-react";
+import { FadeUp, StaggerChildren, StaggerItem, HoverScale, FadeIn } from "@/app/components/Motion";
 
 export const metadata: Metadata = {
   title: "About",
@@ -13,7 +14,7 @@ const governanceBlocks = [
       "Every member gets one vote on bylaws, leadership and major investments. Convened every January.",
     stat: "2,418",
     statLabel: "VOTING MEMBERS",
-    icon: <Users className="w-5 h-5 text-gray-700" />,
+    icon: <Users className="w-5 h-5" style={{ color: "var(--mkt-text)" }} />,
     dark: false,
   },
   {
@@ -22,7 +23,7 @@ const governanceBlocks = [
       "Nine elected directors serve three-year staggered terms. They oversee strategy, risk and member services.",
     stat: "9",
     statLabel: "DIRECTORS",
-    icon: <Building2 className="w-5 h-5 text-gray-700" />,
+    icon: <Building2 className="w-5 h-5" style={{ color: "var(--mkt-text)" }} />,
     dark: false,
   },
   {
@@ -31,7 +32,7 @@ const governanceBlocks = [
       "Independent committee reviewing every disbursement, sector allocation and member-impacting policy.",
     stat: "5",
     statLabel: "AUDITORS",
-    icon: <ClipboardCheck className="w-5 h-5 text-gray-700" />,
+    icon: <ClipboardCheck className="w-5 h-5" style={{ color: "var(--mkt-text)" }} />,
     dark: false,
   },
   {
@@ -82,32 +83,37 @@ const leadership = [
 
 export default function AboutPage() {
   return (
-    <div className="bg-[#fcfbf9] min-h-screen pb-32">
+    <div className="min-h-screen pb-32" style={{ background: "var(--mkt-bg)" }}>
       {/* Hero Section */}
-      <section className="bg-[#f6f4eb] rounded-b-[3rem] pt-12 md:pt-20 pb-20 md:pb-28 px-6">
+      <section 
+        className="rounded-b-[3rem] pt-12 md:pt-20 pb-20 md:pb-28 px-6 border-b"
+        style={{ background: "var(--mkt-card)", borderColor: "var(--mkt-border)" }}
+      >
         <div className="max-w-5xl mx-auto">
-          <div className="text-[10px] font-mono font-bold tracking-[0.2em] text-gray-500 uppercase mb-16 md:mb-24">
-            HOME &gt; ABOUT
-          </div>
-          <h1 className="text-6xl sm:text-7xl md:text-[5.5rem] font-bold text-gray-900 tracking-tight leading-[1.05]">
-            About LikeMinds
-            <br />
-            Cooperative
-          </h1>
+          <FadeUp>
+         
+            <h1 className="text-6xl sm:text-7xl md:text-[5.5rem] font-bold tracking-tight leading-[1.05]" style={{ color: "var(--mkt-text)" }}>
+              About LikeMinds
+              <br />
+              Cooperative
+            </h1>
+          </FadeUp>
         </div>
       </section>
 
       {/* Intro Text */}
       <section className="px-6 py-20 md:py-28">
         <div className="max-w-5xl mx-auto">
-          <p className="text-lg md:text-xl text-gray-700 leading-relaxed max-w-4xl">
-            LikeMinds Cooperative was founded in Toronto, 2014 by twelve members
-            of the Nigerian-Canadian diaspora — engineers, nurses, teachers, small
-            business owners — who pooled their first $50,000 to buy a duplex
-            together. By 2017, we had 200 members and a federally registered
-            cooperative charter. By 2026, we manage $84M of pooled capital across
-            six sectors and seven provinces.
-          </p>
+          <FadeIn>
+            <p className="text-lg md:text-xl leading-relaxed max-w-4xl" style={{ color: "var(--mkt-text)" }}>
+              LikeMinds Cooperative was founded in Toronto, 2014 by twelve members
+              of the Nigerian-Canadian diaspora — engineers, nurses, teachers, small
+              business owners — who pooled their first $50,000 to buy a duplex
+              together. By 2017, we had 200 members and a federally registered
+              cooperative charter. By 2026, we manage $84M of pooled capital across
+              six sectors and seven provinces.
+            </p>
+          </FadeIn>
         </div>
       </section>
 
@@ -115,68 +121,75 @@ export default function AboutPage() {
       <section className="px-6 py-16">
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row gap-12 md:gap-20">
           <div className="md:w-1/3">
-            <p className="text-xs font-semibold tracking-widest text-indigo-500 uppercase mb-4">
-              — STRUCTURE & GOVERNANCE
-            </p>
-            <h2 className="text-4xl md:text-[2.75rem] font-bold text-gray-900 tracking-tight leading-[1.1] md:sticky md:top-32">
-              One member, one vote. No exceptions.
-            </h2>
+            <FadeUp>
+              <p className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: "var(--mkt-accent)" }}>
+                — STRUCTURE & GOVERNANCE
+              </p>
+              <h2 className="text-4xl md:text-[2.75rem] font-bold tracking-tight leading-[1.1] md:sticky md:top-32" style={{ color: "var(--mkt-text)" }}>
+                One member, one vote. No exceptions.
+              </h2>
+            </FadeUp>
           </div>
-          <div className="md:w-2/3 flex flex-col gap-5">
-            {governanceBlocks.map((block) => (
-              <div
-                key={block.title}
-                className={`flex flex-col sm:flex-row items-start sm:items-center justify-between p-6 md:p-8 rounded-3xl gap-6 ${
-                  block.dark
-                    ? "bg-[#111111] text-white shadow-xl shadow-black/5"
-                    : "bg-white border border-gray-100 shadow-sm"
-                }`}
-              >
-                <div className="flex items-start gap-5 flex-1">
-                  <div
-                    className={`shrink-0 w-12 h-12 flex items-center justify-center rounded-2xl ${
-                      block.dark
-                        ? "bg-white/5 border border-white/10"
-                        : "bg-[#f4efe6] text-gray-700"
-                    }`}
-                  >
-                    {block.icon}
-                  </div>
-                  <div>
-                    <h3
-                      className={`font-bold text-lg mb-1.5 ${
-                        block.dark ? "text-white" : "text-gray-900"
+          <div className="md:w-2/3">
+            <StaggerChildren className="flex flex-col gap-5">
+              {governanceBlocks.map((block) => (
+                <StaggerItem key={block.title}>
+                  <HoverScale scale={1.02}>
+                    <div
+                      className={`flex flex-col sm:flex-row items-start sm:items-center justify-between p-6 md:p-8 rounded-3xl gap-6 border ${
+                        block.dark
+                          ? "shadow-xl shadow-black/5"
+                          : "shadow-sm"
                       }`}
+                      style={block.dark
+                        ? { background: "var(--nav-bg)", borderColor: "rgba(255,255,255,0.1)", color: "white" }
+                        : { background: "var(--mkt-card)", borderColor: "var(--mkt-border)" }}
                     >
-                      {block.title}
-                    </h3>
-                    <p
-                      className={`text-sm leading-relaxed ${
-                        block.dark ? "text-gray-400" : "text-gray-600"
-                      }`}
-                    >
-                      {block.description}
-                    </p>
-                  </div>
-                </div>
-                <div className="shrink-0 text-left sm:text-right mt-2 sm:mt-0 pl-17 sm:pl-0">
-                  <div
-                    className={`text-[1.75rem] font-bold leading-none ${
-                      block.dark ? "text-[#facc15]" : "text-gray-900"
-                    }`}
-                  >
-                    {block.stat}
-                  </div>
-                  <div
-                    className={`text-[10px] font-mono font-semibold tracking-widest mt-2 ${
-                      block.dark ? "text-gray-400" : "text-gray-500 uppercase"
-                    }`}
-                  >
-                    {block.statLabel}
-                  </div>
-                </div>
-              </div>
-            ))}
+                      <div className="flex items-start gap-5 flex-1">
+                        <div
+                          className={`shrink-0 w-12 h-12 flex items-center justify-center rounded-2xl ${
+                            block.dark
+                              ? "bg-white/5 border border-white/10"
+                              : "border"
+                          }`}
+                          style={block.dark ? {} : { background: "var(--mkt-bg)", borderColor: "var(--mkt-border)" }}
+                        >
+                          {block.icon}
+                        </div>
+                        <div>
+                          <h3
+                            className="font-bold text-lg mb-1.5"
+                            style={block.dark ? {} : { color: "var(--mkt-text)" }}
+                          >
+                            {block.title}
+                          </h3>
+                          <p
+                            className="text-sm leading-relaxed"
+                            style={block.dark ? { color: "#9ca3af" } : { color: "var(--mkt-muted)" }}
+                          >
+                            {block.description}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="shrink-0 text-left sm:text-right mt-2 sm:mt-0 pl-17 sm:pl-0">
+                        <div
+                          className="text-[1.75rem] font-bold leading-none"
+                          style={block.dark ? { color: "#facc15" } : { color: "var(--mkt-text)" }}
+                        >
+                          {block.stat}
+                        </div>
+                        <div
+                          className="text-[10px] font-mono font-semibold tracking-widest mt-2 uppercase"
+                          style={block.dark ? { color: "#9ca3af" } : { color: "var(--mkt-muted)" }}
+                        >
+                          {block.statLabel}
+                        </div>
+                      </div>
+                    </div>
+                  </HoverScale>
+                </StaggerItem>
+              ))}
+            </StaggerChildren>
           </div>
         </div>
       </section>
@@ -184,41 +197,47 @@ export default function AboutPage() {
       {/* Leadership Profiles */}
       <section className="px-6 py-24 md:py-32">
         <div className="max-w-5xl mx-auto">
-          <p className="text-xs font-semibold tracking-widest text-indigo-500 uppercase mb-4">
-            — LEADERSHIP PROFILES
-          </p>
-          <h2 className="text-4xl md:text-[3rem] font-bold text-gray-900 tracking-tight leading-tight mb-16">
-            Elected by members. Accountable to members.
-          </h2>
+          <FadeUp>
+            <p className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: "var(--mkt-accent)" }}>
+              — LEADERSHIP PROFILES
+            </p>
+            <h2 className="text-4xl md:text-[3rem] font-bold tracking-tight leading-tight mb-16" style={{ color: "var(--mkt-text)" }}>
+              Elected by members. Accountable to members.
+            </h2>
+          </FadeUp>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <StaggerChildren className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {leadership.map((leader) => (
-              <div
-                key={leader.name}
-                className="bg-white rounded-3xl p-6 md:p-8 border border-gray-100 shadow-sm flex flex-col"
-              >
-                <div className="w-16 h-16 rounded-2xl overflow-hidden mb-6 bg-gray-100 shrink-0 border border-gray-100">
-                  <img
-                    src={leader.image}
-                    alt={leader.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <h3 className="font-bold text-gray-900 text-[1.1rem]">
-                  {leader.name}
-                </h3>
-                <p className="text-[11px] font-semibold text-indigo-500 mb-5 mt-1 tracking-wide uppercase">
-                  {leader.role}
-                </p>
-                <p className="text-[13px] text-gray-600 leading-relaxed">
-                  {leader.description}
-                </p>
-              </div>
+              <StaggerItem key={leader.name}>
+                <HoverScale scale={1.03}>
+                  <div
+                    className="rounded-3xl p-6 md:p-8 border shadow-sm flex flex-col h-full cursor-default"
+                    style={{ background: "var(--mkt-card)", borderColor: "var(--mkt-border)" }}
+                  >
+                    <div className="w-16 h-16 rounded-2xl overflow-hidden mb-6 shrink-0 border" style={{ borderColor: "var(--mkt-border)" }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={leader.image}
+                        alt={leader.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <h3 className="font-bold text-[1.1rem]" style={{ color: "var(--mkt-text)" }}>
+                      {leader.name}
+                    </h3>
+                    <p className="text-[11px] font-semibold mb-5 mt-1 tracking-wide uppercase" style={{ color: "var(--mkt-accent)" }}>
+                      {leader.role}
+                    </p>
+                    <p className="text-[13px] leading-relaxed flex-1" style={{ color: "var(--mkt-muted)" }}>
+                      {leader.description}
+                    </p>
+                  </div>
+                </HoverScale>
+              </StaggerItem>
             ))}
-          </div>
+          </StaggerChildren>
         </div>
       </section>
     </div>
   );
 }
-

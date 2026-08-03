@@ -36,16 +36,26 @@ export default function AdminOverviewPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <p className="text-xs font-bold tracking-widest text-gray-400 uppercase mb-1">
+          <p
+            className="text-xs font-bold tracking-widest uppercase mb-1"
+            style={{ color: "var(--admin-muted)" }}
+          >
             Overview
           </p>
-          <h1 className="text-4xl font-bold tracking-tight text-gray-900">
+          <h1 className="text-4xl font-bold tracking-tight" style={{ color: "var(--admin-text)" }}>
             Today
           </h1>
         </div>
 
         <div className="flex items-center gap-2 md:gap-3 flex-wrap">
-          <button className="flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 bg-white text-sm font-medium hover:bg-gray-50 transition-colors">
+          <button
+            className="flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-medium transition-colors"
+            style={{
+              borderColor: "var(--admin-border)",
+              background: "var(--admin-surface)",
+              color: "var(--admin-text)",
+            }}
+          >
             <svg
               width="14"
               height="14"
@@ -63,10 +73,20 @@ export default function AdminOverviewPage() {
             </svg>
             Today
           </button>
-          <button className="px-4 py-2 rounded-full border border-gray-200 bg-white text-sm font-medium hover:bg-gray-50 transition-colors">
+          <button
+            className="px-4 py-2 rounded-full border text-sm font-medium transition-colors"
+            style={{
+              borderColor: "var(--admin-border)",
+              background: "var(--admin-surface)",
+              color: "var(--admin-text)",
+            }}
+          >
             Export
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 rounded-full border border-red-200 bg-red-50 text-red-600 text-sm font-medium hover:bg-red-100 transition-colors">
+          <button
+            className="flex items-center gap-2 px-4 py-2 rounded-full border text-red-600 text-sm font-medium transition-colors"
+            style={{ borderColor: "#fca5a5", background: "#fef2f2" }}
+          >
             <svg
               width="14"
               height="14"
@@ -82,25 +102,35 @@ export default function AdminOverviewPage() {
             </svg>
             Deduct from all
           </button>
-          <button className="px-4 py-2 rounded-full bg-black text-white text-sm font-medium hover:bg-gray-800 transition-colors shadow-sm">
+          <button
+            className="px-4 py-2 rounded-full text-sm font-medium transition-colors shadow-sm"
+            style={{ background: "var(--admin-text)", color: "var(--admin-bg)" }}
+          >
             New announcement
           </button>
         </div>
       </div>
 
       {/* Stats row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 border-y border-gray-200 py-6 md:divide-x divide-gray-200">
+      <div
+        className="grid grid-cols-2 md:grid-cols-4 py-6 border-y md:divide-x"
+        style={{ borderColor: "var(--admin-border)" }}
+      >
         {stats.map((s, i) => (
           <div
             key={s.label}
-            className={`px-4 ${i === 0 || i === 2 ? "pl-0 md:pl-4" : ""} ${i === 0 ? "md:pl-0" : ""} ${
-              i % 2 !== 0 ? "border-l border-gray-200" : "md:border-l border-gray-200"
+            className={`px-4 ${i === 0 ? "pl-0" : ""} ${
+              i % 2 !== 0 ? "border-l" : "md:border-l"
             } ${i === 0 || i === 2 ? "border-l-0" : ""} mb-4 md:mb-0`}
+            style={{ borderColor: "var(--admin-border)" }}
           >
-            <p className="text-[10px] font-bold tracking-widest text-gray-400 uppercase mb-2">
+            <p
+              className="text-[10px] font-bold tracking-widest uppercase mb-2"
+              style={{ color: "var(--admin-muted)" }}
+            >
               {s.label}
             </p>
-            <p className="text-3xl font-bold tracking-tight text-gray-900">
+            <p className="text-3xl font-bold tracking-tight" style={{ color: "var(--admin-text)" }}>
               {s.value}
             </p>
           </div>
@@ -108,26 +138,32 @@ export default function AdminOverviewPage() {
       </div>
 
       {/* Chart Section */}
-      <div className="bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-gray-100">
+      <div
+        className="rounded-2xl p-6 md:p-8 shadow-sm border"
+        style={{ background: "var(--admin-surface)", borderColor: "var(--admin-border)" }}
+      >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
           <div>
-            <p className="text-[10px] font-bold tracking-widest text-gray-400 uppercase mb-1">
+            <p
+              className="text-[10px] font-bold tracking-widest uppercase mb-1"
+              style={{ color: "var(--admin-muted)" }}
+            >
               CASH FLOW · LAST 6 CYCLES
             </p>
-            <h2 className="text-2xl font-bold text-gray-900">₦1.28M</h2>
+            <h2 className="text-2xl font-bold" style={{ color: "var(--admin-text)" }}>₦1.28M</h2>
           </div>
 
-          <div className="flex items-center gap-4 text-xs font-medium text-gray-600">
+          <div className="flex items-center gap-4 text-xs font-medium" style={{ color: "var(--admin-muted)" }}>
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-3 bg-[#fcd34d] rounded-sm"></div>
               Contributions in
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 bg-black rounded-sm"></div>
+              <div className="w-3 h-3 rounded-sm" style={{ background: "var(--admin-text)" }}></div>
               Outflow
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-4 h-[2px] bg-gray-400"></div>
+              <div className="w-4 h-[2px]" style={{ background: "var(--admin-muted)" }}></div>
               Net trend
             </div>
           </div>
@@ -136,7 +172,10 @@ export default function AdminOverviewPage() {
         {/* Chart Graphic (Mock) */}
         <div className="relative h-64 w-full mt-4 flex items-end justify-between px-2 md:px-8">
           {/* Y-axis labels */}
-          <div className="absolute left-0 top-0 bottom-8 flex flex-col justify-between text-[10px] text-gray-400 opacity-0 sm:opacity-100">
+          <div
+            className="absolute left-0 top-0 bottom-8 flex flex-col justify-between text-[10px] opacity-0 sm:opacity-100"
+            style={{ color: "var(--admin-muted)" }}
+          >
             <span>5.0M</span>
             <span>3.75M</span>
             <span>2.5M</span>
@@ -146,11 +185,9 @@ export default function AdminOverviewPage() {
 
           {/* Grid lines */}
           <div className="absolute left-0 sm:left-10 right-0 top-0 bottom-8 flex flex-col justify-between pointer-events-none">
-            <div className="w-full border-b border-gray-100"></div>
-            <div className="w-full border-b border-gray-100"></div>
-            <div className="w-full border-b border-gray-100"></div>
-            <div className="w-full border-b border-gray-100"></div>
-            <div className="w-full border-b border-gray-100"></div>
+            {[0, 1, 2, 3, 4].map((n) => (
+              <div key={n} className="w-full border-b" style={{ borderColor: "var(--admin-border)" }}></div>
+            ))}
           </div>
 
           {/* SVG Line Trend */}
@@ -158,56 +195,28 @@ export default function AdminOverviewPage() {
             className="absolute left-0 sm:left-10 right-0 top-0 bottom-8 w-full sm:w-[calc(100%-2.5rem)] h-full pointer-events-none overflow-visible z-10"
             preserveAspectRatio="none"
           >
-            {/* We'll use a simple polyline for the trend. The coordinates are mocked based on percentages */}
             <polyline
               points="10%,45% 26.6%,40% 43.3%,50% 60%,35% 76.6%,32% 93.3%,30%"
               fill="none"
-              stroke="#9ca3af"
+              stroke="var(--admin-muted)"
               strokeWidth="2"
             />
-            {/* Dots */}
-            <circle
-              cx="10%"
-              cy="45%"
-              r="3"
-              fill="white"
-              stroke="#9ca3af"
-              strokeWidth="2"
-            />
-            <circle
-              cx="26.6%"
-              cy="40%"
-              r="3"
-              fill="white"
-              stroke="#9ca3af"
-              strokeWidth="2"
-            />
-            <circle
-              cx="43.3%"
-              cy="50%"
-              r="3"
-              fill="white"
-              stroke="#9ca3af"
-              strokeWidth="2"
-            />
-            <circle
-              cx="60%"
-              cy="35%"
-              r="3"
-              fill="white"
-              stroke="#9ca3af"
-              strokeWidth="2"
-            />
-            <circle
-              cx="76.6%"
-              cy="32%"
-              r="3"
-              fill="white"
-              stroke="#9ca3af"
-              strokeWidth="2"
-            />
-            {/* The active dot on APR */}
-            <circle cx="93.3%" cy="30%" r="4" fill="black" />
+            {["10%,45%", "26.6%,40%", "43.3%,50%", "60%,35%", "76.6%,32%"].map((pos) => {
+              const [cx, cy] = pos.split(",");
+              return (
+                <circle
+                  key={pos}
+                  cx={cx}
+                  cy={cy}
+                  r="3"
+                  fill="var(--admin-surface)"
+                  stroke="var(--admin-muted)"
+                  strokeWidth="2"
+                />
+              );
+            })}
+            {/* Active dot on APR */}
+            <circle cx="93.3%" cy="30%" r="4" fill="var(--admin-text)" />
           </svg>
 
           {/* Bars */}
@@ -223,12 +232,18 @@ export default function AdminOverviewPage() {
                     style={{ height: `${d.in}%` }}
                   ></div>
                   <div
-                    className="w-1/2 bg-black rounded-t-sm"
-                    style={{ height: `${d.out}%` }}
+                    className="w-1/2 rounded-t-sm"
+                    style={{ height: `${d.out}%`, background: "var(--admin-text)" }}
                   ></div>
                 </div>
                 <div
-                  className={`mt-4 text-[10px] font-bold ${i === chartData.length - 1 ? "text-black" : "text-gray-400"}`}
+                  className="mt-4 text-[10px] font-bold"
+                  style={{
+                    color:
+                      i === chartData.length - 1
+                        ? "var(--admin-text)"
+                        : "var(--admin-muted)",
+                  }}
                 >
                   {d.month}
                 </div>
@@ -240,17 +255,20 @@ export default function AdminOverviewPage() {
 
       {/* Workload */}
       <div>
-        <h3 className="text-lg font-bold text-gray-900 mb-4">Workload</h3>
+        <h3 className="text-lg font-bold mb-4" style={{ color: "var(--admin-text)" }}>Workload</h3>
         <div className="flex flex-col gap-3">
           {workloadTasks.map((task, i) => (
             <Link
               key={i}
               href={task.href}
-              className="group flex items-center justify-between p-5 bg-white rounded-xl shadow-sm border border-gray-100 transition-all hover:shadow-md hover:border-gray-200"
+              className="admin-workload-card group flex items-center justify-between p-5 rounded-xl"
             >
               <div className="flex items-center gap-4">
                 <div className="w-1.5 h-1.5 rounded-full bg-[#fcd34d]"></div>
-                <span className="text-sm font-medium text-gray-700 group-hover:text-black">
+                <span
+                  className="text-sm font-medium"
+                  style={{ color: "var(--admin-muted)" }}
+                >
                   {task.text}
                 </span>
               </div>
@@ -263,7 +281,7 @@ export default function AdminOverviewPage() {
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="text-gray-400 group-hover:text-black transition-colors"
+                style={{ color: "var(--admin-muted)" }}
               >
                 <polyline points="9 18 15 12 9 6"></polyline>
               </svg>

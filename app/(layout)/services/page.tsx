@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { FadeUp, StaggerChildren, StaggerItem, HoverScale, FadeIn } from "@/app/components/Motion";
 
 export const metadata: Metadata = {
   title: "Programs",
@@ -105,7 +106,7 @@ const investments = [
     title: "Member-led SaaS bundle",
     sub: "22% projected · Min $1K",
     status: "VOTING",
-    statusColor: "text-gray-500",
+    statusColor: "text-gray-500", // Will use mkt-muted for this in component
   },
 ];
 
@@ -121,44 +122,52 @@ const welfare = [
 
 export default function ServicesPage() {
   return (
-    <div className="bg-[#fcfbf9] min-h-screen pb-32">
+    <div className="min-h-screen pb-32" style={{ background: "var(--mkt-bg)" }}>
       {/* Hero Section */}
-      <section className="bg-[#f6f4eb] rounded-b-[3rem] pt-12 md:pt-20 pb-20 md:pb-28 px-6">
+      <section 
+        className="rounded-b-[3rem] pt-12 md:pt-20 pb-20 md:pb-28 px-6 border-b"
+        style={{ background: "var(--mkt-card)", borderColor: "var(--mkt-border)" }}
+      >
         <div className="max-w-6xl mx-auto">
-          <div className="text-[10px] font-mono font-bold tracking-[0.2em] text-gray-500 uppercase mb-16 md:mb-20">
-            HOME / PROGRAMS
-          </div>
-
           <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-10">
-            <div className="">
-              <h1 className="text-6xl sm:text-7xl md:text-[6rem] font-bold text-gray-900  tracking-[-0.02em] leading-[1.05] mb-8 ">
+            <FadeUp delay={0.1}>
+              <h1 className="text-6xl sm:text-7xl md:text-[6rem] font-bold tracking-[-0.02em] leading-[1.05] mb-8" style={{ color: "var(--mkt-text)" }}>
                 Save. Borrow.
                 <br />
                 Invest. Belong.
               </h1>
-              <p className="text-xl text-gray-600 leading-relaxed max-w-lg">
+              <p className="text-xl leading-relaxed max-w-lg" style={{ color: "var(--mkt-muted)" }}>
                 Four programs. Use one or all four. No upselling, no hidden
                 fees.
               </p>
-            </div>
+            </FadeUp>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 pb-2">
-              {/* <button className="px-6 py-2.5 rounded-full bg-[#111111] text-white text-[13px] font-semibold transition-transform hover:scale-105">
-                All
-              </button> */}
-              <button className="px-6 py-2.5 rounded-full bg-[#111111] text-white text-[13px] font-semibold hover:bg-gray-50 transition-colors">
+            <FadeIn delay={0.2} className="grid grid-cols-2 md:grid-cols-4 gap-2 pb-2">
+              <button 
+                className="px-6 py-2.5 rounded-full text-[13px] font-semibold transition-colors border"
+                style={{ background: "var(--fg)", color: "var(--bg)", borderColor: "var(--fg)" }}
+              >
                 Savings
               </button>
-              <button className="px-6 py-2.5 rounded-full bg-white text-gray-900 border border-gray-200 text-[13px] font-semibold hover:bg-gray-50 transition-colors">
+              <button 
+                className="px-6 py-2.5 rounded-full border text-[13px] font-semibold transition-colors hover:bg-black/5"
+                style={{ background: "transparent", color: "var(--mkt-text)", borderColor: "var(--mkt-border)" }}
+              >
                 Loans
               </button>
-              <button className="px-6 py-2.5 rounded-full bg-white text-gray-900 border border-gray-200 text-[13px] font-semibold hover:bg-gray-50 transition-colors">
+              <button 
+                className="px-6 py-2.5 rounded-full border text-[13px] font-semibold transition-colors hover:bg-black/5"
+                style={{ background: "transparent", color: "var(--mkt-text)", borderColor: "var(--mkt-border)" }}
+              >
                 Invest
               </button>
-              <button className="px-6 py-2.5 rounded-full bg-white text-gray-900 border border-gray-200 text-[13px] font-semibold hover:bg-gray-50 transition-colors">
+              <button 
+                className="px-6 py-2.5 rounded-full border text-[13px] font-semibold transition-colors hover:bg-black/5"
+                style={{ background: "transparent", color: "var(--mkt-text)", borderColor: "var(--mkt-border)" }}
+              >
                 Welfare
               </button>
-            </div>
+            </FadeIn>
           </div>
         </div>
       </section>
@@ -166,131 +175,141 @@ export default function ServicesPage() {
       {/* 01 - SAVINGS */}
       <section className="px-6 py-24 md:py-32">
         <div className="max-w-6xl mx-auto">
-          <div className="mb-14">
-            <p className="text-xs font-semibold font-mono tracking-[0.15em] text-gray-400 uppercase mb-4">
+          <FadeUp className="mb-14">
+            <p className="text-xs font-semibold font-mono tracking-[0.15em] uppercase mb-4" style={{ color: "var(--mkt-accent)" }}>
               01 — SAVINGS
             </p>
-            <h2 className="text-4xl md:text-[3rem] font-bold text-gray-900 tracking-tight leading-none">
+            <h2 className="text-4xl md:text-[3rem] font-bold tracking-tight leading-none" style={{ color: "var(--mkt-text)" }}>
               Savings schemes
             </h2>
-          </div>
+          </FadeUp>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <StaggerChildren className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {savingsPlans.map((plan) => (
-              <div
-                key={plan.name}
-                className={`bg-white rounded-3xl p-8 flex flex-col ${
-                  plan.tagDark
-                    ? "border-[2.5px] border-[#111111]"
-                    : "border border-gray-200 shadow-sm"
-                }`}
-              >
-                <div className="flex justify-between items-center mb-8">
-                  <span className="text-[10px] font-mono font-semibold tracking-widest text-gray-400 uppercase">
-                    {plan.name}
-                  </span>
-                  <span
-                    className={`text-[9px] font-mono font-bold tracking-widest px-3 py-1.5 rounded-full uppercase ${
-                      plan.tagDark
-                        ? "bg-[#111111] text-[#facc15]"
-                        : "bg-[#f4efe6] text-gray-600"
+              <StaggerItem key={plan.name}>
+                <HoverScale scale={1.02}>
+                  <div
+                    className={`rounded-3xl p-8 flex flex-col h-full cursor-default ${
+                      plan.tagDark ? "border-[2.5px] border-[#111111]" : "border shadow-sm"
                     }`}
+                    style={plan.tagDark ? { background: "var(--mkt-card)" } : { background: "var(--mkt-card)", borderColor: "var(--mkt-border)" }}
                   >
-                    {plan.tag}
-                  </span>
-                </div>
-
-                <h3 className="text-2xl font-bold text-gray-900 mb-3">
-                  {plan.title}
-                </h3>
-                <p className="text-sm text-gray-600 leading-relaxed mb-12 flex-1">
-                  {plan.description}
-                </p>
-
-                <div className="space-y-3.5 pt-6 border-t border-gray-100">
-                  {plan.stats.map((stat, i) => (
-                    <div key={i} className="flex justify-between text-[13px]">
-                      <span className="text-gray-500">{stat.label}</span>
-                      <span className="font-bold text-gray-900">
-                        {stat.value}
+                    <div className="flex justify-between items-center mb-8">
+                      <span className="text-[10px] font-mono font-semibold tracking-widest uppercase" style={{ color: "var(--mkt-muted)" }}>
+                        {plan.name}
+                      </span>
+                      <span
+                        className={`text-[9px] font-mono font-bold tracking-widest px-3 py-1.5 rounded-full uppercase ${
+                          plan.tagDark
+                            ? "bg-[#111111] text-[#facc15]"
+                            : ""
+                        }`}
+                        style={plan.tagDark ? {} : { background: "var(--mkt-bg)", color: "var(--mkt-text)" }}
+                      >
+                        {plan.tag}
                       </span>
                     </div>
-                  ))}
-                </div>
-              </div>
+
+                    <h3 className="text-2xl font-bold mb-3" style={{ color: "var(--mkt-text)" }}>
+                      {plan.title}
+                    </h3>
+                    <p className="text-sm leading-relaxed mb-12 flex-1" style={{ color: "var(--mkt-muted)" }}>
+                      {plan.description}
+                    </p>
+
+                    <div className="space-y-3.5 pt-6 border-t" style={{ borderColor: "var(--mkt-border)" }}>
+                      {plan.stats.map((stat, i) => (
+                        <div key={i} className="flex justify-between text-[13px]">
+                          <span style={{ color: "var(--mkt-muted)" }}>{stat.label}</span>
+                          <span className="font-bold" style={{ color: "var(--mkt-text)" }}>
+                            {stat.value}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </HoverScale>
+              </StaggerItem>
             ))}
-          </div>
+          </StaggerChildren>
         </div>
       </section>
 
       {/* 02 - LOANS */}
       <section className="px-6 pb-24 md:pb-32">
         <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-14 gap-6">
+          <FadeUp className="flex flex-col md:flex-row md:items-end justify-between mb-14 gap-6">
             <div>
-              <p className="text-xs font-semibold font-mono tracking-[0.15em] text-gray-400 uppercase mb-4">
+              <p className="text-xs font-semibold font-mono tracking-[0.15em] uppercase mb-4" style={{ color: "var(--mkt-accent)" }}>
                 02 — LOANS
               </p>
-              <h2 className="text-4xl md:text-[3rem] font-bold text-gray-900 tracking-tight leading-none">
+              <h2 className="text-4xl md:text-[3rem] font-bold tracking-tight leading-none" style={{ color: "var(--mkt-text)" }}>
                 Loan products
               </h2>
             </div>
-            <p className="text-gray-600 text-sm max-w-sm md:text-right leading-relaxed md:pb-1">
+            <p className="text-sm max-w-sm md:text-right leading-relaxed md:pb-1" style={{ color: "var(--mkt-muted)" }}>
               Profit-share only. No compound interest. Decisions made by sector
               council.
             </p>
-          </div>
+          </FadeUp>
 
-          <div className="flex flex-col gap-4">
+          <StaggerChildren className="flex flex-col gap-4">
             {loanProducts.map((loan) => (
-              <div
-                key={loan.title}
-                className="bg-white rounded-2xl p-6 md:p-8 border border-gray-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-8 md:gap-6"
-              >
-                <div className="md:w-1/3">
-                  <h3 className="font-bold text-gray-900 text-lg">
-                    {loan.title}
-                  </h3>
-                  <p className="text-[13px] text-gray-500 mt-1">
-                    {loan.subtitle}
-                  </p>
-                </div>
+              <StaggerItem key={loan.title}>
+                <HoverScale scale={1.01}>
+                  <div
+                    className="rounded-2xl p-6 md:p-8 border shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-8 md:gap-6 cursor-default"
+                    style={{ background: "var(--mkt-card)", borderColor: "var(--mkt-border)" }}
+                  >
+                    <div className="md:w-1/3">
+                      <h3 className="font-bold text-lg" style={{ color: "var(--mkt-text)" }}>
+                        {loan.title}
+                      </h3>
+                      <p className="text-[13px] mt-1" style={{ color: "var(--mkt-muted)" }}>
+                        {loan.subtitle}
+                      </p>
+                    </div>
 
-                <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 gap-6 md:gap-10">
-                  <div>
-                    <p className="text-[10px] font-mono font-semibold tracking-widest text-gray-400 uppercase mb-2">
-                      CEILING
-                    </p>
-                    <p className="font-bold text-gray-900 text-[13px]">
-                      {loan.ceiling}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-mono font-semibold tracking-widest text-gray-400 uppercase mb-2">
-                      {loan.shareType}
-                    </p>
-                    <p className="font-bold text-gray-900 text-[13px]">
-                      {loan.shareValue}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-mono font-semibold tracking-widest text-gray-400 uppercase mb-2">
-                      TENURE
-                    </p>
-                    <p className="font-bold text-gray-900 text-[13px]">
-                      {loan.tenure}
-                    </p>
-                  </div>
-                </div>
+                    <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 gap-6 md:gap-10">
+                      <div>
+                        <p className="text-[10px] font-mono font-semibold tracking-widest uppercase mb-2" style={{ color: "var(--mkt-muted)" }}>
+                          CEILING
+                        </p>
+                        <p className="font-bold text-[13px]" style={{ color: "var(--mkt-text)" }}>
+                          {loan.ceiling}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-mono font-semibold tracking-widest uppercase mb-2" style={{ color: "var(--mkt-muted)" }}>
+                          {loan.shareType}
+                        </p>
+                        <p className="font-bold text-[13px]" style={{ color: "var(--mkt-text)" }}>
+                          {loan.shareValue}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-mono font-semibold tracking-widest uppercase mb-2" style={{ color: "var(--mkt-muted)" }}>
+                          TENURE
+                        </p>
+                        <p className="font-bold text-[13px]" style={{ color: "var(--mkt-text)" }}>
+                          {loan.tenure}
+                        </p>
+                      </div>
+                    </div>
 
-                <div className="md:shrink-0 text-left md:text-right mt-2 md:mt-0">
-                  <button className="px-8 py-2.5 rounded-full border border-gray-300 text-gray-900 text-sm font-semibold hover:bg-gray-50 transition-colors">
-                    Apply
-                  </button>
-                </div>
-              </div>
+                    <div className="md:shrink-0 text-left md:text-right mt-2 md:mt-0">
+                      <button 
+                        className="px-8 py-2.5 rounded-full border text-sm font-semibold transition-colors hover:bg-black/5"
+                        style={{ color: "var(--mkt-text)", borderColor: "var(--mkt-border)" }}
+                      >
+                        Apply
+                      </button>
+                    </div>
+                  </div>
+                </HoverScale>
+              </StaggerItem>
             ))}
-          </div>
+          </StaggerChildren>
         </div>
       </section>
 
@@ -298,69 +317,84 @@ export default function ServicesPage() {
       <section className="px-6 pb-24">
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Invest */}
-          <div className="bg-white rounded-4xl p-8 md:p-12 border border-gray-200 shadow-sm">
-            <p className="text-xs font-semibold font-mono tracking-[0.15em] text-gray-400 uppercase mb-4">
-              03 — INVEST
-            </p>
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight mb-6">
-              Investment opportunities
-            </h2>
-            <p className="text-[15px] text-gray-600 mb-10 leading-relaxed max-w-sm">
-              Members propose. Councils vet. Members vote. Quarterly reporting
-              on every active project.
-            </p>
+          <FadeUp>
+            <div 
+              className="rounded-4xl p-8 md:p-12 border shadow-sm h-full"
+              style={{ background: "var(--mkt-card)", borderColor: "var(--mkt-border)" }}
+            >
+              <p className="text-xs font-semibold font-mono tracking-[0.15em] uppercase mb-4" style={{ color: "var(--mkt-accent)" }}>
+                03 — INVEST
+              </p>
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-6" style={{ color: "var(--mkt-text)" }}>
+                Investment opportunities
+              </h2>
+              <p className="text-[15px] mb-10 leading-relaxed max-w-sm" style={{ color: "var(--mkt-muted)" }}>
+                Members propose. Councils vet. Members vote. Quarterly reporting
+                on every active project.
+              </p>
 
-            <div className="flex flex-col gap-3">
-              {investments.map((inv) => (
-                <div
-                  key={inv.title}
-                  className="bg-[#faf9f6] rounded-2xl p-5 flex justify-between items-center group hover:bg-[#f4efe6] transition-colors border border-transparent hover:border-gray-100"
-                >
-                  <div>
-                    <h3 className="font-bold text-gray-900 text-[15px] mb-1">
-                      {inv.title}
-                    </h3>
-                    <p className="text-[13px] text-gray-500">{inv.sub}</p>
-                  </div>
-                  <span
-                    className={`text-[10px] font-mono font-bold tracking-widest uppercase ${inv.statusColor}`}
-                  >
-                    {inv.status}
-                  </span>
-                </div>
-              ))}
+              <StaggerChildren delay={0.1} className="flex flex-col gap-3">
+                {investments.map((inv) => (
+                  <StaggerItem key={inv.title}>
+                    <div
+                      className="rounded-2xl p-5 flex justify-between items-center group hover:opacity-80 transition-opacity border border-transparent hover:border-black/5"
+                      style={{ background: "var(--mkt-bg)" }}
+                    >
+                      <div>
+                        <h3 className="font-bold text-[15px] mb-1" style={{ color: "var(--mkt-text)" }}>
+                          {inv.title}
+                        </h3>
+                        <p className="text-[13px]" style={{ color: "var(--mkt-muted)" }}>{inv.sub}</p>
+                      </div>
+                      <span
+                        className={`text-[10px] font-mono font-bold tracking-widest uppercase ${inv.statusColor === 'text-gray-500' ? '' : inv.statusColor}`}
+                        style={inv.statusColor === 'text-gray-500' ? { color: "var(--mkt-muted)" } : undefined}
+                      >
+                        {inv.status}
+                      </span>
+                    </div>
+                  </StaggerItem>
+                ))}
+              </StaggerChildren>
             </div>
-          </div>
+          </FadeUp>
 
           {/* Welfare */}
-          <div className="bg-white rounded-4xl p-8 md:p-12 border border-gray-200 shadow-sm">
-            <p className="text-xs font-semibold font-mono tracking-[0.15em] text-gray-400 uppercase mb-4">
-              04 — WELFARE
-            </p>
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight mb-6">
-              Welfare initiatives
-            </h2>
-            <p className="text-[15px] text-gray-600 mb-10 leading-relaxed max-w-sm">
-              A safety net pooled across all members. No claim limits. No
-              probation period after Tier 02.
-            </p>
+          <FadeUp delay={0.15}>
+            <div 
+              className="rounded-4xl p-8 md:p-12 border shadow-sm h-full"
+              style={{ background: "var(--mkt-card)", borderColor: "var(--mkt-border)" }}
+            >
+              <p className="text-xs font-semibold font-mono tracking-[0.15em] uppercase mb-4" style={{ color: "var(--mkt-accent)" }}>
+                04 — WELFARE
+              </p>
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-6" style={{ color: "var(--mkt-text)" }}>
+                Welfare initiatives
+              </h2>
+              <p className="text-[15px] mb-10 leading-relaxed max-w-sm" style={{ color: "var(--mkt-muted)" }}>
+                A safety net pooled across all members. No claim limits. No
+                probation period after Tier 02.
+              </p>
 
-            <div className="flex flex-col gap-3">
-              {welfare.map((w) => (
-                <div
-                  key={w.title}
-                  className="bg-[#faf9f6] rounded-2xl p-5 flex justify-between items-center group hover:bg-[#f4efe6] transition-colors border border-transparent hover:border-gray-100"
-                >
-                  <div>
-                    <h3 className="font-bold text-gray-900 text-[15px] mb-1">
-                      {w.title}
-                    </h3>
-                    <p className="text-[13px] text-gray-500">{w.sub}</p>
-                  </div>
-                </div>
-              ))}
+              <StaggerChildren delay={0.25} className="flex flex-col gap-3">
+                {welfare.map((w) => (
+                  <StaggerItem key={w.title}>
+                    <div
+                      className="rounded-2xl p-5 flex justify-between items-center group hover:opacity-80 transition-opacity border border-transparent hover:border-black/5"
+                      style={{ background: "var(--mkt-bg)" }}
+                    >
+                      <div>
+                        <h3 className="font-bold text-[15px] mb-1" style={{ color: "var(--mkt-text)" }}>
+                          {w.title}
+                        </h3>
+                        <p className="text-[13px]" style={{ color: "var(--mkt-muted)" }}>{w.sub}</p>
+                      </div>
+                    </div>
+                  </StaggerItem>
+                ))}
+              </StaggerChildren>
             </div>
-          </div>
+          </FadeUp>
         </div>
       </section>
     </div>

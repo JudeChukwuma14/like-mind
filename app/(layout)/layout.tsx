@@ -4,6 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
+import { ThemeToggle } from "@/app/components/ThemeToggle";
+import { useTheme } from "@/app/providers/ThemeProvider";
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -16,6 +18,7 @@ const navLinks = [
 
 function Navbar() {
   const pathname = usePathname();
+  const { theme } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -25,6 +28,7 @@ function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  /* Always dark navbar — matches the logo's dark background */
   return (
     <header
       className={`fixed top-0 inset-x-0 z-50 border-b transition-all duration-500 ${
@@ -35,7 +39,7 @@ function Navbar() {
     >
       <div className="mx-auto max-w-7xl px-6 h-16 flex items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="flex items-center group">
+        <Link href="/" className="flex items-center group shrink-0">
           <Image
             src="/Likemind.png"
             alt="LikeMinds Cooperative Logo"
@@ -65,8 +69,9 @@ function Navbar() {
           })}
         </nav>
 
-        {/* CTA */}
+        {/* Right actions */}
         <div className="hidden md:flex items-center gap-3">
+          <ThemeToggle variant="ghost" className="text-white/70" />
           <Link
             href="/dashboard"
             className="px-4 py-2 text-sm font-medium text-white/80 border border-white/20 rounded-full hover:border-white/40 hover:text-white transition-all duration-200"
@@ -81,29 +86,26 @@ function Navbar() {
           </Link>
         </div>
 
-        {/* Mobile hamburger */}
-        <button
-          id="mobile-menu-toggle"
-          className="md:hidden flex flex-col justify-center items-center w-9 h-9 gap-1.5"
-          onClick={() => setMenuOpen(!menuOpen)}
-          aria-label="Toggle menu"
-        >
-          <span
-            className={`block h-0.5 bg-white rounded-full transition-all duration-300 ${menuOpen ? "w-6 rotate-45 translate-y-2" : "w-6"}`}
-          />
-          <span
-            className={`block h-0.5 bg-white rounded-full transition-all duration-300 ${menuOpen ? "opacity-0 w-0" : "w-5"}`}
-          />
-          <span
-            className={`block h-0.5 bg-white rounded-full transition-all duration-300 ${menuOpen ? "w-6 -rotate-45 -translate-y-2" : "w-6"}`}
-          />
-        </button>
+        {/* Mobile right: theme + hamburger */}
+        <div className="md:hidden flex items-center gap-2">
+          <ThemeToggle variant="ghost" className="text-white/70" />
+          <button
+            id="mobile-menu-toggle"
+            className="flex flex-col justify-center items-center w-9 h-9 gap-1.5"
+            onClick={() => setMenuOpen(!menuOpen)}
+            aria-label="Toggle menu"
+          >
+            <span className={`block h-0.5 bg-white rounded-full transition-all duration-300 ${menuOpen ? "w-6 rotate-45 translate-y-2" : "w-6"}`} />
+            <span className={`block h-0.5 bg-white rounded-full transition-all duration-300 ${menuOpen ? "opacity-0 w-0" : "w-5"}`} />
+            <span className={`block h-0.5 bg-white rounded-full transition-all duration-300 ${menuOpen ? "w-6 -rotate-45 -translate-y-2" : "w-6"}`} />
+          </button>
+        </div>
       </div>
 
       {/* Mobile menu */}
       <div
         className={`md:hidden overflow-hidden transition-all duration-300 ${
-          menuOpen ? "max-h-[400px] opacity-100" : "max-h-0 opacity-0"
+          menuOpen ? "max-h-[440px] opacity-100" : "max-h-0 opacity-0"
         }`}
       >
         <div className="border-t border-white/10 px-6 py-4 flex flex-col gap-1 bg-[#0a0a0a]">
@@ -148,12 +150,19 @@ function Navbar() {
 
 function Footer() {
   return (
-    <footer className="bg-[#0a0a0a] text-white border-t border-white/8">
+    <footer
+      className="border-t"
+      style={{
+        background: "var(--mkt-card)",
+        borderColor: "var(--mkt-border)",
+        color: "var(--mkt-text)",
+      }}
+    >
       <div className="mx-auto max-w-7xl px-6 py-16">
         {/* Top row */}
         <div className="flex flex-col md:flex-row justify-between items-start gap-12 mb-12">
           {/* Brand */}
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4 max-w-xs">
             <Image
               src="/Likemind.png"
               alt="LikeMinds Cooperative Logo"
@@ -161,7 +170,7 @@ function Footer() {
               height={100}
               className="object-contain"
             />
-            <p className="text-sm text-white/50 max-w-xs leading-relaxed">
+            <p className="text-sm leading-relaxed" style={{ color: "var(--mkt-muted)" }}>
               A member-owned cooperative pooling capital across real estate,
               agriculture, tech and welfare since 2014.
             </p>
@@ -178,7 +187,10 @@ function Footer() {
                   <Link
                     key={link.href}
                     href={link.href}
-                    className="text-sm text-white/60 hover:text-white transition-colors duration-200"
+                    className="text-sm transition-colors duration-200"
+                    style={{ color: "var(--mkt-muted)" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = "var(--mkt-text)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = "var(--mkt-muted)")}
                   >
                     {link.label}
                   </Link>
@@ -190,42 +202,43 @@ function Footer() {
                 Get Started
               </p>
               <nav className="flex flex-col gap-3">
-                <Link
-                  href="/dashboard"
-                  className="text-sm text-white/60 hover:text-white transition-colors duration-200"
-                >
-                  Sign In
-                </Link>
-                <Link
-                  href="/dashboard"
-                  className="text-sm text-white/60 hover:text-white transition-colors duration-200"
-                >
-                  Become a Member
-                </Link>
-                <Link
-                  href="/apply"
-                  className="text-sm text-white/60 hover:text-white transition-colors duration-200"
-                >
-                  Apply Now
-                </Link>
+                {[
+                  { href: "/dashboard", label: "Sign In" },
+                  { href: "/dashboard", label: "Become a Member" },
+                  { href: "/apply", label: "Apply Now" },
+                ].map((l) => (
+                  <Link
+                    key={l.label}
+                    href={l.href}
+                    className="text-sm transition-colors duration-200"
+                    style={{ color: "var(--mkt-muted)" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = "var(--mkt-text)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = "var(--mkt-muted)")}
+                  >
+                    {l.label}
+                  </Link>
+                ))}
               </nav>
             </div>
           </div>
         </div>
 
         {/* Bottom bar */}
-        <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-white/40 font-medium">
+        <div
+          className="pt-8 border-t flex flex-col md:flex-row items-center justify-between gap-4 text-xs font-medium"
+          style={{ borderColor: "var(--mkt-border)", color: "var(--mkt-muted)" }}
+        >
           <p>© 2026 LikeMinds Cooperative · Federally registered Canadian co-op</p>
           <div className="flex gap-6">
-            <Link href="#" className="hover:text-white/80 transition-colors">
-              Privacy
-            </Link>
-            <Link href="#" className="hover:text-white/80 transition-colors">
-              Terms
-            </Link>
-            <Link href="#" className="hover:text-white/80 transition-colors">
-              Accessibility
-            </Link>
+            {["Privacy", "Terms", "Accessibility"].map((t) => (
+              <Link
+                key={t}
+                href="#"
+                className="transition-colors duration-200 hover:text-[#facc15]"
+              >
+                {t}
+              </Link>
+            ))}
           </div>
         </div>
       </div>
@@ -239,7 +252,7 @@ export default function MarketingLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen flex flex-col bg-[#f6f4eb]">
+    <div className="min-h-screen flex flex-col" style={{ background: "var(--mkt-bg)" }}>
       <Navbar />
       <main className="flex-1 pt-16">{children}</main>
       <Footer />

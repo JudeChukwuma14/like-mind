@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
+import { ThemeToggle } from "@/app/components/ThemeToggle";
 
 /* ─── Nav items matching image: Overview, Cash Wallet, Investments, Loans,
        Withdrawals, Notifications, Profile ──────────────────────────── */
@@ -108,7 +109,7 @@ function Sidebar({
     <aside
       style={{
         background: "var(--dash-surface)",
-        borderRight: "1px solid rgba(255,255,255,0.07)",
+        borderRight: "1px solid var(--dash-border)",
         width: collapsed ? "72px" : "220px",
         transition: "width 0.3s ease",
       }}
@@ -119,7 +120,7 @@ function Sidebar({
         className="flex items-center gap-3 px-4 shrink-0"
         style={{
           height: "64px",
-          borderBottom: "1px solid rgba(255,255,255,0.07)",
+          borderBottom: "1px solid var(--dash-border)",
         }}
       >
         <Link href="/" className="flex items-center gap-3 min-w-0">
@@ -143,8 +144,10 @@ function Sidebar({
           <button
             id="user-sidebar-collapse"
             onClick={onToggle}
-            className="ml-auto shrink-0 hidden lg:flex items-center justify-center w-7 h-7 rounded-md transition-colors hover:bg-white/10"
-            style={{ color: "rgba(255,255,255,0.4)" }}
+            className="ml-auto shrink-0 hidden lg:flex items-center justify-center w-7 h-7 rounded-md transition-colors"
+            style={{ color: "var(--dash-muted)", background: "transparent" }}
+            onMouseEnter={e => (e.currentTarget.style.background = "color-mix(in srgb, var(--dash-border) 60%, transparent)")}
+            onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
             aria-label="Collapse sidebar"
           >
             <IconChevron />
@@ -159,7 +162,7 @@ function Sidebar({
             {!collapsed && (
               <p
                 className="px-3 mb-1.5 text-[10px] font-semibold tracking-widest uppercase"
-                style={{ color: "rgba(255,255,255,0.3)" }}
+                style={{ color: "var(--dash-muted)", opacity: 0.7 }}
               >
                 {group.label}
               </p>
@@ -183,13 +186,13 @@ function Sidebar({
                               color: "#f59e0b",
                             }
                           : {
-                              color: "rgba(255,255,255,0.55)",
+                              color: "var(--dash-muted)",
                             }
                       }
                       onMouseEnter={(e) => {
                         if (!active)
                           e.currentTarget.style.background =
-                            "rgba(255,255,255,0.06)";
+                            "color-mix(in srgb, var(--dash-border) 50%, transparent)";
                       }}
                       onMouseLeave={(e) => {
                         if (!active) e.currentTarget.style.background = "";
@@ -224,7 +227,7 @@ function Sidebar({
       {/* Bottom: AI + User Info */}
       <div
         className="shrink-0 p-3 space-y-2"
-        style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}
+        style={{ borderTop: "1px solid var(--dash-border)" }}
       >
         {/* Ask AI button */}
         {!collapsed && (
@@ -244,19 +247,19 @@ function Sidebar({
         {/* Avatar row */}
         <div className="flex items-center gap-2 px-1 py-1">
           <div
-            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
-            style={{ background: "linear-gradient(135deg, #f59e0b, #ef4444)" }}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+            style={{ background: "linear-gradient(135deg, #f59e0b, #ef4444)", color: "#fff" }}
           >
             AT
           </div>
           {!collapsed && (
             <div className="min-w-0">
-              <p className="text-xs font-semibold text-white truncate">
+              <p className="text-xs font-semibold truncate" style={{ color: "var(--dash-text)" }}>
                 Adeyera Triumph
               </p>
               <p
                 className="text-[10px] truncate"
-                style={{ color: "rgba(255,255,255,0.4)" }}
+                style={{ color: "var(--dash-muted)" }}
               >
                 Member · ALM 04513
               </p>
@@ -269,8 +272,10 @@ function Sidebar({
       {collapsed && (
         <button
           onClick={onToggle}
-          className="mx-auto mb-3 w-8 h-8 hidden lg:flex items-center justify-center rounded-md transition-colors hover:bg-white/10"
-          style={{ color: "rgba(255,255,255,0.4)" }}
+          className="mx-auto mb-3 w-8 h-8 hidden lg:flex items-center justify-center rounded-md transition-colors"
+          style={{ color: "var(--dash-muted)" }}
+          onMouseEnter={e => (e.currentTarget.style.background = "color-mix(in srgb, var(--dash-border) 60%, transparent)")}
+          onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
           aria-label="Expand sidebar"
         >
           <IconChevron right />
@@ -364,8 +369,10 @@ function Topbar({
       <div className="flex items-center gap-4">
         <button
           id="user-mobile-menu-toggle"
-          className="lg:hidden flex items-center justify-center w-10 h-10 bg-white rounded-full border border-gray-100 shadow-sm transition-colors hover:bg-gray-50"
-          style={{ color: "var(--dash-text)" }}
+          className="lg:hidden flex items-center justify-center w-10 h-10 rounded-full border shadow-sm transition-colors"
+          style={{ color: "var(--dash-text)", background: "var(--dash-surface)", borderColor: "var(--dash-border)" }}
+          onMouseEnter={e => (e.currentTarget.style.background = "var(--dash-bg)")}
+          onMouseLeave={e => (e.currentTarget.style.background = "var(--dash-surface)")}
           onClick={onMobileToggle}
           aria-label={mobileOpen ? "Close menu" : "Open menu"}
         >
@@ -376,14 +383,19 @@ function Topbar({
           <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-0.5">
             {category}
           </p>
-          <h2 className="text-lg font-bold text-[#111]">{mainTitle}</h2>
+          <h2 className="text-lg font-bold" style={{ color: "var(--dash-text)" }}>{mainTitle}</h2>
         </div>
       </div>
 
       {/* Right: Search + Actions */}
       <div className="flex items-center gap-3">
+        {/* Theme toggle */}
+        <ThemeToggle variant="default" />
         {/* Search bar */}
-        <div className="hidden sm:flex items-center gap-2 px-4 py-2.5 bg-white rounded-full border border-gray-100 shadow-sm w-[280px]">
+        <div
+          className="hidden sm:flex items-center gap-2 px-4 py-2.5 rounded-full border shadow-sm w-[280px]"
+          style={{ background: "var(--dash-surface)", borderColor: "var(--dash-border)", color: "var(--dash-muted)" }}
+        >
           <svg
             width="14"
             height="14"
@@ -392,7 +404,6 @@ function Topbar({
             stroke="currentColor"
             strokeWidth="2"
             strokeLinecap="round"
-            className="text-gray-400"
           >
             <circle cx="11" cy="11" r="8" />
             <line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -400,16 +411,20 @@ function Topbar({
           <input
             type="text"
             placeholder="Search transactions, members"
-            className="flex-1 bg-transparent text-sm outline-none text-[#111] placeholder:text-gray-400"
+            className="flex-1 bg-transparent text-sm outline-none"
+            style={{ color: "var(--dash-text)" }}
           />
-          <span className="text-[10px] font-medium text-gray-400">⌘K</span>
+          <span className="text-[10px] font-medium" style={{ color: "var(--dash-muted)" }}>⌘K</span>
         </div>
 
         {/* Notifications bell */}
         <Link
           href="/dashboard/notifications"
           id="user-topbar-notifications"
-          className="relative w-10 h-10 bg-white rounded-full border border-gray-100 shadow-sm flex items-center justify-center transition-colors hover:bg-gray-50 text-gray-600 hover:text-[#111]"
+          className="relative w-10 h-10 rounded-full border shadow-sm flex items-center justify-center transition-colors"
+          style={{ background: "var(--dash-surface)", borderColor: "var(--dash-border)", color: "var(--dash-muted)" }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--dash-text)"; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--dash-muted)"; }}
         >
           <svg
             width="18"

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { HoverScale, AnimatePresence, motion } from "@/app/components/Motion";
 
 const faqs = [
   {
@@ -56,50 +57,65 @@ export function FaqAccordion() {
       {faqs.map((faq, i) => {
         const isOpen = openIndex === i;
         return (
-          <div
-            key={faq.num}
-            onClick={() => toggle(i)}
-            className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm cursor-pointer hover:border-gray-200 transition-colors"
-          >
-            <div className="flex gap-6 items-start">
-              <span className="text-xs font-mono text-[#a89f91] mt-1">
-                {faq.num}
-              </span>
-              <div className="flex-1">
-                <div className="flex justify-between items-center">
-                  <h3 className="font-bold text-gray-900">
-                    {faq.question}
-                  </h3>
-                  <svg
-                    className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
-                      isOpen ? "rotate-180" : ""
-                    }`}
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </div>
-                <div
-                  className={`grid transition-all duration-300 ease-in-out ${
-                    isOpen ? "grid-rows-[1fr] opacity-100 mt-4" : "grid-rows-[0fr] opacity-0"
-                  }`}
+          <HoverScale key={faq.num} scale={1.01}>
+            <div
+              onClick={() => toggle(i)}
+              className="rounded-2xl p-6 border shadow-sm cursor-pointer transition-colors"
+              style={{
+                background: "var(--mkt-card)",
+                borderColor: "var(--mkt-border)",
+              }}
+            >
+              <div className="flex gap-6 items-start">
+                <span
+                  className="text-xs font-mono mt-1"
+                  style={{ color: "var(--mkt-accent)" }}
                 >
-                  <div className="overflow-hidden">
-                    <p className="text-sm text-gray-600 leading-relaxed pr-8">
-                      {faq.answer}
-                    </p>
+                  {faq.num}
+                </span>
+                <div className="flex-1">
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-bold" style={{ color: "var(--mkt-text)" }}>
+                      {faq.question}
+                    </h3>
+                    <motion.svg
+                      animate={{ rotate: isOpen ? 180 : 0 }}
+                      className="w-4 h-4"
+                      style={{ color: "var(--mkt-muted)" }}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </motion.svg>
                   </div>
+                  <AnimatePresence initial={false}>
+                    {isOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0, marginTop: 0 }}
+                        animate={{ height: "auto", opacity: 1, marginTop: 16 }}
+                        exit={{ height: 0, opacity: 0, marginTop: 0 }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                        className="overflow-hidden"
+                      >
+                        <p
+                          className="text-sm leading-relaxed pr-8"
+                          style={{ color: "var(--mkt-muted)" }}
+                        >
+                          {faq.answer}
+                        </p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
             </div>
-          </div>
+          </HoverScale>
         );
       })}
     </div>

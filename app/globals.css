@@ -1,206 +1,203 @@
 @import "tailwindcss";
 
-/* ─── Design System Tokens ─────────────────────────────────── */
-:root {
-  --background: #f4efe6;
-  --foreground: #171717;
+/* ═══════════════════════════════════════════════════════════════
+   THEME SYSTEM
+   Driven by data-theme="light|dark" on <html>.
+   Set by inline script in app/layout.tsx before first paint.
+   ═══════════════════════════════════════════════════════════════ */
 
-  /* Marketing palette — indigo/violet */
-  --mkt-primary: #4f46e5;
-  --mkt-secondary: #7c3aed;
-  --mkt-accent: #06b6d4;
+/* ── Light theme ────────────────────────────────────────────── */
+[data-theme="light"] {
+  color-scheme: light;
 
-  /* User dashboard palette — slate/blue */
-  --dash-bg: #f4efe6;
-  --dash-surface: #171717;
-  --dash-border: #d4d4d8;
-  --dash-primary: #6366f1;
-  --dash-accent: #22d3ee;
-  --dash-text: #171717;
-  --dash-muted: #737373;
+  /* Global surface */
+  --bg:            #f6f4eb;
+  --bg-elevated:   #ffffff;
+  --fg:            #111111;
+  --fg-muted:      #6b7280;
+  --border:        #e5e7eb;
+  --border-subtle: rgba(0,0,0,0.06);
 
-  /* Admin palette — light cream/amber */
-  --admin-bg: #fcfbf8;
+  /* Marketing / Landing */
+  --mkt-bg:        #f6f4eb;
+  --mkt-card:      #ffffff;
+  --mkt-text:      #111111;
+  --mkt-muted:     #6b7280;
+  --mkt-border:    #e5e7eb;
+  --mkt-accent:    #a89f91;
+
+  /* User dashboard */
+  --dash-bg:       #f4efe6;
+  --dash-surface:  #ffffff;
+  --dash-border:   #e2ddd6;
+  --dash-primary:  #f59e0b;
+  --dash-accent:   #22d3ee;
+  --dash-text:     #171717;
+  --dash-muted:    #737373;
+
+  /* Admin */
+  --admin-bg:      #fcfbf8;
   --admin-surface: #ffffff;
-  --admin-border: #e5e0d8;
-  --admin-primary: #fcd34d; /* yellow/gold */
-  --admin-accent: #ef4444;
-  --admin-text: #171717;
-  --admin-muted: #737373;
+  --admin-border:  #e5e0d8;
+  --admin-primary: #fcd34d;
+  --admin-accent:  #ef4444;
+  --admin-text:    #171717;
+  --admin-muted:   #737373;
+
+  /* Shared brand */
+  --brand:         #facc15;
+  --brand-fg:      #0a0a0a;
+  --brand-hover:   #fde68a;
+
+  /* Navbar / dark strip */
+  --nav-bg:        #0a0a0a;
+  --nav-text:      #ffffff;
 }
 
+/* ── Dark theme ─────────────────────────────────────────────── */
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* Global surface */
+  --bg:            #0f0f0f;
+  --bg-elevated:   #1a1a1a;
+  --fg:            #f0ede8;
+  --fg-muted:      #9ca3af;
+  --border:        #2a2a2a;
+  --border-subtle: rgba(255,255,255,0.07);
+
+  /* Marketing / Landing */
+  --mkt-bg:        #0f0f0f;
+  --mkt-card:      #1a1a1a;
+  --mkt-text:      #f0ede8;
+  --mkt-muted:     #9ca3af;
+  --mkt-border:    #2a2a2a;
+  --mkt-accent:    #a89f91;
+
+  /* User dashboard */
+  --dash-bg:       #111111;
+  --dash-surface:  #0d0d0d;
+  --dash-border:   #2a2a2a;
+  --dash-primary:  #f59e0b;
+  --dash-accent:   #22d3ee;
+  --dash-text:     #f0ede8;
+  --dash-muted:    #9ca3af;
+
+  /* Admin */
+  --admin-bg:      #111111;
+  --admin-surface: #1a1a1a;
+  --admin-border:  #2a2a2a;
+  --admin-primary: #fcd34d;
+  --admin-accent:  #ef4444;
+  --admin-text:    #f0ede8;
+  --admin-muted:   #9ca3af;
+
+  /* Shared brand */
+  --brand:         #facc15;
+  --brand-fg:      #0a0a0a;
+  --brand-hover:   #fde68a;
+
+  /* Navbar */
+  --nav-bg:        #0a0a0a;
+  --nav-text:      #ffffff;
+}
+
+/* ── Legacy support (Tailwind @theme inline) ────────────────── */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: var(--bg);
+  --color-foreground: var(--fg);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* ── Base ───────────────────────────────────────────────────── */
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--bg);
+  color: var(--fg);
   font-family: var(--font-geist-sans, Arial, Helvetica, sans-serif);
 }
 
-/* ─── Smooth global scrolling ───────────────────────────────── */
 html {
   scroll-behavior: smooth;
 }
 
-/* ─── Shared utility classes ────────────────────────────────── */
-.gradient-text {
-  background: linear-gradient(135deg, var(--mkt-primary), var(--mkt-secondary));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+/* ── Smooth theme transition ────────────────────────────────── */
+*,
+*::before,
+*::after {
+  transition:
+    background-color 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+/* Exclude colour transitions on text to avoid blurry re-renders */
+a, button, span, p, h1, h2, h3, h4, h5, h6, label, input, select, textarea {
+  transition:
+    background-color 0.25s ease,
+    border-color 0.25s ease,
+    color 0.15s ease,
+    opacity 0.2s ease,
+    box-shadow 0.25s ease;
 }
 
-/* Custom Scrollbars */
-.custom-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
-}
-.custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: rgba(156, 163, 175, 0.5);
-  border-radius: 20px;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(156, 163, 175, 0.8);
-}
-
-.dark-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
-}
-.dark-scrollbar::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
-}
-.dark-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-.dark-scrollbar::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.15);
-  border-radius: 20px;
-}
-.dark-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(255, 255, 255, 0.25);
-}
-
-/* Main Viewport Global Scrollbar */
-html {
-  scrollbar-width: thin;
-  scrollbar-color: #cbd5e1 var(--background);
-}
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-::-webkit-scrollbar-track {
-  background: var(--background);
-}
-::-webkit-scrollbar-thumb {
-  background-color: #cbd5e1;
-  border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background-color: #94a3b8;
-}
-
-@media (prefers-color-scheme: dark) {
-  html {
-    scrollbar-color: #475569 var(--background);
-  }
-  ::-webkit-scrollbar-track {
-    background: var(--background);
-  }
-  ::-webkit-scrollbar-thumb {
-    background-color: #475569;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background-color: #64748b;
-  }
-}
-
-/* ─── Hero Animations ───────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════
+   HERO ANIMATIONS
+   ═══════════════════════════════════════════════════════════════ */
 @keyframes fadeUp {
-  from {
-    opacity: 0;
-    transform: translateY(32px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(32px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
-
 @keyframes fadeIn {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
-
 @keyframes floatY {
   0%, 100% { transform: translateY(0px); }
   50%       { transform: translateY(-12px); }
 }
-
 @keyframes shimmer {
   0%   { background-position: -200% center; }
   100% { background-position: 200% center; }
 }
-
 @keyframes scaleIn {
   from { opacity: 0; transform: scale(0.92); }
   to   { opacity: 1; transform: scale(1); }
 }
-
 @keyframes slideDown {
   from { opacity: 0; transform: translateY(-16px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.4); }
-  50%       { box-shadow: 0 0 24px 8px rgba(250, 204, 21, 0.15); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(250,204,21,0.4); }
+  50%       { box-shadow: 0 0 24px 8px rgba(250,204,21,0.15); }
+}
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-.animate-fade-up    { animation: fadeUp 0.7s ease-out both; }
-.animate-fade-in    { animation: fadeIn 0.7s ease-out both; }
-.animate-scale-in   { animation: scaleIn 0.6s ease-out both; }
-.animate-float      { animation: floatY 5s ease-in-out infinite; }
-.animate-slide-down { animation: slideDown 0.4s ease-out both; }
-.animate-pulse-glow { animation: pulse-glow 2.5s ease-in-out infinite; }
+.animate-fade-up       { animation: fadeUp 0.7s ease-out both; }
+.animate-fade-in       { animation: fadeIn 0.7s ease-out both; }
+.animate-scale-in      { animation: scaleIn 0.6s ease-out both; }
+.animate-float         { animation: floatY 5s ease-in-out infinite; }
+.animate-slide-down    { animation: slideDown 0.4s ease-out both; }
+.animate-pulse-glow    { animation: pulse-glow 2.5s ease-in-out infinite; }
+.animate-marquee       { animation: marquee 30s linear infinite; }
 
-.delay-100 { animation-delay: 0.1s; }
-.delay-200 { animation-delay: 0.2s; }
-.delay-300 { animation-delay: 0.3s; }
-.delay-400 { animation-delay: 0.4s; }
-.delay-500 { animation-delay: 0.5s; }
-.delay-600 { animation-delay: 0.6s; }
-.delay-700 { animation-delay: 0.7s; }
+.delay-100  { animation-delay: 0.1s; }
+.delay-200  { animation-delay: 0.2s; }
+.delay-300  { animation-delay: 0.3s; }
+.delay-400  { animation-delay: 0.4s; }
+.delay-500  { animation-delay: 0.5s; }
+.delay-600  { animation-delay: 0.6s; }
+.delay-700  { animation-delay: 0.7s; }
 
 .shimmer-text {
-  background: linear-gradient(
-    90deg,
-    #facc15 0%,
-    #fde68a 40%,
-    #facc15 60%,
-    #b45309 100%
-  );
+  background: linear-gradient(90deg, #facc15 0%, #fde68a 40%, #facc15 60%, #b45309 100%);
   background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -208,10 +205,143 @@ html {
   animation: shimmer 4s linear infinite;
 }
 
-/* Navbar scroll-shrink — toggled by JS */
-.navbar-scrolled {
-  backdrop-filter: blur(20px);
-  background: rgba(10, 10, 10, 0.95) !important;
-  border-bottom-color: rgba(250, 204, 21, 0.15) !important;
+/* ═══════════════════════════════════════════════════════════════
+   SCROLLBARS
+   ═══════════════════════════════════════════════════════════════ */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156,163,175,0.5) transparent;
+}
+.custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track  { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb  { background-color: rgba(156,163,175,0.5); border-radius: 20px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: rgba(156,163,175,0.8); }
+
+.dark-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.15) transparent;
+}
+.dark-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+.dark-scrollbar::-webkit-scrollbar-track  { background: transparent; }
+.dark-scrollbar::-webkit-scrollbar-thumb  { background-color: rgba(255,255,255,0.15); border-radius: 20px; }
+.dark-scrollbar::-webkit-scrollbar-thumb:hover { background-color: rgba(255,255,255,0.25); }
+
+html {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 var(--bg);
+}
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background-color: #94a3b8; }
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb { background-color: #374151; }
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background-color: #4b5563; }
+
+/* ═══════════════════════════════════════════════════════════════
+   SEMANTIC UTILITY CLASSES
+   Use these instead of hardcoded Tailwind colors so every
+   component automatically responds to data-theme changes.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Global surface ─────────────────────────────────────────── */
+.bg-theme          { background: var(--bg); }
+.bg-surface        { background: var(--bg-elevated); }
+.text-theme        { color: var(--fg); }
+.text-muted        { color: var(--fg-muted); }
+.border-theme      { border-color: var(--border); }
+
+/* ── Dashboard (user) ───────────────────────────────────────── */
+.dash-bg           { background: var(--dash-bg); }
+.dash-surface      { background: var(--dash-surface); }
+.dash-text         { color: var(--dash-text); }
+.dash-text-muted   { color: var(--dash-muted); }
+.dash-border       { border-color: var(--dash-border); }
+
+/* ── Admin ──────────────────────────────────────────────────── */
+.admin-bg          { background: var(--admin-bg); }
+.admin-surface     { background: var(--admin-surface); }
+.admin-text        { color: var(--admin-text); }
+.admin-text-muted  { color: var(--admin-muted); }
+.admin-border      { border-color: var(--admin-border); }
+
+/* ── Marketing ──────────────────────────────────────────────── */
+.mkt-bg            { background: var(--mkt-bg); }
+.mkt-card          { background: var(--mkt-card); }
+.mkt-text          { color: var(--mkt-text); }
+.mkt-text-muted    { color: var(--mkt-muted); }
+.mkt-border        { border-color: var(--mkt-border); }
+
+/* ── Reusable component patterns ────────────────────────────── */
+.card-theme {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+}
+.card-dash {
+  background: var(--dash-surface);
+  border: 1px solid var(--dash-border);
+}
+.card-admin {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+}
+.card-mkt {
+  background: var(--mkt-card);
+  border: 1px solid var(--mkt-border);
+}
+
+/* ── Buttons ────────────────────────────────────────────────── */
+.btn-primary {
+  background: var(--brand);
+  color: var(--brand-fg);
+}
+.btn-primary:hover {
+  background: var(--brand-hover);
+}
+.btn-inverse {
+  background: var(--fg);
+  color: var(--bg);
+}
+.btn-inverse:hover {
+  opacity: 0.9;
+}
+
+/* ── Inputs ─────────────────────────────────────────────────── */
+.input-theme {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--fg);
+}
+.input-dash {
+  background: var(--dash-surface);
+  border: 1px solid var(--dash-border);
+  color: var(--dash-text);
+}
+.input-admin {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  color: var(--admin-text);
+}
+
+/* ── Admin workload card (Server Component safe hover) ──────── */
+.admin-workload-card {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.admin-workload-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  border-color: var(--admin-primary);
+}
+
+/* ── Dash card hover (Server Component safe) ─────────────────── */
+.dash-card-hover {
+  background: var(--dash-surface);
+  border: 1px solid var(--dash-border);
+  transition: box-shadow 0.2s ease;
+}
+.dash-card-hover:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
 }
 
