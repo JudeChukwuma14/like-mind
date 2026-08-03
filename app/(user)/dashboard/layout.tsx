@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
@@ -122,7 +123,7 @@ function Sidebar({
         }}
       >
         <Link href="/" className="flex items-center gap-3 min-w-0">
-          <div
+          {/* <div
             className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold shrink-0 text-white"
             style={{ background: "linear-gradient(135deg, #f59e0b, #ef4444)" }}
           >
@@ -132,7 +133,9 @@ function Sidebar({
             <span className="font-bold text-white truncate text-sm">
               LikeMind
             </span>
-          )}
+          )} */}
+
+          <Image src="/Likemind.png" alt="Logo" width={100} height={100} className="w-20 h-auto object-cover"/>
         </Link>
 
         {/* collapse toggle — only visible on desktop */}

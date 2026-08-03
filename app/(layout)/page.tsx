@@ -1,50 +1,132 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { FaqAccordion } from "./FaqAccordion";
 
 export const metadata: Metadata = {
-  title: "Home",
+  title: "Home | LikeMinds Cooperative",
   description:
-    "Kajola — your all-in-one platform for managing teams, workflows, and growth.",
+    "LikeMinds Cooperative — a member-owned co-op pooling capital across real estate, agriculture, tech and welfare. Build wealth together with honest returns and no hidden fees.",
 };
+
+const stats = [
+  { value: "$84M", label: "Pooled capital" },
+  { value: "1,200+", label: "Active members" },
+  { value: "6", label: "Investment sectors" },
+  { value: "7", label: "Provinces served" },
+];
 
 export default function HomePage() {
   return (
     <>
       {/* ── Hero ────────────────────────────────────────────────── */}
-      <section className="relative flex flex-col items-center justify-center text-center px-6 py-18 overflow-hidden">
-        <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-black leading-tight tracking-tight max-w-4xl">
-          Let's Build wealth
-        </h1>
-        <h1 className="text-5xl sm:text-6xl md:text-7xl font-extrabold text-black leading-tight tracking-tight max-w-4xl">
-          Together
-        </h1>
+      <section className="relative flex flex-col items-center justify-center text-center min-h-[92vh] px-6 py-24 overflow-hidden">
+        {/* Background image */}
+        <div className="absolute inset-0 z-0">
+          <Image
+            src="/hero-bg.png"
+            alt="Hero background"
+            fill
+            priority
+            className="object-cover object-center"
+          />
+          {/* Dark gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a]/80 via-[#0a0a0a]/60 to-[#0a0a0a]/85" />
+          {/* Subtle vignette */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_30%,rgba(0,0,0,0.6)_100%)]" />
+        </div>
 
-        <p className="mt-6 text-lg text-black/55 max-w-2xl mx-auto leading-relaxed">
-          A member-owned co-op pooling capital across real estate, agriculture,
-          tech and welfare. Honest returns, no hidden fees.
-        </p>
+        {/* Gold accent orb */}
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#facc15]/5 rounded-full blur-3xl pointer-events-none z-0" />
 
-        <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-          <Link
-            id="hero-cta-primary"
-            href="/dashboard"
-            className="px-8 py-3.5 rounded-xl font-semibold bg-black text-white text-base  transition-all duration-200 hover:scale-105 "
-          >
-            Become a member →
-          </Link>
-          <Link
-            id="hero-cta-secondary"
-            href="/about"
-            className="px-8 py-3.5 rounded-xl font-semibold text-black bg-white  text-base border border-white/15 hover:border-white/30 transition-all duration-200 hover:bg-white/5"
-          >
-            Learn more
-          </Link>
+        {/* Content */}
+        <div className="relative z-10 flex flex-col items-center max-w-5xl mx-auto">
+          {/* Badge */}
+          <div className="animate-fade-up mb-8">
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#facc15]/30 bg-[#facc15]/10 text-[#facc15] text-xs font-semibold tracking-widest uppercase">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#facc15] animate-pulse inline-block" />
+              Federally Registered Canadian Co-op · Est. 2014
+            </span>
+          </div>
+
+          {/* Headline */}
+          <h1 className="animate-fade-up delay-100 text-5xl sm:text-6xl md:text-8xl font-extrabold text-white leading-[1.05] tracking-tight max-w-4xl">
+            Let&apos;s Build{" "}
+            <span className="shimmer-text">Wealth</span>
+            <br />
+            Together
+          </h1>
+
+          <p className="animate-fade-up delay-300 mt-8 text-lg sm:text-xl text-white/65 max-w-2xl mx-auto leading-relaxed font-light">
+            A member-owned co-op pooling capital across real estate, agriculture,
+            tech and welfare. Honest returns, no hidden fees, one member one vote.
+          </p>
+
+          {/* CTAs */}
+          <div className="animate-fade-up delay-400 mt-12 flex flex-wrap items-center justify-center gap-4">
+            <Link
+              id="hero-cta-primary"
+              href="/dashboard"
+              className="group relative px-8 py-4 rounded-full font-semibold bg-[#facc15] text-[#0a0a0a] text-base transition-all duration-300 hover:bg-[#fde68a] hover:scale-105 shadow-[0_0_30px_rgba(250,204,21,0.3)] hover:shadow-[0_0_50px_rgba(250,204,21,0.5)]"
+            >
+              Become a member
+              <span className="ml-2 inline-block transition-transform duration-300 group-hover:translate-x-1">→</span>
+            </Link>
+            <Link
+              id="hero-cta-secondary"
+              href="/about"
+              className="px-8 py-4 rounded-full font-semibold text-white text-base border border-white/25 hover:border-white/50 hover:bg-white/8 transition-all duration-300 backdrop-blur-sm"
+            >
+              Learn more
+            </Link>
+          </div>
+
+          {/* Trust signals */}
+          <div className="animate-fade-up delay-500 mt-6 flex flex-wrap items-center justify-center gap-6 text-xs text-white/40 font-medium">
+            <span className="flex items-center gap-1.5">
+              <svg className="w-3.5 h-3.5 text-[#facc15]" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+              </svg>
+              No hidden fees
+            </span>
+            <span className="flex items-center gap-1.5">
+              <svg className="w-3.5 h-3.5 text-[#facc15]" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+              </svg>
+              Federally registered
+            </span>
+            <span className="flex items-center gap-1.5">
+              <svg className="w-3.5 h-3.5 text-[#facc15]" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+              </svg>
+              Member-governed
+            </span>
+          </div>
+        </div>
+
+        {/* Stats bar */}
+        <div className="animate-fade-up delay-600 relative z-10 mt-20 w-full max-w-4xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-white/10 rounded-2xl overflow-hidden border border-white/10 backdrop-blur-sm">
+            {stats.map((stat) => (
+              <div key={stat.label} className="flex flex-col items-center py-6 px-4 bg-[#0a0a0a]/60 hover:bg-[#facc15]/5 transition-colors duration-300">
+                <span className="text-3xl md:text-4xl font-bold text-[#facc15]">{stat.value}</span>
+                <span className="text-xs text-white/50 mt-1 font-medium tracking-wide">{stat.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Scroll indicator */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 animate-float">
+          <div className="flex flex-col items-center gap-2">
+            <span className="text-xs text-white/30 tracking-widest uppercase font-medium">Scroll</span>
+            <div className="w-px h-8 bg-gradient-to-b from-white/30 to-transparent" />
+          </div>
         </div>
       </section>
 
       {/* ── About ───────────────────────────────────────────────── */}
-      <section className="py-24 px-6 max-w-7xl mx-auto bg-white">
+      <section className="py-24 px-6 max-w-7xl mx-auto bg-[#f6f4eb]">
         <div className="flex flex-col md:flex-row gap-8 md:gap-24 items-start">
           <div className="md:w-1/3">
             <p className="text-xs font-semibold tracking-widest text-[#a89f91] uppercase mb-4">
@@ -114,11 +196,16 @@ export default function HomePage() {
                 desc: "No silos in council.",
               },
             ].map((value) => (
-              <div key={value.num} className="flex flex-col">
+              <div
+                key={value.num}
+                className="group flex flex-col p-4 rounded-2xl hover:bg-[#f6f4eb] transition-colors duration-200 cursor-default"
+              >
                 <span className="text-xs font-mono text-[#a89f91] mb-3">
                   {value.num}
                 </span>
-                <h3 className="font-bold text-gray-900 mb-2">{value.title}</h3>
+                <h3 className="font-bold text-gray-900 mb-2 group-hover:text-[#111111] transition-colors">
+                  {value.title}
+                </h3>
                 <p className="text-sm text-gray-500 leading-relaxed">
                   {value.desc}
                 </p>
@@ -129,7 +216,7 @@ export default function HomePage() {
       </section>
 
       {/* ── Faqs ────────────────────────────────────────────────── */}
-      <section className="py-24 px-6 max-w-7xl mx-auto bg-white">
+      <section className="py-24 px-6 max-w-7xl mx-auto bg-[#f6f4eb]">
         <div className="flex flex-col lg:flex-row gap-16">
           <div className="lg:w-1/3">
             <p className="text-xs font-semibold tracking-widest text-[#a89f91] uppercase mb-4">
@@ -143,7 +230,7 @@ export default function HomePage() {
               and answers.
             </h2>
             <p className="text-sm text-gray-600 leading-relaxed max-w-xs">
-              If your question isn't covered here, message us — every member rep
+              If your question isn&apos;t covered here, message us — every member rep
               is also a member.
             </p>
           </div>
@@ -180,12 +267,12 @@ export default function HomePage() {
         </div>
 
         {/* Placeholder image/video rectangle */}
-        <div className="max-w-4xl mx-auto h-100 md:h-112.5 bg-[#e1e2dd] rounded-3xl w-full"></div>
+        <div className="max-w-4xl mx-auto h-100 md:h-112.5 bg-[#e1e2dd] rounded-3xl w-full" />
       </section>
 
       {/* ── Contact ─────────────────────────────────────────────── */}
-      <section className=" bg-white">
-        <div className="py-24 px-6 max-w-5xl mx-auto ">
+      <section className="bg-white">
+        <div className="py-24 px-6 max-w-5xl mx-auto">
           <div className="flex flex-col lg:flex-row justify-center gap-8 lg:gap-12 items-start">
             {/* Contact Form */}
             <div className="bg-white rounded-3xl p-10 lg:p-12 shadow-sm border border-gray-100 w-full lg:w-3/5">
@@ -205,7 +292,7 @@ export default function HomePage() {
                     <input
                       type="text"
                       placeholder="Alexandra Morgan"
-                      className="w-full px-4 py-3 rounded-xl border border-black/50 focus:outline-none focus:ring-2  focus:border-black/30 transition-all text-sm "
+                      className="w-full px-4 py-3 rounded-xl border border-black/50 focus:outline-none focus:ring-2 focus:border-black/30 transition-all text-sm"
                     />
                   </div>
                   <div className="flex-1">
@@ -215,17 +302,17 @@ export default function HomePage() {
                     <input
                       type="email"
                       placeholder="alex@example.com"
-                      className="w-full px-4 py-3 rounded-xl border border-black/50 focus:outline-none focus:ring-2  focus:border-black/30 transition-all text-sm"
+                      className="w-full px-4 py-3 rounded-xl border border-black/50 focus:outline-none focus:ring-2 focus:border-black/30 transition-all text-sm"
                     />
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-2">
-                    I'd like to ask about
+                    I&apos;d like to ask about
                   </label>
                   <div className="relative">
-                    <select className="w-full px-4 py-3 rounded-xl border border-black/50 focus:outline-none focus:ring-2  focus:border-black/30 transition-all text-sm appearance-none bg-white">
+                    <select className="w-full px-4 py-3 rounded-xl border border-black/50 focus:outline-none focus:ring-2 focus:border-black/30 transition-all text-sm appearance-none bg-white">
                       <option>Membership application</option>
                       <option>General inquiries</option>
                     </select>
@@ -252,8 +339,8 @@ export default function HomePage() {
                   <textarea
                     rows={4}
                     placeholder="I'd like to learn more about the Generations Trust scheme and what it means for my children's inheritance."
-                    className="w-full px-4 py-3 rounded-xl border border-black/50 focus:outline-none ring-2 ring-black/10  transition-all text-sm resize-none"
-                  ></textarea>
+                    className="w-full px-4 py-3 rounded-xl border border-black/50 focus:outline-none ring-2 ring-black/10 transition-all text-sm resize-none"
+                  />
                   <p className="text-xs text-gray-500 mt-2">
                     Avg response time: 8 hours on business days.
                   </p>
@@ -298,31 +385,21 @@ export default function HomePage() {
               <div className="flex flex-col gap-8">
                 <div className="flex justify-between items-center border-b border-white/10 pb-6">
                   <div>
-                    <p className="text-xs text-gray-400 mb-1">
-                      General inquiries
-                    </p>
-                    <p className="font-semibold text-sm">
-                      support@likeminds.coop
-                    </p>
+                    <p className="text-xs text-gray-400 mb-1">General inquiries</p>
+                    <p className="font-semibold text-sm">support@likeminds.coop</p>
                   </div>
                   <div className="text-[#facc15] text-xs">↗</div>
                 </div>
                 <div className="flex justify-between items-center border-b border-white/10 pb-6">
                   <div>
-                    <p className="text-xs text-gray-400 mb-1">
-                      Member relations
-                    </p>
-                    <p className="font-semibold text-sm">
-                      members@likeminds.coop
-                    </p>
+                    <p className="text-xs text-gray-400 mb-1">Member relations</p>
+                    <p className="font-semibold text-sm">members@likeminds.coop</p>
                   </div>
                   <div className="text-[#facc15] text-xs">↗</div>
                 </div>
                 <div className="flex justify-between items-center">
                   <div>
-                    <p className="text-xs text-gray-400 mb-1">
-                      Phone (toll-free)
-                    </p>
+                    <p className="text-xs text-gray-400 mb-1">Phone (toll-free)</p>
                     <p className="font-semibold text-sm">1—800—LIKEMIND</p>
                   </div>
                   <div className="text-[#facc15] text-xs">↗</div>
