@@ -23,7 +23,14 @@ export default function BasicInformationPage() {
     router.push("/apply/contact-information");
   };
 
-  const genders = ["Female", "Male", "Non-binary", "Prefer not to say"];
+  // value differs from label only for "Male" -> "male", to match the exact
+  // string the backend expects; label text shown to the user is unchanged.
+  const genders = [
+    { label: "Female", value: "Female" },
+    { label: "Male", value: "male" },
+    { label: "Non-binary", value: "Non-binary" },
+    { label: "Prefer not to say", value: "Prefer not to say" },
+  ];
 
   return (
     <form onSubmit={handleNext} className="flex flex-col h-full justify-between min-h-full">
@@ -37,7 +44,27 @@ export default function BasicInformationPage() {
           <p className="text-lg text-gray-600 mb-10">Legal identity for KYC.</p>
 
           <div className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
+                <div className="relative">
+                  <select
+                    required
+                    value={data.title}
+                    onChange={(e) => setData({ title: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white appearance-none"
+                  >
+                    <option value="">Select</option>
+                    <option value="Mr">Mr</option>
+                    <option value="Mrs">Mrs</option>
+                    <option value="Ms">Ms</option>
+                    <option value="Miss">Miss</option>
+                    <option value="Dr">Dr</option>
+                    <option value="Mx">Mx</option>
+                  </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                </div>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">First name</label>
                 <input
@@ -78,16 +105,16 @@ export default function BasicInformationPage() {
                 <div className="flex flex-wrap gap-2">
                   {genders.map((g) => (
                     <button
-                      key={g}
+                      key={g.value}
                       type="button"
-                      onClick={() => setData({ gender: g })}
+                      onClick={() => setData({ gender: g.value })}
                       className={`px-5 py-2.5 rounded-full text-sm font-medium transition-colors ${
-                        data.gender === g
+                        data.gender === g.value
                           ? "bg-[#171717] text-white"
                           : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
                       }`}
                     >
-                      {g}
+                      {g.label}
                     </button>
                   ))}
                 </div>
@@ -99,6 +126,8 @@ export default function BasicInformationPage() {
                   <input
                     type="date"
                     required
+                    min="1900-01-01"
+                    max={new Date().toISOString().slice(0, 10)}
                     value={data.dob}
                     onChange={(e) => setData({ dob: e.target.value })}
                     className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white text-gray-700 appearance-none"
@@ -109,37 +138,26 @@ export default function BasicInformationPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Status in Canada</label>
-                <div className="relative">
-                  <select
-                    value={data.statusInCanada}
-                    onChange={(e) => setData({ statusInCanada: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white appearance-none"
-                  >
-                    <option value="Citizen">Citizen</option>
-                    <option value="Permanent Resident">Permanent Resident</option>
-                    <option value="Work Permit">Work Permit</option>
-                    <option value="Study Permit">Study Permit</option>
-                  </select>
-                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-                </div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Residency status</label>
+                <input
+                  type="text"
+                  required
+                  value={data.residencyStatus}
+                  onChange={(e) => setData({ residencyStatus: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white"
+                  placeholder="e.g. Citizen, Permanent Resident, Visa holder"
+                />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Province of residence</label>
-                <div className="relative">
-                  <select
-                    value={data.provinceOfResidence}
-                    onChange={(e) => setData({ provinceOfResidence: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white appearance-none"
-                  >
-                    <option value="Ontario">Ontario</option>
-                    <option value="British Columbia">British Columbia</option>
-                    <option value="Alberta">Alberta</option>
-                    <option value="Quebec">Quebec</option>
-                    <option value="Nova Scotia">Nova Scotia</option>
-                  </select>
-                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-                </div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Province/state of residence</label>
+                <input
+                  type="text"
+                  required
+                  value={data.provinceOfResidence}
+                  onChange={(e) => setData({ provinceOfResidence: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white"
+                  placeholder="e.g. Ontario, Lagos, California"
+                />
               </div>
             </div>
           </div>

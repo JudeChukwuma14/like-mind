@@ -1,11 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, ChevronDown, Lock, Mail, MapPin, Info } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronDown, Mail, MapPin, Info } from "lucide-react";
+import { City, State } from "country-state-city";
+import PhoneInput, { type Country as PhoneCountry } from "react-phone-number-input";
 import { StepHeader } from "../StepHeader";
 import { useApplyStore } from "../useApplyStore";
+import { CountrySelect } from "./CountrySelect";
+import { SearchableSelect } from "./SearchableSelect";
 
 export default function ContactInformationPage() {
   const router = useRouter();
@@ -15,6 +19,16 @@ export default function ContactInformationPage() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const states = useMemo(() => State.getStatesOfCountry(data.countryCode), [data.countryCode]);
+  const cities = useMemo(
+    () => City.getCitiesOfState(data.countryCode, data.provinceCode),
+    [data.countryCode, data.provinceCode],
+  );
+  const cityItems = useMemo(
+    () => cities.map((c) => ({ key: c.name, label: c.name })),
+    [cities],
+  );
 
   if (!isClient || !mounted) return null;
 
@@ -50,17 +64,73 @@ export default function ContactInformationPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
-                <input
-                  type="text"
-                  required
-                  value={data.city}
-                  onChange={(e) => setData({ city: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white"
-                  placeholder="Toronto"
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
+                <CountrySelect
+                  value={data.countryCode}
+                  onChange={(c) =>
+                    setData({
+                      country: c.name,
+                      countryCode: c.isoCode,
+                      province: "",
+                      provinceCode: "",
+                      city: "",
+                    })
+                  }
                 />
+              </div>
+              <div />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Province</label>
+                <div className="relative">
+                  <select
+                    required
+                    disabled={states.length === 0}
+                    value={data.provinceCode}
+                    onChange={(e) => {
+                      const state = states.find((s) => s.isoCode === e.target.value);
+                      setData({ province: state?.name ?? "", provinceCode: e.target.value, city: "" });
+                    }}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white appearance-none disabled:bg-gray-50/50 disabled:text-gray-400"
+                  >
+                    <option value="">
+                      {states.length === 0 ? "No states/provinces" : "Select"}
+                    </option>
+                    {states.map((s) => (
+                      <option key={s.isoCode} value={s.isoCode}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
+                {cityItems.length > 0 ? (
+                  <SearchableSelect
+                    items={cityItems}
+                    value={data.city}
+                    onChange={(item) => setData({ city: item.key })}
+                    placeholder="Select city"
+                    searchPlaceholder="Search city..."
+                    disabled={!data.provinceCode}
+                  />
+                ) : (
+                  <input
+                    type="text"
+                    required
+                    value={data.city}
+                    onChange={(e) => setData({ city: e.target.value })}
+                    disabled={!data.provinceCode}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white disabled:bg-gray-50/50 disabled:text-gray-400"
+                    placeholder={data.provinceCode ? "Enter your city" : "Select province first"}
+                  />
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Postal code</label>
@@ -73,55 +143,20 @@ export default function ContactInformationPage() {
                   placeholder="M6K 2W5"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Province</label>
-                <div className="relative">
-                  <select
-                    value={data.province}
-                    onChange={(e) => setData({ province: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white appearance-none"
-                  >
-                    <option value="Ontario">Ontario</option>
-                    <option value="British Columbia">British Columbia</option>
-                    <option value="Alberta">Alberta</option>
-                  </select>
-                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    disabled
-                    value={data.country}
-                    className="w-full pr-12 pl-4 py-3 rounded-xl border border-gray-200 bg-gray-50/50 text-gray-500 outline-none"
-                  />
-                  <Lock className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                </div>
-              </div>
-              <div />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Phone number</label>
-                <div className="relative flex">
-                  <span className="inline-flex items-center px-4 py-3 rounded-l-xl border border-r-0 border-gray-200 bg-gray-50 text-gray-500 text-sm">
-                    CA +1
-                  </span>
-                  <input
-                    type="tel"
-                    required
-                    value={data.phone}
-                    onChange={(e) => setData({ phone: e.target.value })}
-                    className="w-full px-4 py-3 rounded-r-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white"
-                    placeholder="(416) 555-0184"
-                  />
-                </div>
+                <PhoneInput
+                  international
+                  defaultCountry={(data.countryCode || "NG") as PhoneCountry}
+                  value={data.phone}
+                  onChange={(value) => setData({ phone: value ?? "" })}
+                  className="likemind-phone-input"
+                  numberInputProps={{ required: true }}
+                  placeholder="(416) 555-0184"
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Personal email</label>

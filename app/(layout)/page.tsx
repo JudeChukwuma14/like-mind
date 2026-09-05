@@ -176,7 +176,7 @@ export default function HomePage() {
           <div className="animate-fade-up delay-400 mt-12 flex flex-wrap items-center justify-center gap-4">
             <Link
               id="hero-cta-primary"
-              href="/dashboard"
+              href="/apply"
               className="group relative px-8 py-4 rounded-full font-semibold bg-[#facc15] text-[#0a0a0a] text-base transition-all duration-300 hover:bg-[#fde68a] hover:scale-105 shadow-[0_0_30px_rgba(250,204,21,0.3)] hover:shadow-[0_0_50px_rgba(250,204,21,0.5)]"
             >
               Become a member

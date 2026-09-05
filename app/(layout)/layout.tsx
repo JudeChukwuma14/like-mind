@@ -79,7 +79,7 @@ function Navbar() {
             Sign In
           </Link>
           <Link
-            href="/dashboard"
+            href="/apply"
             className="px-5 py-2 rounded-full text-sm font-semibold text-[#0a0a0a] bg-[#facc15] transition-all duration-200 hover:bg-[#fde68a] hover:scale-105 animate-pulse-glow"
           >
             Become a member

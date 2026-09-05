@@ -5,6 +5,18 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { ThemeToggle } from "@/app/components/ThemeToggle";
+import { useCurrentUser } from "@/app/lib/useCurrentUser";
+
+/** "Member" claim role strings arrive as-is (e.g. "Member"); this just guards odd casing like "MEMBER". */
+function humanizeRole(role: string): string {
+  return role.replace(/([a-z0-9])([A-Z])/g, "$1 $2");
+}
+
+function initialsFor(label: string): string {
+  const parts = label.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  return parts.slice(0, 2).map((p) => p[0]!.toUpperCase()).join("");
+}
 
 /* ─── Nav items matching image: Overview, Cash Wallet, Investments, Loans,
        Withdrawals, Notifications, Profile ──────────────────────────── */
@@ -98,6 +110,10 @@ function Sidebar({
   onMobileClose: () => void;
 }) {
   const pathname = usePathname();
+  const user = useCurrentUser();
+  const displayName = user?.name || user?.email || "Member";
+  const displayRole = user?.role ? humanizeRole(user.role) : "Member";
+  const avatarInitials = initialsFor(displayName);
 
   /* Close mobile menu on route change */
   useEffect(() => {
@@ -136,7 +152,7 @@ function Sidebar({
             </span>
           )} */}
 
-          <Image src="/Likemind.png" alt="Logo" width={100} height={100} className="w-20 h-auto object-cover"/>
+          <Image src="/Likemind.png" alt="Logo" width={100} height={100} className="w-20 h-auto object-cover" style={{ width: "auto", height: "auto" }}/>
         </Link>
 
         {/* collapse toggle — only visible on desktop */}
@@ -240,18 +256,18 @@ function Sidebar({
             className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
             style={{ background: "linear-gradient(135deg, #f59e0b, #ef4444)", color: "#fff" }}
           >
-            AT
+            {avatarInitials}
           </div>
           {!collapsed && (
             <div className="min-w-0">
               <p className="text-xs font-semibold truncate" style={{ color: "var(--dash-text)" }}>
-                Adeyera Triumph
+                {displayName}
               </p>
               <p
                 className="text-[10px] truncate"
                 style={{ color: "var(--dash-muted)" }}
               >
-                Member · ALM 04513
+                {displayRole}
               </p>
             </div>
           )}
@@ -310,15 +326,15 @@ function Sidebar({
 
 /* ─── Topbar ────────────────────────────────────────────────── */
 function Topbar({
-  sidebarWidth,
   mobileOpen,
   onMobileToggle,
 }: {
-  sidebarWidth: number;
   mobileOpen: boolean;
   onMobileToggle: () => void;
 }) {
   const pathname = usePathname();
+  const user = useCurrentUser();
+  const avatarInitials = initialsFor(user?.name || user?.email || "Member");
 
   /* Derive page title and category from pathname */
   let category = "OVERVIEW";
@@ -435,7 +451,7 @@ function Topbar({
             className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0 shadow-sm transition-transform hover:scale-105"
             style={{ background: "linear-gradient(135deg, #f59e0b, #ef4444)" }}
           >
-            AT
+            {avatarInitials}
           </Link>
         )}
       </div>
@@ -477,7 +493,6 @@ export default function UserDashboardLayout({
       `}</style>
 
       <Topbar
-        sidebarWidth={sidebarWidth}
         mobileOpen={mobileOpen}
         onMobileToggle={() => setMobileOpen((o) => !o)}
       />

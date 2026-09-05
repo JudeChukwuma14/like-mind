@@ -131,12 +131,15 @@ export default function EmploymentPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Years in role</label>
                 <input
-                  type="text"
+                  type="number"
                   required
+                  min={0}
+                  max={70}
+                  step={0.5}
                   value={data.yearsInRole}
                   onChange={(e) => setData({ yearsInRole: e.target.value })}
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white"
-                  placeholder="4.5 years"
+                  placeholder="4.5"
                 />
               </div>
             </div>

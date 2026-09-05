@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Check } from "lucide-react";
 import { useSetupStore } from "../useSetupStore";
+import { useRequireAccount } from "../useSetupGuard";
+import { SetupStepHeader } from "../SetupStepHeader";
+import { FadeUp, motion } from "@/app/components/Motion";
 
 type CheckboxItemProps = {
   checked: boolean;
@@ -14,29 +17,36 @@ type CheckboxItemProps = {
 
 function CheckboxItem({ checked, onChange, children }: CheckboxItemProps) {
   return (
-    <label className="flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl border border-[#e0d9cc] cursor-pointer hover:bg-[#fafaf8] transition-colors select-none">
-      <div
+    <div className="flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl border border-[#e0d9cc] select-none">
+      <motion.div
         onClick={() => onChange(!checked)}
-        className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all cursor-pointer ${
+        whileTap={{ scale: 0.85 }}
+        className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
           checked
             ? "bg-[#171717] border-[#171717]"
             : "border-[#c8bfa8] bg-white"
         }`}
       >
         {checked && <Check className="w-3 h-3 text-white stroke-[3]" />}
-      </div>
-      <span className="text-sm text-[#171717] font-medium">{children}</span>
-    </label>
+      </motion.div>
+      <span className="text-sm text-[#171717] font-medium flex items-center gap-1.5 flex-wrap">
+        {children}
+      </span>
+    </div>
   );
 }
 
+const inlineNumberInputClass =
+  "w-14 px-2 py-1 rounded-md border border-[#ddd6c8] bg-[#faf9f6] text-center text-sm font-semibold text-[#171717] outline-none focus:border-[#f5c518] focus:ring-2 focus:ring-[#f5c518]/30 disabled:opacity-40 disabled:cursor-not-allowed transition-all";
+
 export default function WithdrawalPolicyPage() {
   const router = useRouter();
-  const { data, setData, isClient } = useSetupStore();
+  const { data, setData, isClient, lastSaved } = useSetupStore();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
-  if (!isClient || !mounted) return null;
+  useRequireAccount(isClient, data.cooperativeAccountId);
+  if (!isClient || !mounted || !data.cooperativeAccountId) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,40 +54,54 @@ export default function WithdrawalPolicyPage() {
   };
 
   return (
-    <div>
-      {/* Step label */}
-      <p className="text-[10px] font-mono uppercase tracking-widest text-[#a09880] mb-1">Step 5</p>
-      <h1 className="text-4xl md:text-5xl font-bold text-[#171717] mb-1">Withdrawal policy</h1>
-      <p className="text-sm mb-8">
-        <span className="text-[#a09880]">When members can </span>
-        <span className="text-[#3b82f6]">pull</span>
-        <span className="text-[#a09880]"> funds out and how the cooperative pays.</span>
-      </p>
+    <FadeUp>
+      <SetupStepHeader
+        step={5}
+        title="Withdrawal policy"
+        subtitle={
+          <>
+            <span className="text-[#a09880]">When members can </span>
+            <span className="text-[#3b82f6]">pull</span>
+            <span className="text-[#a09880]"> funds out and how the cooperative pays.</span>
+          </>
+        }
+        lastSaved={lastSaved}
+      />
 
       <form onSubmit={handleSubmit} className="space-y-5 max-w-2xl">
         {/* Max per cycle + Frequency */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 bg-white rounded-2xl border border-[#e0d9cc] p-5">
           <div>
             <label className="block text-xs font-semibold text-[#d97706] mb-1.5">
               Maximum per cycle
             </label>
-            <input
-              type="text"
-              value={data.maxPerCycle}
-              onChange={(e) => setData({ maxPerCycle: e.target.value })}
-              placeholder="75% of balance"
-              className="w-full px-4 py-3 rounded-xl border border-[#ddd6c8] bg-white text-[#171717] text-sm outline-none focus:border-[#f5c518] focus:ring-2 focus:ring-[#f5c518]/30 transition-all"
-            />
+            <div className="relative">
+              <input
+                type="number"
+                min={0}
+                max={100}
+                required
+                value={data.maxPerCycle}
+                onChange={(e) => setData({ maxPerCycle: e.target.value })}
+                placeholder="75"
+                className="w-full px-4 py-3 pr-20 rounded-xl border border-[#ddd6c8] bg-white text-[#171717] text-sm outline-none focus:border-[#f5c518] focus:ring-2 focus:ring-[#f5c518]/30 transition-all"
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold text-[#a09880] bg-[#f0ebe0] px-2 py-0.5 rounded-full">
+                % balance
+              </span>
+            </div>
           </div>
           <div>
             <label className="block text-xs font-semibold text-[#d97706] mb-1.5">
-              Frequency
+              Max withdrawals per cycle
             </label>
             <input
-              type="text"
+              type="number"
+              min={0}
+              required
               value={data.withdrawalFrequency}
               onChange={(e) => setData({ withdrawalFrequency: e.target.value })}
-              placeholder="2 per month"
+              placeholder="2"
               className="w-full px-4 py-3 rounded-xl border border-[#ddd6c8] bg-white text-[#171717] text-sm outline-none focus:border-[#f5c518] focus:ring-2 focus:ring-[#f5c518]/30 transition-all"
             />
           </div>
@@ -111,8 +135,16 @@ export default function WithdrawalPolicyPage() {
               checked={data.blockNewMember}
               onChange={(v) => setData({ blockNewMember: v })}
             >
-              Less than{" "}
-              <span className="text-[#3b82f6]">30</span> days since joining
+              Less than
+              <input
+                type="number"
+                min={1}
+                disabled={!data.blockNewMember}
+                value={data.minimumDaysSinceJoining}
+                onChange={(e) => setData({ minimumDaysSinceJoining: e.target.value })}
+                className={inlineNumberInputClass}
+              />
+              days since joining
             </CheckboxItem>
           </div>
         </div>
@@ -133,6 +165,6 @@ export default function WithdrawalPolicyPage() {
           </button>
         </div>
       </form>
-    </div>
+    </FadeUp>
   );
 }

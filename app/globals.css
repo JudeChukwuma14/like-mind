@@ -1,4 +1,51 @@
 @import "tailwindcss";
+@import "react-phone-number-input/style.css";
+
+/* ── Phone input (apply flow) — restyled to match the app's input look ── */
+.likemind-phone-input.PhoneInput {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.likemind-phone-input.PhoneInput:focus-within {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+.likemind-phone-input .PhoneInputInput {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 0.875rem;
+  color: #171717;
+}
+.likemind-phone-input .PhoneInputCountry {
+  margin-right: 0.25rem;
+}
+/* The library's own :root custom properties for flag sizing don't reliably
+   resolve through Tailwind v4's import pipeline, so size the flag directly. */
+.likemind-phone-input .PhoneInputCountryIcon {
+  width: 22px;
+  height: 15px;
+}
+.likemind-phone-input .PhoneInputCountryIconImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ── Phone input (setup flow) — amber accent instead of the apply flow's indigo ── */
+.setup-phone-input.PhoneInput {
+  border-color: #ddd6c8;
+}
+.setup-phone-input.PhoneInput:focus-within {
+  border-color: #f5c518;
+  box-shadow: 0 0 0 2px rgba(245, 197, 24, 0.3);
+}
 
 /* ═══════════════════════════════════════════════════════════════
    THEME SYSTEM

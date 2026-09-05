@@ -5,23 +5,33 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import { useSetupStore } from "../useSetupStore";
+import { useRequireAccount } from "../useSetupGuard";
+import { SetupStepHeader } from "../SetupStepHeader";
+import { FadeUp, motion } from "@/app/components/Motion";
 
 const FREQUENCIES = ["Monthly", "Weekly", "Quarterly"];
 
 const DUE_DAYS = [
-  "1st of month", "5th of month", "10th of month", "15th of month",
-  "20th of month", "25th of month", "28th of month", "Last day of month",
+  { value: "1", label: "1st of month" },
+  { value: "5", label: "5th of month" },
+  { value: "10", label: "10th of month" },
+  { value: "15", label: "15th of month" },
+  { value: "20", label: "20th of month" },
+  { value: "25", label: "25th of month" },
+  { value: "28", label: "28th of month" },
+  { value: "31", label: "Last day of month" },
 ];
 
-const GRACE_PERIODS = ["0 days", "3 days", "5 days", "7 days", "10 days", "14 days"];
+const GRACE_PERIODS = ["0", "3", "5", "7", "10", "14"];
 
 export default function CyclesContributionsPage() {
   const router = useRouter();
-  const { data, setData, isClient } = useSetupStore();
+  const { data, setData, isClient, lastSaved } = useSetupStore();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
-  if (!isClient || !mounted) return null;
+  useRequireAccount(isClient, data.cooperativeAccountId);
+  if (!isClient || !mounted || !data.cooperativeAccountId) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,15 +39,17 @@ export default function CyclesContributionsPage() {
   };
 
   return (
-    <div>
-      {/* Step label */}
-      <p className="text-[10px] font-mono uppercase tracking-widest text-[#a09880] mb-1">Step 3</p>
-      <h1 className="text-4xl md:text-5xl font-bold text-[#171717] mb-1">
-        Cycles &amp; contributions
-      </h1>
-      <p className="text-sm text-[#a09880] mb-8">
-        How often members save and what they&apos;re saving toward.
-      </p>
+    <FadeUp>
+      <SetupStepHeader
+        step={3}
+        title="Cycles & contributions"
+        subtitle={
+          <span className="text-[#a09880]">
+            How often members save and what they&apos;re saving toward.
+          </span>
+        }
+        lastSaved={lastSaved}
+      />
 
       <form onSubmit={handleSubmit} className="space-y-7 max-w-2xl">
         {/* Cycle frequency */}
@@ -47,9 +59,10 @@ export default function CyclesContributionsPage() {
           </label>
           <div className="flex flex-wrap gap-2">
             {FREQUENCIES.map((freq) => (
-              <button
+              <motion.button
                 key={freq}
                 type="button"
+                whileTap={{ scale: 0.95 }}
                 onClick={() => setData({ cycleFrequency: freq })}
                 className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${
                   data.cycleFrequency === freq
@@ -58,13 +71,13 @@ export default function CyclesContributionsPage() {
                 }`}
               >
                 {freq}
-              </button>
+              </motion.button>
             ))}
           </div>
         </div>
 
         {/* Due day + Late grace */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 bg-white rounded-2xl border border-[#e0d9cc] p-5">
           <div>
             <label className="block text-xs font-semibold text-[#d97706] mb-1.5">
               Due day
@@ -75,7 +88,9 @@ export default function CyclesContributionsPage() {
                 onChange={(e) => setData({ dueDay: e.target.value })}
                 className="w-full px-4 py-3 pr-9 rounded-xl border border-[#ddd6c8] bg-white text-[#171717] text-sm outline-none focus:border-[#f5c518] focus:ring-2 focus:ring-[#f5c518]/30 appearance-none transition-all"
               >
-                {DUE_DAYS.map((d) => <option key={d}>{d}</option>)}
+                {DUE_DAYS.map((d) => (
+                  <option key={d.value} value={d.value}>{d.label}</option>
+                ))}
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#a09880] pointer-events-none" />
             </div>
@@ -90,7 +105,9 @@ export default function CyclesContributionsPage() {
                 onChange={(e) => setData({ lateGrace: e.target.value })}
                 className="w-full px-4 py-3 pr-9 rounded-xl border border-[#ddd6c8] bg-white text-[#171717] text-sm outline-none focus:border-[#f5c518] focus:ring-2 focus:ring-[#f5c518]/30 appearance-none transition-all"
               >
-                {GRACE_PERIODS.map((g) => <option key={g}>{g}</option>)}
+                {GRACE_PERIODS.map((g) => (
+                  <option key={g} value={g}>{g} {g === "1" ? "day" : "days"}</option>
+                ))}
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#a09880] pointer-events-none" />
             </div>
@@ -98,7 +115,7 @@ export default function CyclesContributionsPage() {
         </div>
 
         {/* Min + Max monthly */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 bg-white rounded-2xl border border-[#e0d9cc] p-5">
           <div>
             <label className="block text-xs font-semibold text-[#d97706] mb-1.5">
               Minimum monthly
@@ -110,6 +127,7 @@ export default function CyclesContributionsPage() {
               <input
                 type="number"
                 min={0}
+                required
                 value={data.minMonthly}
                 onChange={(e) => setData({ minMonthly: e.target.value })}
                 placeholder="5,000"
@@ -128,6 +146,7 @@ export default function CyclesContributionsPage() {
               <input
                 type="number"
                 min={0}
+                required
                 value={data.maxMonthly}
                 onChange={(e) => setData({ maxMonthly: e.target.value })}
                 placeholder="250,000"
@@ -153,6 +172,6 @@ export default function CyclesContributionsPage() {
           </button>
         </div>
       </form>
-    </div>
+    </FadeUp>
   );
 }

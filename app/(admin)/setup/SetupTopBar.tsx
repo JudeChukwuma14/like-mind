@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { motion } from "@/app/components/Motion";
 
 const steps = [
   { id: 1, path: "/setup/welcome" },
@@ -18,7 +19,7 @@ export function SetupTopBar() {
   const activeStep = currentStepIndex === -1 ? null : steps[currentStepIndex];
 
   return (
-    <header className="w-full bg-[#f4efe6] border-b border-dashed border-blue-400/60">
+    <header className="w-full bg-[#f4efe6] sticky top-0 z-10 border-b border-[#e0d9cc]">
       <div className="flex items-center justify-between px-5 py-3 md:px-8">
         {/* Logo + label */}
         <div className="flex items-center gap-3">
@@ -42,6 +43,18 @@ export function SetupTopBar() {
           </span>
         )}
       </div>
+
+      {/* Progress bar */}
+      {activeStep && (
+        <div className="h-1 w-full bg-[#e0d9cc]">
+          <motion.div
+            className="h-full bg-[#f5c518]"
+            initial={false}
+            animate={{ width: `${(activeStep.id / steps.length) * 100}%` }}
+            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          />
+        </div>
+      )}
     </header>
   );
 }

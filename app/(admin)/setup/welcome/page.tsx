@@ -1,9 +1,22 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, Check } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import toast from "react-hot-toast";
+import { Eye, EyeOff, Check, ChevronDown, Loader2 } from "lucide-react";
+import PhoneInput, { type Country as PhoneCountry } from "react-phone-number-input";
+import { State } from "country-state-city";
 import { useSetupStore } from "../useSetupStore";
+import { useRedirectIfAccountExists } from "../useSetupGuard";
+import { CountrySelect } from "@/app/(user)/apply/contact-information/CountrySelect";
+import { adminApiFetch, getApiErrorMessage, type ApiEnvelope } from "@/app/lib/api-client";
+import { FadeUp } from "@/app/components/Motion";
+
+type CreateAccountResponse = ApiEnvelope<{
+  cooperativeAccount: { id: string };
+  resume: boolean;
+}>;
 
 function PasswordReq({
   met,
@@ -34,11 +47,39 @@ export default function SetupWelcomePage() {
   const [mounted, setMounted] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showEmail, setShowEmail] = useState(false);
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => setMounted(true), []);
 
-  if (!isClient || !mounted) return null;
+  const createAccount = useMutation({
+    mutationFn: async () =>
+      adminApiFetch<CreateAccountResponse>("/api/CooperativeAccount/CreateAccount", {
+        method: "POST",
+        body: {
+          email: data.email,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          dateOfBirth: data.dateOfBirth,
+          cooperativeAdminPhoneNumber: data.cooperativeAdminPhoneNumber,
+          country: data.country,
+          societyOrProvince: data.societyOrProvince,
+          password: data.password,
+        },
+      }),
+    onSuccess: (res) => {
+      setData({ cooperativeAccountId: res.data.cooperativeAccount.id });
+      toast.success("Account created!");
+      router.push("/setup/cooperative-profile");
+    },
+    onError: (err) => {
+      toast.error(getApiErrorMessage(err));
+    },
+  });
+
+  const states = useMemo(() => State.getStatesOfCountry(data.countryCode), [data.countryCode]);
+
+  useRedirectIfAccountExists(isClient, data.cooperativeAccountId);
+
+  if (!isClient || !mounted || data.cooperativeAccountId) return null;
 
   const password = data.password;
   const hasLength = password.length >= 12;
@@ -47,30 +88,14 @@ export default function SetupWelcomePage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setTimeout(() => {
-      router.push("/setup/cooperative-profile");
-    }, 600);
+    createAccount.mutate();
   };
 
   return (
-    <div className="min-h-screen bg-[#f4efe6] flex flex-col">
-      {/* Top bar */}
-      <header className="w-full bg-[#f4efe6] border-b border-dashed border-blue-400/60">
-        <div className="flex items-center px-5 py-3 md:px-8">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-[#f5c518] rounded-lg flex items-center justify-center shrink-0">
-              <span className="text-[10px] font-black text-[#171717]">LM</span>
-            </div>
-            <span className="font-semibold text-sm text-[#171717]">LikeMind</span>
-            <span className="text-xs font-mono text-[#a09880] uppercase tracking-widest ml-1">Setup</span>
-          </div>
-        </div>
-      </header>
-
+    <FadeUp>
       {/* Center content */}
-      <div className="flex-1 flex items-start justify-center pt-12 px-4">
-        <div className="w-full max-w-sm">
+      <div className="flex justify-center px-4">
+        <div className="w-full">
           {/* Heading */}
           <div className="text-center mb-10">
             <h1 className="text-3xl font-bold text-[#171717] mb-2">Welcome to LikeMinds</h1>
@@ -81,9 +106,121 @@ export default function SetupWelcomePage() {
           <form onSubmit={handleSubmit} className="space-y-5">
             <h2 className="text-lg font-semibold text-[#171717]">Create your account</h2>
 
+            {/* First / last name */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-[#a09880] mb-1.5 uppercase tracking-wide">
+                  First name
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={data.firstName}
+                  onChange={(e) => setData({ firstName: e.target.value })}
+                  placeholder="Ada"
+                  className="w-full px-4 py-3 rounded-xl border border-[#ddd6c8] bg-white text-[#171717] text-sm outline-none focus:border-[#f5c518] focus:ring-2 focus:ring-[#f5c518]/30 transition-all placeholder:text-[#c8bfa8]"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-[#a09880] mb-1.5 uppercase tracking-wide">
+                  Last name
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={data.lastName}
+                  onChange={(e) => setData({ lastName: e.target.value })}
+                  placeholder="Okafor"
+                  className="w-full px-4 py-3 rounded-xl border border-[#ddd6c8] bg-white text-[#171717] text-sm outline-none focus:border-[#f5c518] focus:ring-2 focus:ring-[#f5c518]/30 transition-all placeholder:text-[#c8bfa8]"
+                />
+              </div>
+            </div>
+
+            {/* Date of birth */}
+            <div>
+              <label className="block text-xs font-semibold text-[#a09880] mb-1.5 uppercase tracking-wide">
+                Date of birth
+              </label>
+              <input
+                type="date"
+                required
+                min="1900-01-01"
+                max={new Date().toISOString().slice(0, 10)}
+                value={data.dateOfBirth}
+                onChange={(e) => setData({ dateOfBirth: e.target.value })}
+                className="w-full px-4 py-3 rounded-xl border border-[#ddd6c8] bg-white text-[#171717] text-sm outline-none focus:border-[#f5c518] focus:ring-2 focus:ring-[#f5c518]/30 transition-all appearance-none"
+              />
+            </div>
+
+            {/* Phone */}
+            <div>
+              <label className="block text-xs font-semibold text-[#a09880] mb-1.5 uppercase tracking-wide">
+                Phone number
+              </label>
+              <PhoneInput
+                international
+                defaultCountry={(data.countryCode || "CA") as PhoneCountry}
+                value={data.cooperativeAdminPhoneNumber}
+                onChange={(value) => setData({ cooperativeAdminPhoneNumber: value ?? "" })}
+                className="likemind-phone-input setup-phone-input"
+                numberInputProps={{ required: true }}
+                placeholder="(416) 555-0184"
+              />
+            </div>
+
+            {/* Country / society-province */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-[#a09880] mb-1.5 uppercase tracking-wide">
+                  Country
+                </label>
+                <CountrySelect
+                  value={data.countryCode}
+                  onChange={(c) =>
+                    setData({
+                      country: c.name,
+                      countryCode: c.isoCode,
+                      societyOrProvince: "",
+                      societyOrProvinceCode: "",
+                    })
+                  }
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-[#a09880] mb-1.5 uppercase tracking-wide">
+                  Society / province
+                </label>
+                <div className="relative">
+                  <select
+                    required
+                    disabled={states.length === 0}
+                    value={data.societyOrProvinceCode}
+                    onChange={(e) => {
+                      const state = states.find((s) => s.isoCode === e.target.value);
+                      setData({
+                        societyOrProvince: state?.name ?? "",
+                        societyOrProvinceCode: e.target.value,
+                      });
+                    }}
+                    className="w-full px-4 py-3 rounded-xl border border-[#ddd6c8] bg-white text-[#171717] text-sm outline-none focus:border-[#f5c518] focus:ring-2 focus:ring-[#f5c518]/30 transition-all appearance-none disabled:bg-[#ede7d8]/50 disabled:text-[#c8bfa8]"
+                  >
+                    <option value="">
+                      {states.length === 0 ? "No states/provinces" : "Select"}
+                    </option>
+                    {states.map((s) => (
+                      <option key={s.isoCode} value={s.isoCode}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#a09880] pointer-events-none" />
+                </div>
+              </div>
+            </div>
+
             {/* Email */}
             <div>
-              <label className="block text-xs font-semibold text-[#d97706] mb-1.5 uppercase tracking-wide">
+              <label className="block text-xs font-semibold text-[#a09880] mb-1.5 uppercase tracking-wide">
                 Email
               </label>
               <div className="relative">
@@ -146,14 +283,15 @@ export default function SetupWelcomePage() {
             {/* Submit */}
             <button
               type="submit"
-              disabled={loading || !hasLength}
-              className="w-full bg-[#171717] hover:bg-black text-white py-3.5 rounded-full font-semibold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+              disabled={createAccount.isPending || !hasLength}
+              className="w-full inline-flex items-center justify-center gap-2 bg-[#171717] hover:bg-black text-white py-3.5 rounded-full font-semibold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-2"
             >
-              {loading ? "Creating…" : "Create Account"}
+              {createAccount.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+              {createAccount.isPending ? "Creating…" : "Create Account"}
             </button>
           </form>
         </div>
       </div>
-    </div>
+    </FadeUp>
   );
 }

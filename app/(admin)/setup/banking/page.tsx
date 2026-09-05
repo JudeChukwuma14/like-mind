@@ -3,7 +3,13 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Loader2, Wallet, Trash2 } from "lucide-react";
 import { useSetupStore, BankingDestination } from "../useSetupStore";
+import { useRequireAccount } from "../useSetupGuard";
+import { SetupStepHeader } from "../SetupStepHeader";
+import { FadeUp, AnimatePresence, motion } from "@/app/components/Motion";
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function getInitials(name: string) {
   return name
@@ -25,31 +31,43 @@ function getBankColor(name: string) {
 
 export default function BankingPage() {
   const router = useRouter();
-  const { data, setData, isClient } = useSetupStore();
+  const { data, setData, isClient, lastSaved } = useSetupStore();
   const [mounted, setMounted] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [destEmail, setDestEmail] = useState("");
+  const [destDescription, setDestDescription] = useState("");
+  const [emailTouched, setEmailTouched] = useState(false);
   const [adding, setAdding] = useState(false);
 
   useEffect(() => setMounted(true), []);
-  if (!isClient || !mounted) return null;
+  useRequireAccount(isClient, data.cooperativeAccountId);
+  if (!isClient || !mounted || !data.cooperativeAccountId) return null;
 
   const destinations = data.destinations ?? [];
+  const emailValid = EMAIL_RE.test(destEmail.trim());
 
   const handleAddDestination = () => {
-    if (!displayName.trim() || !destEmail.trim()) return;
+    if (!displayName.trim() || !emailValid) return;
     setAdding(true);
     const newDest: BankingDestination = {
+      id: crypto.randomUUID(),
       displayName: displayName.trim(),
       email: destEmail.trim(),
+      description: destDescription.trim(),
       verified: false,
     };
     setTimeout(() => {
       setData({ destinations: [...destinations, newDest] });
       setDisplayName("");
       setDestEmail("");
+      setDestDescription("");
+      setEmailTouched(false);
       setAdding(false);
     }, 600);
+  };
+
+  const handleRemoveDestination = (id: string) => {
+    setData({ destinations: destinations.filter((d) => d.id !== id) });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -58,53 +76,80 @@ export default function BankingPage() {
   };
 
   return (
-    <div>
-      {/* Step label */}
-      <p className="text-[10px] font-mono uppercase tracking-widest text-[#a09880] mb-1">Step 6</p>
-      <h1 className="text-4xl md:text-5xl font-bold text-[#171717] mb-1">Banking</h1>
-      <p className="text-[10px] font-mono uppercase tracking-widest text-[#a09880] mb-8">
-        Where the cooperative holds funds and how payouts settle.
-      </p>
+    <FadeUp>
+      <SetupStepHeader
+        step={6}
+        title="Banking"
+        subtitle={
+          <span className="text-[#a09880]">
+            Where the cooperative holds funds and how payouts settle.
+          </span>
+        }
+        lastSaved={lastSaved}
+      />
 
       <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl">
         {/* Existing destinations */}
-        {destinations.length > 0 && (
+        {destinations.length > 0 ? (
           <div>
             <p className="text-[10px] font-mono uppercase tracking-widest text-[#a09880] mb-3">
               Interac Destinations – {destinations.length}
             </p>
             <div className="space-y-2">
-              {destinations.map((dest, i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between px-4 py-3.5 bg-white rounded-xl border border-[#e0d9cc]"
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-white font-bold text-xs"
-                      style={{ backgroundColor: getBankColor(dest.displayName) }}
-                    >
-                      {getInitials(dest.displayName)}
+              <AnimatePresence initial={false}>
+                {destinations.map((dest) => (
+                  <motion.div
+                    key={dest.id}
+                    layout
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, x: -16, transition: { duration: 0.2 } }}
+                    transition={{ duration: 0.3 }}
+                    className="flex items-center justify-between gap-3 px-4 py-3.5 bg-white rounded-xl border border-[#e0d9cc]"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div
+                        className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-white font-bold text-xs"
+                        style={{ backgroundColor: getBankColor(dest.displayName) }}
+                      >
+                        {getInitials(dest.displayName)}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-[#171717] truncate">{dest.displayName}</p>
+                        <p className="text-xs text-[#a09880] truncate">
+                          {dest.email} · payouts and fees
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-semibold text-[#171717]">{dest.displayName}</p>
-                      <p className="text-xs text-[#a09880]">
-                        {dest.email} · payouts and fees
-                      </p>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {dest.verified ? (
+                        <span className="text-[10px] font-bold bg-[#dcfce7] text-[#166534] px-2.5 py-1 rounded-full uppercase tracking-wide">
+                          Verified
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-bold bg-[#fef9c3] text-[#854d0e] px-2.5 py-1 rounded-full uppercase tracking-wide">
+                          Pending
+                        </span>
+                      )}
+                      <motion.button
+                        type="button"
+                        whileTap={{ scale: 0.85 }}
+                        onClick={() => handleRemoveDestination(dest.id)}
+                        aria-label={`Remove ${dest.displayName}`}
+                        className="text-[#a09880] hover:text-[#dc2626] transition-colors p-1"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </motion.button>
                     </div>
-                  </div>
-                  {dest.verified ? (
-                    <span className="text-[10px] font-bold bg-[#dcfce7] text-[#166534] px-2.5 py-1 rounded-full uppercase tracking-wide">
-                      Verified
-                    </span>
-                  ) : (
-                    <span className="text-[10px] font-bold bg-[#fef9c3] text-[#854d0e] px-2.5 py-1 rounded-full uppercase tracking-wide">
-                      Pending
-                    </span>
-                  )}
-                </div>
-              ))}
+                  </motion.div>
+                ))}
+              </AnimatePresence>
             </div>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center text-center gap-2 py-8 bg-white rounded-2xl border border-dashed border-[#ddd6c8]">
+            <Wallet className="w-6 h-6 text-[#c8bfa8]" />
+            <p className="text-sm text-[#a09880]">No payout destinations yet — add one below.</p>
           </div>
         )}
 
@@ -135,18 +180,42 @@ export default function BankingPage() {
                   type="email"
                   value={destEmail}
                   onChange={(e) => setDestEmail(e.target.value)}
+                  onBlur={() => setEmailTouched(true)}
                   placeholder="name@likemind.coop"
-                  className="w-full px-4 py-3 rounded-xl border border-[#ddd6c8] bg-[#faf9f6] text-[#171717] text-sm outline-none focus:border-[#f5c518] focus:ring-2 focus:ring-[#f5c518]/30 transition-all"
+                  className={`w-full px-4 py-3 rounded-xl border bg-[#faf9f6] text-[#171717] text-sm outline-none focus:ring-2 transition-all ${
+                    emailTouched && destEmail.trim() && !emailValid
+                      ? "border-red-400 focus:border-red-400 focus:ring-red-200"
+                      : "border-[#ddd6c8] focus:border-[#f5c518] focus:ring-[#f5c518]/30"
+                  }`}
                 />
+                {emailTouched && destEmail.trim() && !emailValid && (
+                  <p className="text-xs text-red-600 mt-1">Enter a valid email address.</p>
+                )}
               </div>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-[#a09880] mb-1.5 uppercase tracking-wide">
+                Description — optional
+              </label>
+              <input
+                type="text"
+                value={destDescription}
+                onChange={(e) => setDestDescription(e.target.value)}
+                placeholder="e.g. Primary payout account"
+                className="w-full px-4 py-3 rounded-xl border border-[#ddd6c8] bg-[#faf9f6] text-[#171717] text-sm outline-none focus:border-[#f5c518] focus:ring-2 focus:ring-[#f5c518]/30 transition-all"
+              />
             </div>
             <div className="flex items-center gap-4 flex-wrap">
               <button
                 type="button"
-                onClick={handleAddDestination}
-                disabled={!displayName.trim() || !destEmail.trim() || adding}
-                className="bg-[#171717] hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed text-white px-5 py-2.5 rounded-full font-semibold text-sm transition-colors"
+                onClick={() => {
+                  setEmailTouched(true);
+                  handleAddDestination();
+                }}
+                disabled={!displayName.trim() || !emailValid || adding}
+                className="inline-flex items-center gap-2 bg-[#171717] hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed text-white px-5 py-2.5 rounded-full font-semibold text-sm transition-colors"
               >
+                {adding && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                 {adding ? "Adding…" : "Add destination"}
               </button>
               <p className="text-xs text-[#a09880]">
@@ -176,6 +245,6 @@ export default function BankingPage() {
           </button>
         </div>
       </form>
-    </div>
+    </FadeUp>
   );
 }

@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Check } from "lucide-react";
+import { Check, Lock } from "lucide-react";
+import { useSetupStore } from "./useSetupStore";
 
 const steps = [
   { id: 1, name: "Welcome", path: "/setup/welcome" },
@@ -20,9 +21,14 @@ const steps = [
 
 export function SetupSidebar() {
   const pathname = usePathname();
+  const { data, isClient } = useSetupStore();
 
   const currentStepIndex = steps.findIndex((s) => pathname.includes(s.path));
   const activeIndex = currentStepIndex === -1 ? 0 : currentStepIndex;
+  // Welcome creates the account — once that's done, re-visiting it would
+  // create a duplicate, so it's locked out of the nav (page.tsx enforces
+  // this with a redirect regardless; this just keeps the sidebar honest).
+  const isWelcomeLocked = isClient && Boolean(data.cooperativeAccountId);
 
   return (
     <aside className="w-56 bg-[#f4efe6] flex flex-col h-screen sticky top-0 shrink-0 border-r border-[#e0d9cc]">
@@ -39,15 +45,14 @@ export function SetupSidebar() {
           const isActive = index === activeIndex;
           const isDone = index < activeIndex;
           const isFuture = index > activeIndex;
+          const isLocked = step.id === 1 && isWelcomeLocked && !isActive;
 
-          return (
-            <Link
-              key={step.id}
-              href={step.path}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 ${
-                isActive ? "bg-[#f0e8c8]" : "hover:bg-[#ede7d8]"
-              }`}
-            >
+          const rowClassName = `flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 ${
+            isActive ? "bg-[#f0e8c8]" : isLocked ? "" : "hover:bg-[#ede7d8]"
+          }`;
+
+          const content = (
+            <>
               {/* Step circle */}
               <div
                 className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-colors ${
@@ -58,7 +63,9 @@ export function SetupSidebar() {
                       : "border-2 border-[#c8bfa8] bg-transparent"
                 }`}
               >
-                {isDone ? (
+                {isLocked ? (
+                  <Lock className="w-2.5 h-2.5 text-white" />
+                ) : isDone ? (
                   <Check className="w-3 h-3 text-white stroke-[3]" />
                 ) : isActive ? (
                   <span className="text-[10px] font-bold text-white">
@@ -85,6 +92,24 @@ export function SetupSidebar() {
               >
                 {step.name}
               </span>
+            </>
+          );
+
+          if (isLocked) {
+            return (
+              <div
+                key={step.id}
+                title="Already created — can't be revisited"
+                className={`${rowClassName} opacity-50 cursor-not-allowed`}
+              >
+                {content}
+              </div>
+            );
+          }
+
+          return (
+            <Link key={step.id} href={step.path} className={rowClassName}>
+              {content}
             </Link>
           );
         })}

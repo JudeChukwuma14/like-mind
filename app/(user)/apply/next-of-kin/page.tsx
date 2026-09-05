@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, ChevronDown, Mail } from "lucide-react";
+import PhoneInput, { type Country as PhoneCountry } from "react-phone-number-input";
 import { StepHeader } from "../StepHeader";
 import { useApplyStore } from "../useApplyStore";
 
@@ -83,19 +84,15 @@ export default function NextOfKinPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Phone number</label>
-                <div className="relative flex">
-                  <span className="inline-flex items-center px-4 py-3 rounded-l-xl border border-r-0 border-gray-200 bg-gray-50 text-gray-500 text-sm">
-                    CA +1
-                  </span>
-                  <input
-                    type="tel"
-                    required
-                    value={data.nokPhone}
-                    onChange={(e) => setData({ nokPhone: e.target.value })}
-                    className="w-full px-4 py-3 rounded-r-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white"
-                    placeholder="(416) 555-0271"
-                  />
-                </div>
+                <PhoneInput
+                  international
+                  defaultCountry={(data.countryCode || "CA") as PhoneCountry}
+                  value={data.nokPhone}
+                  onChange={(value) => setData({ nokPhone: value ?? "" })}
+                  className="likemind-phone-input"
+                  numberInputProps={{ required: true }}
+                  placeholder="(416) 555-0271"
+                />
               </div>
             </div>
 
@@ -137,6 +134,24 @@ export default function NextOfKinPage() {
                     Recommended. You can split shares between multiple beneficiaries later from your dashboard.
                   </p>
                 </div>
+              </div>
+            </div>
+
+            <div className="max-w-xs">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Share percentage</label>
+              <div className="relative">
+                <input
+                  type="number"
+                  required
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={data.nokSharePercentage}
+                  onChange={(e) => setData({ nokSharePercentage: e.target.value })}
+                  className="w-full pl-4 pr-10 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white"
+                  placeholder="100"
+                />
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm">%</span>
               </div>
             </div>
           </div>

@@ -1,33 +1,124 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Check } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import SignatureCanvas from "react-signature-canvas";
+import toast from "react-hot-toast";
+import { ArrowLeft, Check, Loader2 } from "lucide-react";
 import { useApplyStore } from "../useApplyStore";
+import { buildRegisterRequest, PASSWORD_RULES } from "../register-mapper";
+import { apiFetch, getApiErrorMessage, type ApiEnvelope } from "@/app/lib/api-client";
+import { computeFingerprint, getDeviceId } from "@/app/lib/device-info";
 
 export default function AcknowledgementPage() {
   const router = useRouter();
-  const { data, setData, isClient } = useApplyStore();
+  const { data, setData, clearData, isClient } = useApplyStore();
   const [mounted, setMounted] = useState(false);
   const [currentTime, setCurrentTime] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const sigPadRef = useRef<SignatureCanvas>(null);
+  const resizeObserverRef = useRef<ResizeObserver | null>(null);
+  const [canvasWidth, setCanvasWidth] = useState(0);
 
   useEffect(() => {
     setMounted(true);
-    setCurrentTime(new Date().toLocaleString('en-US', { 
-      year: 'numeric', month: '2-digit', day: '2-digit', 
+    setCurrentTime(new Date().toLocaleString('en-US', {
+      year: 'numeric', month: '2-digit', day: '2-digit',
       hour: '2-digit', minute:'2-digit', timeZoneName: 'short'
     }));
   }, []);
+
+  // Callback ref (not useRef+effect): fires exactly when the container div
+  // actually attaches/detaches, so it isn't racy against the mount guard
+  // above unmounting the real DOM on the first render.
+  const sigContainerRef = useCallback((node: HTMLDivElement | null) => {
+    resizeObserverRef.current?.disconnect();
+    if (!node) return;
+    setCanvasWidth(node.clientWidth);
+    const observer = new ResizeObserver(([entry]) => setCanvasWidth(entry.contentRect.width));
+    observer.observe(node);
+    resizeObserverRef.current = observer;
+  }, []);
+
+  // Restore a previously-drawn signature once the canvas has a real size.
+  useEffect(() => {
+    if (
+      data.signatureMode === "drawn" &&
+      data.signatureImageDataUrl &&
+      sigPadRef.current &&
+      canvasWidth > 0
+    ) {
+      sigPadRef.current.fromDataURL(data.signatureImageDataUrl, {
+        width: canvasWidth,
+        height: 128,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canvasWidth, data.signatureMode]);
+
+  const submitApplication = useMutation({
+    mutationFn: async () => {
+      const [body, fingerprint] = await Promise.all([buildRegisterRequest(data), computeFingerprint()]);
+      return apiFetch<ApiEnvelope<unknown>>("/api/User/Users/Register", {
+        method: "POST",
+        headers: {
+          "X-Device-Id": getDeviceId(),
+          "X-Fingerprint": fingerprint,
+        },
+        body,
+      });
+    },
+    onSuccess: (res) => {
+      toast.success(res.message || "Application submitted!");
+      clearData();
+      router.push("/apply/confirmation");
+    },
+    onError: (err) => {
+      toast.error(getApiErrorMessage(err));
+    },
+  });
 
   if (!isClient || !mounted) return null;
 
   const handleNext = (e: React.FormEvent) => {
     e.preventDefault();
-    router.push("/apply/confirmation");
+    submitApplication.mutate();
   };
 
-  const isFormValid = data.signature && data.agreeInfoTrue && data.agreeBylaws && data.agreeConsent;
+  const handleSignatureEnd = () => {
+    if (sigPadRef.current && !sigPadRef.current.isEmpty()) {
+      setData({ signatureImageDataUrl: sigPadRef.current.getTrimmedCanvas().toDataURL("image/png") });
+    }
+  };
+
+  const handleClearSignature = () => {
+    if (data.signatureMode === "drawn") {
+      sigPadRef.current?.clear();
+      setData({ signatureImageDataUrl: "" });
+    } else {
+      setData({ signature: "" });
+    }
+  };
+
+  const handleToggleSignatureMode = () => {
+    setData({ signatureMode: data.signatureMode === "typed" ? "drawn" : "typed" });
+  };
+
+  const passwordMeetsRules = PASSWORD_RULES.every((rule) => rule.test(data.password));
+  const passwordValid = passwordMeetsRules && data.password === confirmPassword;
+  const signatureValid =
+    data.signatureMode === "typed"
+      ? data.signature.trim() !== ""
+      : data.signatureImageDataUrl !== "";
+  const isFormValid =
+    signatureValid &&
+    data.agreeInfoTrue &&
+    data.agreeBylaws &&
+    data.agreeConsent &&
+    passwordValid;
 
   return (
     <form onSubmit={handleNext} className="flex flex-col h-full justify-between min-h-full">
@@ -54,26 +145,53 @@ export default function AcknowledgementPage() {
                   — DIGITAL SIGNATURE
                 </div>
                 <div className="text-xs text-gray-500 flex gap-2">
-                  <button type="button" className="hover:text-gray-900" onClick={() => setData({ signature: "" })}>Clear</button>
+                  <button type="button" className="hover:text-gray-900" onClick={handleClearSignature}>Clear</button>
                   <span>·</span>
-                  <button type="button" className="hover:text-gray-900">Type instead</button>
+                  <button type="button" className="hover:text-gray-900" onClick={handleToggleSignatureMode}>
+                    {data.signatureMode === "typed" ? "Draw instead" : "Type instead"}
+                  </button>
                 </div>
               </div>
 
-              <div className="h-32 flex items-center justify-center border-b border-gray-100 mb-6 relative">
-                <input
-                  type="text"
-                  required
-                  value={data.signature}
-                  onChange={(e) => setData({ signature: e.target.value })}
-                  className="w-full text-center text-6xl outline-none bg-transparent"
-                  style={{ fontFamily: "'Cedarville Cursive', cursive", color: "#171717" }}
-                  placeholder="Type your name"
-                />
+              <div
+                ref={sigContainerRef}
+                className="h-32 flex items-center justify-center border-b border-gray-100 mb-6 relative"
+              >
+                {data.signatureMode === "typed" ? (
+                  <input
+                    type="text"
+                    required
+                    value={data.signature}
+                    onChange={(e) => setData({ signature: e.target.value })}
+                    className="w-full text-center text-6xl outline-none bg-transparent"
+                    style={{ fontFamily: "'Cedarville Cursive', cursive", color: "#171717" }}
+                    placeholder="Type your name"
+                  />
+                ) : (
+                  canvasWidth > 0 && (
+                    <SignatureCanvas
+                      ref={sigPadRef}
+                      penColor="#171717"
+                      onEnd={handleSignatureEnd}
+                      canvasProps={{
+                        width: canvasWidth,
+                        height: 128,
+                        className: "cursor-crosshair",
+                      }}
+                    />
+                  )
+                )}
               </div>
 
               <div className="flex items-center justify-between text-xs text-gray-500 font-mono">
-                <div>Signed by {data.signature || "..."}</div>
+                <div>
+                  Signed by{" "}
+                  {data.signatureMode === "typed"
+                    ? data.signature || "..."
+                    : data.signatureImageDataUrl
+                      ? "(drawn signature)"
+                      : "..."}
+                </div>
                 <div>{currentTime}</div>
               </div>
             </div>
@@ -128,6 +246,55 @@ export default function AcknowledgementPage() {
                 </div>
               </label>
             </div>
+
+            {/* Account password */}
+            <div className="bg-white rounded-2xl p-6 border border-gray-200 mt-8">
+              <h3 className="font-medium text-[#171717] text-sm mb-1">Create your account password</h3>
+              <p className="text-xs text-gray-500 mb-4">Used to sign in to your member dashboard once approved.</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                  <input
+                    type="password"
+                    required
+                    value={data.password}
+                    onChange={(e) => setData({ password: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white"
+                    placeholder="Create a password"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Confirm password</label>
+                  <input
+                    type="password"
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white"
+                    placeholder="Re-enter password"
+                  />
+                </div>
+              </div>
+              {data.password && (
+                <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
+                  {PASSWORD_RULES.map((rule) => {
+                    const met = rule.test(data.password);
+                    return (
+                      <li
+                        key={rule.label}
+                        className={`text-xs flex items-center gap-1 ${met ? "text-emerald-600" : "text-gray-400"}`}
+                      >
+                        <Check className="w-3 h-3" />
+                        {rule.label}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+              {data.password && confirmPassword && data.password !== confirmPassword && (
+                <p className="text-xs text-red-600 mt-2">Passwords don't match.</p>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -140,17 +307,18 @@ export default function AcknowledgementPage() {
           <ArrowLeft className="w-4 h-4" />
           Back to review
         </Link>
-        
+
         <span className="text-xs text-gray-400 font-mono tracking-widest uppercase hidden md:inline-block">
           88% complete
         </span>
 
         <button
           type="submit"
-          disabled={!isFormValid}
+          disabled={!isFormValid || submitApplication.isPending}
           className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 disabled:cursor-not-allowed text-white px-8 py-3 rounded-full font-medium transition-colors"
         >
-          Submit application
+          {submitApplication.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+          {submitApplication.isPending ? "Submitting…" : "Submit application"}
         </button>
       </div>
     </form>

@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { Toaster } from "react-hot-toast";
 import { ThemeProvider } from "@/app/providers/ThemeProvider";
+import { QueryProvider } from "@/app/providers/QueryProvider";
 import { THEME_KEY } from "@/app/lib/theme";
 
 const geistSans = Geist({
@@ -52,8 +54,18 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="min-h-screen antialiased">
-        <ThemeProvider>{children}</ThemeProvider>
+      <body className="min-h-screen antialiased" suppressHydrationWarning>
+        <QueryProvider>
+          <ThemeProvider>{children}</ThemeProvider>
+        </QueryProvider>
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 4000,
+            error: { duration: 7000 },
+            style: { maxWidth: "420px", whiteSpace: "pre-line" },
+          }}
+        />
       </body>
     </html>
   );

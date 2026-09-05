@@ -4,12 +4,13 @@ import { useState, useEffect } from "react";
 
 export type ApplyData = {
   // Basic Information
+  title: string;
   firstName: string;
   middleName: string;
   lastName: string;
   gender: string;
   dob: string;
-  statusInCanada: string;
+  residencyStatus: string;
   provinceOfResidence: string;
 
   // Contact Information
@@ -17,7 +18,9 @@ export type ApplyData = {
   city: string;
   postalCode: string;
   province: string;
+  provinceCode: string;
   country: string;
+  countryCode: string;
   phone: string;
   email: string;
 
@@ -35,6 +38,7 @@ export type ApplyData = {
   nokEmail: string;
   nokPhone: string;
   nokPrimaryBeneficiary: boolean;
+  nokSharePercentage: string;
 
   // Referee
   refereeFullName: string;
@@ -42,27 +46,36 @@ export type ApplyData = {
   refereeEmail: string;
   refereeRelationship: string;
   refereeKnownDuration: string;
+  refereeSkipped: boolean;
 
   // Acknowledgement
   signature: string;
+  signatureMode: "typed" | "drawn";
+  signatureImageDataUrl: string;
   agreeInfoTrue: boolean;
   agreeBylaws: boolean;
   agreeConsent: boolean;
+
+  // Account (required by the API to create the member login)
+  password: string;
 };
 
 const defaultData: ApplyData = {
+  title: "",
   firstName: "",
   middleName: "",
   lastName: "",
   gender: "",
   dob: "",
-  statusInCanada: "Permanent Resident",
-  provinceOfResidence: "Ontario",
+  residencyStatus: "",
+  provinceOfResidence: "",
   homeAddress: "",
   city: "",
   postalCode: "",
   province: "Ontario",
+  provinceCode: "ON",
   country: "Canada",
+  countryCode: "CA",
   phone: "",
   email: "",
   employmentStatus: "Employed",
@@ -76,15 +89,20 @@ const defaultData: ApplyData = {
   nokEmail: "",
   nokPhone: "",
   nokPrimaryBeneficiary: false,
+  nokSharePercentage: "100",
   refereeFullName: "",
   refereeMemberId: "",
   refereeEmail: "",
   refereeRelationship: "Mentor / Colleague",
   refereeKnownDuration: "",
+  refereeSkipped: false,
   signature: "",
+  signatureMode: "typed",
+  signatureImageDataUrl: "",
   agreeInfoTrue: false,
   agreeBylaws: false,
   agreeConsent: false,
+  password: "",
 };
 
 export function useApplyStore() {
@@ -97,7 +115,7 @@ export function useApplyStore() {
     const saved = localStorage.getItem("kajola_apply_data");
     if (saved) {
       try {
-        setDataState(JSON.parse(saved));
+        setDataState({ ...defaultData, ...JSON.parse(saved) });
       } catch (e) {
         console.error("Failed to parse apply data", e);
       }

@@ -30,7 +30,7 @@ export default function ReviewPage() {
       fields: [
         { label: "NAME", value: `${data.firstName} ${data.middleName ? data.middleName + " " : ""}${data.lastName}` },
         { label: "DOB", value: data.dob || "—" },
-        { label: "STATUS", value: `${data.statusInCanada} · ${data.provinceOfResidence}` },
+        { label: "STATUS", value: `${data.residencyStatus} · ${data.provinceOfResidence}` },
       ],
     },
     {

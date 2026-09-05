@@ -1,271 +1,409 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
+import { ChevronLeft, ChevronRight, Search, X } from "lucide-react";
+import { adminApiFetch, getApiErrorMessage, type ApiEnvelope } from "@/app/lib/api-client";
 
-const members = [
-  {
-    initials: "BO",
-    name: "Bisi Olatunji",
-    id: "LM-3380",
-    role: "Member",
-    balance: "₦485,200",
-    cycle: "Apr - paid",
-    status: null,
-    bgColor: "bg-gray-800",
-  },
-  {
-    initials: "AO",
-    name: "Adaeze Okonkwo",
-    id: "LM-9821",
-    role: "Secretary",
-    balance: "₦1,210,800",
-    cycle: "Apr - paid",
-    status: null,
-    bgColor: "bg-gray-200 text-gray-700",
-  },
-  {
-    initials: "CO",
-    name: "Chinedu Okeke",
-    id: "LM-4421",
-    role: "Member",
-    balance: "₦62,400",
-    cycle: "Apr - loan",
-    status: null,
-    bgColor: "bg-gray-200 text-gray-700",
-  },
-  {
-    initials: "TA",
-    name: "Tomi Adesanya",
-    id: "LM-7798",
-    role: "Member",
-    balance: "₦298,500",
-    cycle: "Apr - pending",
-    status: { text: "ACTIVE", type: "active" },
-    bgColor: "bg-gray-200 text-gray-700",
-  },
-  {
-    initials: "SK",
-    name: "Sade Kuti",
-    id: "LM-2218",
-    role: "Treasurer",
-    balance: "₦892,140",
-    cycle: "Apr - paid",
-    status: { text: "ACTIVE", type: "active" },
-    bgColor: "bg-gray-200 text-gray-700",
-  },
-  {
-    initials: "JN",
-    name: "Jide Ndubuisi",
-    id: "LM-5512",
-    role: "Member",
-    balance: "₦144,300",
-    cycle: "Mar - overdue",
-    status: { text: "OVERDUE", type: "overdue" },
-    bgColor: "bg-gray-200 text-gray-700",
-  },
-  {
-    initials: "RU",
-    name: "Ronke Udom",
-    id: "LM-6240",
-    role: "Member",
-    balance: "₦210,000",
-    cycle: "Apr - paid",
-    status: { text: "ACTIVE", type: "active" },
-    bgColor: "bg-gray-200 text-gray-700",
-  },
-  {
-    initials: "NA",
-    name: "Ngozi Adesanya",
-    id: "LM-7798",
-    role: "Loan officer",
-    balance: "₦1,486,000",
-    cycle: "Apr - paid",
-    status: { text: "ACTIVE", type: "active" },
-    bgColor: "bg-gray-200 text-gray-700",
-  },
-];
+// Confirmed against the live /api/User swagger schema (UserListItemDto /
+// UserListItemDtoPagedResult) — this is the full set of fields the backend
+// actually returns; no role/balance/cycle data exists on this endpoint.
+type MemberListItem = {
+  id: string;
+  email: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  isActive: boolean;
+  createdAt: string;
+};
+
+type MemberPage = {
+  items: MemberListItem[] | null;
+  pageNumber: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+};
+
+const PAGE_SIZE = 20;
+
+type StatusFilter = "all" | "active" | "inactive";
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+type SearchMode = "none" | "id" | "email" | "text";
+
+function classify(query: string): SearchMode {
+  const trimmed = query.trim();
+  if (!trimmed) return "none";
+  if (UUID_RE.test(trimmed)) return "id";
+  if (EMAIL_RE.test(trimmed)) return "email";
+  return "text";
+}
+
+function fullName(m: MemberListItem): string {
+  return [m.firstName, m.lastName].filter(Boolean).join(" ") || m.email || "Unnamed";
+}
+
+function initialsFor(m: MemberListItem): string {
+  const parts = fullName(m).trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  return parts.slice(0, 2).map((p) => p[0]!.toUpperCase()).join("");
+}
+
+function formatDate(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+}
+
+type RoleOption = { id: string; name: string };
+
+/**
+ * /api/Auth/SearchUsersByRole has no documented response schema, but every
+ * other paginated user endpoint on this backend returns the same
+ * UserListItemDtoPagedResult envelope — assume that here too, defensively,
+ * and log the raw response if it doesn't match so this can be tightened up.
+ */
+function pluckPagedResult(raw: unknown): MemberPage {
+  const obj = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+  const data = obj.data && typeof obj.data === "object" ? (obj.data as Record<string, unknown>) : null;
+  const items = data && Array.isArray(data.items) ? (data.items as MemberListItem[]) : null;
+  if (!data || !items) {
+    console.info("[AdminUsers] SearchUsersByRole raw response (unexpected shape):", raw);
+    return { items: [], pageNumber: 1, pageSize: PAGE_SIZE, totalCount: 0, totalPages: 1 };
+  }
+  return {
+    items,
+    pageNumber: typeof data.pageNumber === "number" ? data.pageNumber : 1,
+    pageSize: typeof data.pageSize === "number" ? data.pageSize : PAGE_SIZE,
+    totalCount: typeof data.totalCount === "number" ? data.totalCount : items.length,
+    totalPages: typeof data.totalPages === "number" ? data.totalPages : 1,
+  };
+}
+
+/**
+ * /api/User/GetById and /api/User/GetUserByEmail have no documented
+ * response schema (swagger just says "200 OK", "a user in details").
+ * Pulled defensively, same approach as the member detail page — raw
+ * response is logged so the real shape can be confirmed later.
+ */
+function pluckSingleResult(raw: unknown): MemberListItem | null {
+  const obj = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+  const data = obj.data && typeof obj.data === "object" ? (obj.data as Record<string, unknown>) : obj;
+  console.info("[AdminUsers] single-lookup raw response:", raw);
+
+  const str = (src: Record<string, unknown>, k: string) =>
+    typeof src[k] === "string" ? (src[k] as string) : null;
+
+  const id = str(data, "id");
+  if (!id) return null;
+
+  // The GetById response nests firstName/lastName inside basicInfo
+  const basicInfo =
+    data.basicInfo && typeof data.basicInfo === "object"
+      ? (data.basicInfo as Record<string, unknown>)
+      : null;
+
+  return {
+    id,
+    email: str(data, "email"),
+    firstName: basicInfo ? str(basicInfo, "firstName") : str(data, "firstName"),
+    lastName: basicInfo ? str(basicInfo, "lastName") : str(data, "lastName"),
+    isActive: typeof data.isActive === "boolean" ? data.isActive : false,
+    createdAt: str(data, "createdAt") ?? "",
+  };
+}
 
 export default function MembersPage() {
-  const [filterOpen, setFilterOpen] = useState(false);
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [status, setStatus] = useState<StatusFilter>("all");
+  const [roleId, setRoleId] = useState("");
+
+  // Debounce so exact-lookup/search calls don't fire on every keystroke.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setSearch(searchInput.trim());
+      setPage(1);
+    }, 350);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
+  // Shares its query key with the Roles page, so if that's already been
+  // visited this reads from cache instead of firing a second request.
+  const rolesQuery = useQuery({
+    queryKey: ["admin-roles"],
+    queryFn: async () => {
+      const res = await adminApiFetch<ApiEnvelope<RoleOption[]>>("/api/admin/authorization/GetAllRoles");
+      return res.data ?? [];
+    },
+  });
+
+  const handleSearchInputChange = (value: string) => {
+    setSearchInput(value);
+    if (roleId) setRoleId(""); // typing a search overrides an active role filter
+  };
+
+  const handleRoleChange = (nextRoleId: string) => {
+    setRoleId(nextRoleId);
+    setSearchInput("");
+    setSearch("");
+    setPage(1);
+  };
+
+  const mode = classify(search);
+  const isActiveParam = status === "active" ? true : status === "inactive" ? false : undefined;
+
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: ["admin-users", mode, search, page, status, roleId],
+    queryFn: async (): Promise<MemberPage> => {
+      if (roleId) {
+        const params = new URLSearchParams({ roleId, page: String(page), pageSize: String(PAGE_SIZE) });
+        const res = await adminApiFetch<unknown>(`/api/Auth/SearchUsersByRole?${params.toString()}`);
+        return pluckPagedResult(res);
+      }
+      if (mode === "id") {
+        const res = await adminApiFetch<unknown>(`/api/User/GetById?userId=${encodeURIComponent(search)}`);
+        const item = pluckSingleResult(res);
+        return { items: item ? [item] : [], pageNumber: 1, pageSize: 1, totalCount: item ? 1 : 0, totalPages: 1 };
+      }
+      if (mode === "email") {
+        const res = await adminApiFetch<unknown>(`/api/User/GetUserByEmail?email=${encodeURIComponent(search)}`);
+        const item = pluckSingleResult(res);
+        return { items: item ? [item] : [], pageNumber: 1, pageSize: 1, totalCount: item ? 1 : 0, totalPages: 1 };
+      }
+
+      const params = new URLSearchParams({ page: String(page), pageSize: String(PAGE_SIZE) });
+      if (isActiveParam !== undefined) params.set("isActive", String(isActiveParam));
+
+      // Plain browsing uses /api/User; a typed search term uses /api/User/search.
+      if (mode === "text") {
+        params.set("q", search);
+        const res = await adminApiFetch<ApiEnvelope<MemberPage>>(`/api/User/search?${params.toString()}`);
+        return res.data;
+      }
+      const res = await adminApiFetch<ApiEnvelope<MemberPage>>(`/api/User/Users?${params.toString()}`);
+      return res.data;
+    },
+  });
+
+  const result = data;
+  const members = result?.items ?? [];
+  const exactLookup = mode === "id" || mode === "email";
+  // SearchUsersByRole doesn't take isActive, so status filtering doesn't apply while a role is selected.
+  const statusTabsDisabled = exactLookup || Boolean(roleId);
+  const roles = rolesQuery.data ?? [];
+  const selectedRoleName = roles.find((r) => r.id === roleId)?.name;
+
+  const handleTabChange = (next: StatusFilter) => {
+    setStatus(next);
+    setPage(1);
+  };
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-10">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-        <div>
-          <p className="text-[10px] font-bold tracking-widest text-gray-400 uppercase mb-1">
-            DIRECTORY
+      <div>
+        <p
+          className="text-[10px] font-bold tracking-widest uppercase mb-1"
+          style={{ color: "var(--admin-muted)" }}
+        >
+          Directory
+        </p>
+        <h1 className="text-4xl font-bold tracking-tight" style={{ color: "var(--admin-text)" }}>
+          Members
+        </h1>
+        {result && (
+          <p className="text-sm mt-1" style={{ color: "var(--admin-muted)" }}>
+            {result.totalCount} member{result.totalCount === 1 ? "" : "s"}
           </p>
-          <h1 className="text-4xl font-bold tracking-tight text-gray-900">
-            Members
-          </h1>
-        </div>
-        
-        <div className="flex items-center gap-2 md:gap-3 flex-wrap">
-          <button className="px-4 py-2 rounded-full border border-gray-200 bg-white text-sm font-medium hover:bg-gray-50 transition-colors">
-            Export
-          </button>
-          <button className="px-4 py-2 rounded-full bg-black text-white text-sm font-medium hover:bg-gray-800 transition-colors shadow-sm">
-            Add member
-          </button>
-        </div>
+        )}
       </div>
 
-      {/* Tabs */}
-      <div className="flex items-center gap-8 border-b border-gray-200">
-        <button className="pb-3 border-b-2 border-black flex items-center gap-2">
-          <span className="text-sm font-bold text-gray-900">Directory</span>
-          <span className="px-1.5 py-0.5 rounded bg-gray-900 text-white text-[10px] font-bold">178</span>
-        </button>
-        <button className="pb-3 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700">
-          Share capital
-        </button>
-      </div>
-
-      {/* Sub Header & Filters */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pt-2">
-        <div className="flex items-center gap-4 sm:gap-8 flex-wrap">
-          <div>
-            <p className="text-[10px] font-bold tracking-widest text-gray-400 uppercase mb-1">
-              ACTIVE
-            </p>
-            <p className="text-2xl font-bold text-gray-900">178</p>
-          </div>
-          <div>
-            <p className="text-[10px] font-bold tracking-widest text-gray-400 uppercase mb-1">
-              SUSPENDED
-            </p>
-            <p className="text-2xl font-bold text-gray-900">4</p>
-          </div>
-          <div>
-            <p className="text-[10px] font-bold tracking-widest text-gray-400 uppercase mb-1">
-              OUTSTANDING
-            </p>
-            <p className="text-2xl font-bold text-gray-900">27</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 relative">
-          <button className="px-4 py-2 rounded-full border border-gray-200 bg-white text-sm font-medium hover:bg-gray-50 transition-colors">
-            All roles
-          </button>
-          <button 
-            onClick={() => setFilterOpen(!filterOpen)}
-            className={`px-4 py-2 rounded-full border text-sm font-medium transition-colors ${filterOpen ? 'bg-gray-100 border-gray-300' : 'bg-white border-gray-200 hover:bg-gray-50'}`}
-          >
-            Status
-          </button>
-
-          {/* Filter Dropdown */}
-          {filterOpen && (
-            <div className="absolute top-12 right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-gray-100 p-5 z-50">
-              <p className="text-[10px] font-bold tracking-widest text-gray-400 uppercase mb-4">
-                FILTER BY ROLE
-              </p>
-              
-              <div className="space-y-3 mb-6">
-                {[
-                  { label: "Super admin", count: 2, checked: true },
-                  { label: "Treasurer", count: 2, checked: true },
-                  { label: "Secretary", count: 3, checked: true },
-                  { label: "Credit Officer", count: 4, checked: false },
-                  { label: "Auditor", count: 2, checked: false },
-                  { label: "Member", count: 167, checked: false },
-                ].map((role) => (
-                  <label key={role.label} className="flex items-center justify-between cursor-pointer group">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-5 h-5 rounded flex items-center justify-center transition-colors ${role.checked ? 'bg-black' : 'bg-white border border-gray-300 group-hover:border-gray-400'}`}>
-                        {role.checked && (
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="20 6 9 17 4 12"></polyline>
-                          </svg>
-                        )}
-                      </div>
-                      <span className={`text-sm ${role.checked ? 'font-medium text-gray-900' : 'text-gray-600'}`}>
-                        {role.label}
-                      </span>
-                    </div>
-                    <span className="text-xs text-gray-400">{role.count}</span>
-                  </label>
-                ))}
-              </div>
-
-              <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                <button 
-                  onClick={() => setFilterOpen(false)}
-                  className="text-sm text-gray-500 hover:text-gray-900 font-medium"
-                >
-                  Clear
-                </button>
-                <button 
-                  onClick={() => setFilterOpen(false)}
-                  className="px-4 py-2 bg-black text-white text-sm font-medium rounded-full hover:bg-gray-800 transition-colors shadow-sm"
-                >
-                  Show 5
-                </button>
-              </div>
-            </div>
+      {/* Search + status tabs */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+        <div
+          className="flex items-center gap-2 px-4 py-2 rounded-full border text-sm sm:w-80"
+          style={{ borderColor: "var(--admin-border)", background: "var(--admin-surface)", color: "var(--admin-muted)" }}
+        >
+          <Search className="w-3.5 h-3.5 shrink-0" />
+          <input
+            type="text"
+            value={searchInput}
+            onChange={(e) => handleSearchInputChange(e.target.value)}
+            placeholder="Search by name, email, or paste a member ID"
+            className="bg-transparent border-none outline-none w-full text-sm min-w-0"
+            style={{ color: "var(--admin-text)" }}
+          />
+          {searchInput && (
+            <button
+              type="button"
+              onClick={() => handleSearchInputChange("")}
+              aria-label="Clear search"
+              className="shrink-0 transition-colors hover:opacity-70"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
           )}
         </div>
+
+        <select
+          value={roleId}
+          onChange={(e) => handleRoleChange(e.target.value)}
+          className="px-4 py-2 rounded-full text-sm font-medium border outline-none"
+          style={{ background: "var(--admin-surface)", color: "var(--admin-text)", borderColor: "var(--admin-border)" }}
+        >
+          <option value="">All roles</option>
+          {roles.map((r) => (
+            <option key={r.id} value={r.id}>
+              {r.name}
+            </option>
+          ))}
+        </select>
+
+        <div className="flex items-center gap-2">
+          {(["all", "active", "inactive"] as StatusFilter[]).map((s) => (
+            <button
+              key={s}
+              type="button"
+              disabled={statusTabsDisabled}
+              onClick={() => handleTabChange(s)}
+              className="px-4 py-2 rounded-full text-sm font-medium capitalize transition-colors border disabled:opacity-40 disabled:cursor-not-allowed"
+              style={
+                status === s
+                  ? { background: "var(--admin-text)", color: "var(--admin-bg)", borderColor: "var(--admin-text)" }
+                  : { background: "var(--admin-surface)", color: "var(--admin-muted)", borderColor: "var(--admin-border)" }
+              }
+            >
+              {s}
+            </button>
+          ))}
+        </div>
       </div>
 
+      {exactLookup && (
+        <p className="text-xs" style={{ color: "var(--admin-muted)" }}>
+          Showing an exact match for {mode === "id" ? "this member ID" : "this email"} — status filters don&apos;t apply here.
+        </p>
+      )}
+      {roleId && (
+        <p className="text-xs" style={{ color: "var(--admin-muted)" }}>
+          Filtering by role{selectedRoleName ? ` — ${selectedRoleName}` : ""} — status filters don&apos;t apply here.
+        </p>
+      )}
+
       {/* Table */}
-      <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden mt-2">
-        <div className="grid grid-cols-12 gap-2 sm:gap-4 px-4 sm:px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-          <div className="col-span-5 md:col-span-3 text-[10px] font-bold tracking-widest text-gray-400 uppercase">MEMBER</div>
-          <div className="col-span-3 hidden md:block text-[10px] font-bold tracking-widest text-gray-400 uppercase">ROLE</div>
-          <div className="col-span-3 text-[10px] font-bold tracking-widest text-gray-400 uppercase">BALANCE</div>
-          <div className="col-span-4 md:col-span-3 text-[10px] font-bold tracking-widest text-gray-400 uppercase text-right sm:text-left pr-4 sm:pr-0">CYCLE</div>
+      <div
+        className="rounded-3xl border overflow-hidden"
+        style={{ background: "var(--admin-surface)", borderColor: "var(--admin-border)" }}
+      >
+        <div
+          className="grid grid-cols-12 gap-4 px-6 py-4 border-b text-[10px] font-bold tracking-widest uppercase"
+          style={{ borderColor: "var(--admin-border)", color: "var(--admin-muted)" }}
+        >
+          <div className="col-span-6 md:col-span-5">Member</div>
+          <div className="col-span-3 hidden md:block">Joined</div>
+          <div className="col-span-6 md:col-span-4 text-right">Status</div>
         </div>
-        
-        <div className="divide-y divide-gray-100">
-          {members.map((m, i) => (
-            <Link 
-              href="#" 
-              key={i}
-              className="grid grid-cols-12 gap-2 sm:gap-4 items-center p-4 px-4 sm:px-6 transition-colors hover:bg-gray-50 group"
+
+        {isLoading && (
+          <div className="p-10 text-center text-sm" style={{ color: "var(--admin-muted)" }}>
+            Loading members…
+          </div>
+        )}
+
+        {isError && (
+          <div className="p-10 text-center text-sm" style={{ color: "var(--admin-accent)" }}>
+            {getApiErrorMessage(error)}
+          </div>
+        )}
+
+        {!isLoading && !isError && members.length === 0 && (
+          <div className="p-10 text-center text-sm" style={{ color: "var(--admin-muted)" }}>
+            No members found.
+          </div>
+        )}
+
+        <div className="divide-y" style={{ borderColor: "var(--admin-border)" }}>
+          {members.map((m) => (
+            <Link
+              href={`/admin/members/${m.id}`}
+              key={m.id}
+              className="hover-admin-border grid grid-cols-12 gap-4 items-center px-6 py-4 transition-colors"
             >
-              <div className="col-span-5 md:col-span-3 flex items-center gap-3 sm:gap-4">
-                <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold text-white shrink-0 ${m.bgColor}`}>
-                  {m.initials}
+              <div className="col-span-6 md:col-span-5 flex items-center gap-3 min-w-0">
+                <div
+                  className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+                  style={{ background: "var(--admin-primary)", color: "#000" }}
+                >
+                  {initialsFor(m)}
                 </div>
                 <div className="min-w-0">
-                  <p className="font-bold text-gray-900 text-sm sm:text-base truncate">{m.name}</p>
-                  <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5 truncate">{m.id}</p>
+                  <p className="font-semibold text-sm truncate" style={{ color: "var(--admin-text)" }}>
+                    {fullName(m)}
+                  </p>
+                  <p className="text-xs truncate" style={{ color: "var(--admin-muted)" }}>
+                    {m.email ?? "—"}
+                  </p>
                 </div>
               </div>
-              
-              <div className="col-span-3 hidden md:block text-sm font-medium text-gray-700">
-                {m.role}
+
+              <div className="col-span-3 hidden md:block text-sm" style={{ color: "var(--admin-muted)" }}>
+                {formatDate(m.createdAt)}
               </div>
-              
-              <div className="col-span-3 text-xs sm:text-sm font-bold text-gray-900 truncate">
-                {m.balance}
-              </div>
-              
-              <div className="col-span-4 md:col-span-3 flex items-center justify-end sm:justify-between ml-auto w-full">
-                <div className="flex items-center gap-2 sm:gap-4 justify-end w-full sm:w-auto">
-                  <span className="text-xs sm:text-sm font-medium text-gray-600 truncate">{m.cycle}</span>
-                  {m.status && (
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase hidden xl:block ${
-                      m.status.type === 'active' 
-                        ? 'bg-[#bbf7d0]/50 text-green-800' 
-                        : 'bg-gray-100 text-gray-500'
-                    }`}>
-                      {m.status.text}
-                    </span>
-                  )}
-                </div>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400 group-hover:text-black transition-colors shrink-0 ml-1 sm:ml-2">
-                  <polyline points="9 18 15 12 9 6"></polyline>
-                </svg>
+
+              <div className="col-span-6 md:col-span-4 flex items-center justify-end gap-3">
+                <span
+                  className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase"
+                  style={
+                    m.isActive
+                      ? { background: "#dcfce7", color: "#166534" }
+                      : { background: "var(--admin-border)", color: "var(--admin-muted)" }
+                  }
+                >
+                  {m.isActive ? "Active" : "Inactive"}
+                </span>
+                <ChevronRight className="w-4 h-4 shrink-0" style={{ color: "var(--admin-muted)" }} />
               </div>
             </Link>
           ))}
         </div>
       </div>
 
+      {/* Pagination */}
+      {result && !exactLookup && result.totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <p className="text-xs" style={{ color: "var(--admin-muted)" }}>
+            Page {result.pageNumber} of {result.totalPages}
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="w-9 h-9 rounded-full border flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              style={{ borderColor: "var(--admin-border)", color: "var(--admin-text)" }}
+              aria-label="Previous page"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.min(result.totalPages, p + 1))}
+              disabled={page >= result.totalPages}
+              className="w-9 h-9 rounded-full border flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              style={{ borderColor: "var(--admin-border)", color: "var(--admin-text)" }}
+              aria-label="Next page"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

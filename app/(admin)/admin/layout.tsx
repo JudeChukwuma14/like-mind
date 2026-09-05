@@ -1,106 +1,93 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import {
+  LogOut,
+  LayoutGrid,
+  FileText,
+  Users,
+  PiggyBank,
+  HandCoins,
+  TrendingUp,
+  ArrowUpRight,
+  BarChart3,
+  Megaphone,
+  History,
+  KeyRound,
+  Settings as SettingsIcon,
+  Search,
+  Bell,
+  Menu,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  type LucideIcon,
+} from "lucide-react";
 import { ThemeToggle } from "@/app/components/ThemeToggle";
 import Image from "next/image";
+import { useRequireAdminAuth } from "./useAdminGuard";
+import { useAdminAuth } from "@/app/providers/AdminAuthProvider";
+
+/** "RootAdmin" -> "Root Admin" */
+function humanizeRole(role: string): string {
+  return role.replace(/([a-z0-9])([A-Z])/g, "$1 $2");
+}
+
+function initialsFor(label: string): string {
+  const parts = label.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  return parts.slice(0, 2).map((p) => p[0]!.toUpperCase()).join("");
+}
 
 /* ─── Nav items matching image: Overview, Applications, Members,
        Contributions, Loans, Investment, Withdrawals, Reports,
        Announcements, Audit logs, Settings ───────────────────── */
-const navGroups = [
+type NavItem = { href: string; label: string; icon: LucideIcon; badge?: number };
+
+const navGroups: { label: string; items: NavItem[] }[] = [
   {
     label: "",
-    items: [{ href: "/admin", label: "Overview", icon: "⊞" }],
+    items: [{ href: "/admin", label: "Overview", icon: LayoutGrid }],
   },
   {
     label: "MANAGEMENT",
     items: [
-      {
-        href: "/admin/applications",
-        label: "Applications",
-        icon: "◧",
-        badge: 7,
-      },
-      { href: "/admin/members", label: "Members", icon: "◉" },
-      {
-        href: "/admin/contributions",
-        label: "Contributions",
-        icon: "◈",
-        badge: 12,
-      },
-      { href: "/admin/loans", label: "Loans", icon: "$", badge: 3 },
-      { href: "/admin/investments", label: "Investment", icon: "↗" },
-      { href: "/admin/withdrawals", label: "Withdrawals", icon: "↑", badge: 5 },
+      { href: "/admin/applications", label: "Applications", icon: FileText, badge: 7 },
+      { href: "/admin/members", label: "Members", icon: Users },
+      { href: "/admin/roles", label: "Roles", icon: KeyRound },
+      { href: "/admin/contributions", label: "Contributions", icon: PiggyBank, badge: 12 },
+      { href: "/admin/loans", label: "Loans", icon: HandCoins, badge: 3 },
+      { href: "/admin/investments", label: "Investment", icon: TrendingUp },
+      { href: "/admin/withdrawals", label: "Withdrawals", icon: ArrowUpRight, badge: 5 },
     ],
   },
   {
     label: "REPORTING",
     items: [
-      { href: "/admin/reports", label: "Reports", icon: "≡" },
-      { href: "/admin/announcements", label: "Announcements", icon: "◎" },
-      { href: "/admin/audit-logs", label: "Audit logs", icon: "≋" },
+      { href: "/admin/reports", label: "Reports", icon: BarChart3 },
+      { href: "/admin/announcements", label: "Announcements", icon: Megaphone },
+      { href: "/admin/audit-logs", label: "Audit logs", icon: History },
     ],
   },
   {
     label: "SYSTEM",
-    items: [{ href: "/admin/settings", label: "Settings", icon: "⚙" }],
+    items: [{ href: "/admin/settings", label: "Settings", icon: SettingsIcon }],
   },
 ];
 
-/* ─── SVG Icons ─────────────────────────────────────────────── */
-function IconMenu() {
-  return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-    >
-      <line x1="3" y1="6" x2="21" y2="6" />
-      <line x1="3" y1="12" x2="21" y2="12" />
-      <line x1="3" y1="18" x2="21" y2="18" />
-    </svg>
+/** Longest-href-first so nested routes (e.g. /admin/audit-logs) don't match a shorter sibling. */
+const navItemsByHref = navGroups
+  .flatMap((g) => g.items)
+  .sort((a, b) => b.href.length - a.href.length);
+
+function pageTitleFor(pathname: string): { category: string; title: string } {
+  const item = navItemsByHref.find((i) =>
+    i.href === "/admin" ? pathname === "/admin" : pathname.startsWith(i.href),
   );
-}
-function IconX() {
-  return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-    >
-      <line x1="18" y1="6" x2="6" y2="18" />
-      <line x1="6" y1="6" x2="18" y2="18" />
-    </svg>
-  );
-}
-function IconChevron({ right }: { right?: boolean }) {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-    >
-      {right ? (
-        <polyline points="9 18 15 12 9 6" />
-      ) : (
-        <polyline points="15 18 9 12 15 6" />
-      )}
-    </svg>
-  );
+  const group = item && navGroups.find((g) => g.items.includes(item));
+  return { category: group?.label || "OVERVIEW", title: item?.label ?? "Dashboard" };
 }
 
 /* ─── Sidebar ───────────────────────────────────────────────── */
@@ -116,12 +103,23 @@ function AdminSidebar({
   onMobileClose: () => void;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { logout, user } = useAdminAuth();
+
+  const displayName = user?.name || user?.email || "Admin";
+  const displayRole = user?.role ? humanizeRole(user.role) : "Admin";
+  const avatarInitials = initialsFor(displayName);
 
   /* Close mobile menu on route change */
   useEffect(() => {
     onMobileClose();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
+
+  const handleLogout = () => {
+    logout();
+    router.push("/login");
+  };
 
   const sidebarContent = (
     <aside
@@ -167,7 +165,7 @@ function AdminSidebar({
             style={{ color: "var(--admin-muted)" }}
             aria-label="Collapse sidebar"
           >
-            <IconChevron />
+            <ChevronLeft className="w-4 h-4" />
           </button>
         )}
       </div>
@@ -206,9 +204,7 @@ function AdminSidebar({
                             }
                       }
                     >
-                      <span className="text-base shrink-0 w-5 text-center">
-                        {item.icon}
-                      </span>
+                      <item.icon className="w-[18px] h-[18px] shrink-0" strokeWidth={2} />
                       {!collapsed && (
                         <span className="truncate flex-1">{item.label}</span>
                       )}
@@ -239,24 +235,34 @@ function AdminSidebar({
             className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-black shrink-0"
             style={{ background: "var(--admin-primary)" }}
           >
-            AT
+            {avatarInitials}
           </div>
           {!collapsed && (
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p
                 className="text-sm font-semibold truncate"
                 style={{ color: "var(--admin-text)" }}
               >
-                Adeyera Triumph
+                {displayName}
               </p>
               <p
                 className="text-xs truncate"
                 style={{ color: "var(--admin-muted)" }}
               >
-                Super admin
+                {displayRole}
               </p>
             </div>
           )}
+          <button
+            type="button"
+            onClick={handleLogout}
+            title="Log out"
+            aria-label="Log out"
+            className="shrink-0 w-8 h-8 flex items-center justify-center rounded-md transition-colors hover:bg-black/5"
+            style={{ color: "var(--admin-muted)" }}
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
@@ -268,7 +274,7 @@ function AdminSidebar({
           style={{ color: "var(--admin-muted)" }}
           aria-label="Expand sidebar"
         >
-          <IconChevron right />
+          <ChevronRight className="w-4 h-4" />
         </button>
       )}
     </aside>
@@ -312,75 +318,80 @@ function AdminSidebar({
 
 /* ─── Topbar ────────────────────────────────────────────────── */
 function AdminTopbar({
-  sidebarWidth,
   mobileOpen,
   onMobileToggle,
 }: {
-  sidebarWidth: number;
   mobileOpen: boolean;
   onMobileToggle: () => void;
 }) {
+  const pathname = usePathname();
+  const { category, title } = pageTitleFor(pathname);
+
   return (
     <header
-      className="fixed top-0 right-0 z-30 h-16 flex items-center justify-between px-4 md:px-8"
+      className="fixed top-0 right-0 z-30 h-16 flex items-center justify-between gap-4 px-4 md:px-8"
       style={{
         left: 0,
         marginLeft: `var(--admin-sidebar-offset, 0px)`,
         background: "var(--admin-bg)",
+        borderBottom: "1px dashed var(--admin-border)",
       }}
     >
       {/* Left */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 min-w-0">
         {/* Hamburger — mobile only */}
         <button
           id="admin-mobile-menu-toggle"
-          className="lg:hidden flex items-center justify-center w-9 h-9 rounded-lg transition-colors hover:bg-black/5"
+          className="shrink-0 lg:hidden flex items-center justify-center w-9 h-9 rounded-lg transition-colors hover:bg-black/5"
           style={{ color: "var(--admin-text)" }}
           onClick={onMobileToggle}
           aria-label={mobileOpen ? "Close menu" : "Open menu"}
         >
-          {mobileOpen ? <IconX /> : <IconMenu />}
+          {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
 
-        {/* Search bar */}
-        <div
-          className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-full text-sm border"
-          style={{
-            borderColor: "var(--admin-border)",
-            color: "var(--admin-muted)",
-            background: "var(--admin-surface)",
-            width: "320px",
-          }}
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
+        {/* Page title */}
+        <div className="min-w-0 hidden sm:block">
+          <p
+            className="text-[10px] font-bold uppercase tracking-widest mb-0.5"
+            style={{ color: "#f59e0b" }}
           >
-            <circle cx="11" cy="11" r="8"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-          </svg>
-          <input
-            type="text"
-            placeholder="Search members, refs, loans"
-            className="bg-transparent border-none outline-none w-full text-sm"
-            style={{ color: "var(--admin-text)" }}
-          />
+            {category}
+          </p>
+          <h1 className="text-lg font-bold truncate" style={{ color: "var(--admin-text)" }}>
+            {title}
+          </h1>
         </div>
       </div>
 
       {/* Right */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3 md:gap-4 shrink-0">
+        {/* Search bar */}
+        <div
+          className="hidden md:flex items-center gap-2 px-4 py-2 rounded-full text-sm border"
+          style={{
+            borderColor: "var(--admin-border)",
+            color: "var(--admin-muted)",
+            background: "var(--admin-surface)",
+            width: "260px",
+          }}
+        >
+          <Search className="w-3.5 h-3.5 shrink-0" />
+          <input
+            type="text"
+            placeholder="Search members, refs, loans"
+            className="bg-transparent border-none outline-none w-full text-sm min-w-0"
+            style={{ color: "var(--admin-text)" }}
+          />
+          <span className="text-[10px] font-medium shrink-0">⌘K</span>
+        </div>
+
         {/* Theme toggle */}
         <ThemeToggle variant="default" />
 
         {/* Notification bell */}
         <button
-          className="relative w-9 h-9 rounded-full flex items-center justify-center transition-colors hover:bg-black/5 border"
+          className="relative w-9 h-9 rounded-full flex items-center justify-center transition-colors hover:bg-black/5 border shrink-0"
           style={{
             background: "var(--admin-surface)",
             borderColor: "var(--admin-border)",
@@ -388,18 +399,11 @@ function AdminTopbar({
           }}
           aria-label="Notifications"
         >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-          >
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-          </svg>
+          <Bell className="w-4 h-4" />
+          <span
+            className="absolute top-2 right-2 w-2 h-2 rounded-full"
+            style={{ background: "var(--admin-accent)" }}
+          />
         </button>
       </div>
     </header>
@@ -414,8 +418,13 @@ export default function AdminDashboardLayout({
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { isAuthenticated, isLoading } = useRequireAdminAuth();
 
   const sidebarWidth = collapsed ? 72 : 220;
+
+  // Avoid flashing protected content before the session check (and any
+  // resulting redirect to /login) completes.
+  if (isLoading || !isAuthenticated) return null;
 
   return (
     <div
@@ -440,7 +449,6 @@ export default function AdminDashboardLayout({
       />
 
       <AdminTopbar
-        sidebarWidth={sidebarWidth}
         mobileOpen={mobileOpen}
         onMobileToggle={() => setMobileOpen((o) => !o)}
       />

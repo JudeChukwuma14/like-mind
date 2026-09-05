@@ -20,10 +20,12 @@ export default function RefereePage() {
 
   const handleNext = (e: React.FormEvent) => {
     e.preventDefault();
+    setData({ refereeSkipped: false });
     router.push("/apply/review");
   };
 
   const handleSkip = () => {
+    setData({ refereeSkipped: true });
     router.push("/apply/review");
   };
 
@@ -125,15 +127,18 @@ export default function RefereePage() {
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">How long have you known this person?</label>
-              <textarea
+            <div className="max-w-xs">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Years known</label>
+              <input
+                type="number"
                 required
+                min={0}
+                max={100}
+                step={1}
                 value={data.refereeKnownDuration}
                 onChange={(e) => setData({ refereeKnownDuration: e.target.value })}
-                rows={3}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white resize-none"
-                placeholder="Folake was my mentor at the Black Professional Network of Toronto from 2019..."
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white"
+                placeholder="4"
               />
             </div>
           </div>

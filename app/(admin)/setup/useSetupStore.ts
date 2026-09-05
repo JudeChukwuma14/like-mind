@@ -3,83 +3,119 @@
 import { useState, useEffect } from "react";
 
 export type BankingDestination = {
+  id: string;
   displayName: string;
   email: string;
+  description: string;
   verified: boolean;
 };
 
 export type SetupData = {
+  // Set once CreateAccount succeeds; CompleteSetup's URL needs it.
+  cooperativeAccountId: string;
+
   // Step 1 — Welcome / account creation
   email: string;
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
+  cooperativeAdminPhoneNumber: string;
+  country: string;
+  countryCode: string;
+  societyOrProvince: string;
+  societyOrProvinceCode: string;
   password: string;
 
   // Step 2 — Cooperative profile
   cooperativeName: string;
   rcNumber: string;
-  founded: string;
+  founded: string; // ISO date (YYYY-MM-DD)
   headquartersAddress: string;
-  defaultCurrency: string;
-  timezone: string;
+  defaultCurrency: string; // ISO 4217 code, e.g. "NGN"
+  timezone: string; // IANA timezone id, e.g. "Africa/Lagos"
   publicMotto: string;
   brandAccentColor: string;
+  logoAssetId: string;
+  logoFileName: string;
+  logoPreviewUrl: string;
 
   // Step 3 — Cycles & contributions
   cycleFrequency: string; // "Monthly" | "Weekly" | "Quarterly"
-  dueDay: string;
-  lateGrace: string;
+  dueDay: string; // day of month, 1-31
+  lateGrace: string; // grace period in days
   minMonthly: string;
   maxMonthly: string;
 
   // Step 4 — Loan policy
-  interestRate: string;
+  interestRate: string; // annual percent
   maxTermMonths: string;
-  latePenalty: string;
+  latePenalty: string; // percent per month
   requiresActiveMember: boolean;
+  minimumMembershipMonths: string;
   requiresGuarantor: boolean;
+  minimumGuarantorCount: string;
   requiresDebtToIncome: boolean;
+  maximumDebtToIncomeRatioPercent: string;
   requiresBankStatement: boolean;
 
   // Step 5 — Withdrawal policy
-  maxPerCycle: string;
-  withdrawalFrequency: string;
+  maxPerCycle: string; // percent of balance
+  withdrawalFrequency: string; // max withdrawals per cycle
   blockActiveLoan: boolean;
   blockGuarantor: boolean;
   blockArrears: boolean;
   blockNewMember: boolean;
+  minimumDaysSinceJoining: string;
 
   // Step 6 — Banking
   destinations: BankingDestination[];
 };
 
 const defaultData: SetupData = {
+  cooperativeAccountId: "",
   email: "",
+  firstName: "",
+  lastName: "",
+  dateOfBirth: "",
+  cooperativeAdminPhoneNumber: "",
+  country: "Canada",
+  countryCode: "CA",
+  societyOrProvince: "Ontario",
+  societyOrProvinceCode: "ON",
   password: "",
   cooperativeName: "",
   rcNumber: "",
   founded: "",
   headquartersAddress: "",
-  defaultCurrency: "NGN - ₦",
-  timezone: "WAT - UTC+1",
+  defaultCurrency: "NGN",
+  timezone: "Africa/Lagos",
   publicMotto: "",
   brandAccentColor: "#f5c518",
+  logoAssetId: "",
+  logoFileName: "",
+  logoPreviewUrl: "",
   cycleFrequency: "Monthly",
-  dueDay: "28th of month",
-  lateGrace: "5 days",
+  dueDay: "28",
+  lateGrace: "5",
   minMonthly: "",
   maxMonthly: "",
   interestRate: "",
   maxTermMonths: "",
   latePenalty: "",
   requiresActiveMember: true,
+  minimumMembershipMonths: "3",
   requiresGuarantor: true,
+  minimumGuarantorCount: "1",
   requiresDebtToIncome: true,
+  maximumDebtToIncomeRatioPercent: "40",
   requiresBankStatement: false,
-  maxPerCycle: "75% of balance",
-  withdrawalFrequency: "2 per month",
+  maxPerCycle: "75",
+  withdrawalFrequency: "2",
   blockActiveLoan: true,
   blockGuarantor: true,
   blockArrears: true,
   blockNewMember: false,
+  minimumDaysSinceJoining: "30",
   destinations: [],
 };
 
