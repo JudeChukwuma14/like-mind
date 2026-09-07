@@ -46,6 +46,7 @@ function Navbar() {
             width={70}
             height={70}
             className="object-contain transition-transform duration-300 group-hover:scale-105"
+            style={{ width: "auto", height: "auto" }}
           />
         </Link>
 
@@ -169,6 +170,7 @@ function Footer() {
               width={100}
               height={100}
               className="object-contain"
+              style={{ width: "auto", height: "auto" }}
             />
             <p className="text-sm leading-relaxed" style={{ color: "var(--mkt-muted)" }}>
               A member-owned cooperative pooling capital across real estate,

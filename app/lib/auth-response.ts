@@ -30,10 +30,14 @@ export function extractAuthToken(raw: unknown): string | null {
   return null;
 }
 
-/** Confirmed shape: `data: { requires2FA: true }` when a verification code was just emailed. */
+/** Confirmed shape: `data: { requires2FA: true }` (admin) or top-level `{ requires2FA: true }` (member) when a verification code was just emailed. */
 export function authNeedsTwoFactor(raw: unknown): boolean {
   if (!raw || typeof raw !== "object") return false;
-  const data = (raw as Record<string, unknown>).data;
+  const obj = raw as Record<string, unknown>;
+  // Member login endpoint returns requires2FA at the top level
+  if (obj.requires2FA === true) return true;
+  // Admin login endpoint wraps it inside data
+  const data = obj.data;
   if (!data || typeof data !== "object") return false;
   return (data as Record<string, unknown>).requires2FA === true;
 }

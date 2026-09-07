@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Image from "next/image";
 import { Globe } from "lucide-react";
 
 const LEFT_PANEL: Record<string, { label: string; heading: string; subtext?: string }> = {
@@ -29,13 +30,7 @@ export default function SignInLayout({ children }: { children: React.ReactNode }
       {/* Left panel */}
       <div className="lg:w-[38%] shrink-0 bg-[#0a0a0a] text-white flex flex-col justify-between p-8 lg:p-12 lg:min-h-screen">
         <Link href="/" className="flex items-center gap-2.5 w-fit">
-          <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold shrink-0"
-            style={{ background: "linear-gradient(135deg, #f97316, #a855f7)" }}
-          >
-            L
-          </div>
-          <span className="font-semibold">LikeMind</span>
+          <Image src="/Likemind.png" alt="LikeMind" width={120} height={40} style={{ width: "auto", height: "auto" }} className="h-8 w-auto object-contain" />
         </Link>
 
         <div className="mt-16 lg:mt-0">

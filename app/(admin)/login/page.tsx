@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useMutation } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { Eye, EyeOff, Loader2, ArrowLeft } from "lucide-react";
@@ -11,7 +12,14 @@ import { useAdminAuth } from "@/app/providers/AdminAuthProvider";
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const { login, loginByEmailOnly, verify2fa, resendOtp, isAuthenticated, isLoading } = useAdminAuth();
+  const {
+    login,
+    loginByEmailOnly,
+    verify2fa,
+    resendOtp,
+    isAuthenticated,
+    isLoading,
+  } = useAdminAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
@@ -30,7 +38,9 @@ export default function AdminLoginPage() {
     mutationFn: () => login(email, password),
     onSuccess: (res) => {
       if (res.requires2FA) {
-        toast.success(res.message ?? "Check your email for a verification code.");
+        toast.success(
+          res.message ?? "Check your email for a verification code.",
+        );
         setStep("verify");
         return;
       }
@@ -46,7 +56,9 @@ export default function AdminLoginPage() {
     mutationFn: () => loginByEmailOnly(email),
     onSuccess: (res) => {
       if (res.requires2FA) {
-        toast.success(res.message ?? "Check your email for a verification code.");
+        toast.success(
+          res.message ?? "Check your email for a verification code.",
+        );
         setStep("verify");
         return;
       }
@@ -101,18 +113,14 @@ export default function AdminLoginPage() {
       {/* Top bar */}
       <header className="w-full bg-[#f4efe6] ">
         <div className="flex items-center px-5 py-3 md:px-8">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-[#f5c518] rounded-lg flex items-center justify-center shrink-0">
-              <span className="text-[10px] font-black text-[#171717] tracking-tight">LM</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-sm text-[#171717] tracking-tight">
-                LikeMind
-              </span>
-              <span className="text-xs font-mono text-[#a09880] uppercase tracking-widest ml-1">
-                Setup
-              </span>
-            </div>
+          <div className="flex items-center gap-3 bg-[#f5f1e8]">
+            <Image
+              src="/Likemind.png"
+              alt="LikeMind"
+              width={100}
+              height={100}
+              className="h-12 w-12 object-contain"
+            />
           </div>
         </div>
       </header>
@@ -128,21 +136,26 @@ export default function AdminLoginPage() {
                   Welcome to LikeMinds
                 </h1>
                 <p className="text-sm text-[#a09880]">
-                  Log into{" "}
-                  <span className="text-[#d97706]">your</span> account
+                  Log into <span className="text-[#d97706]">your</span> account
                 </p>
               </div>
 
               {/* Form */}
               <form onSubmit={handleCredentialsSubmit} className="space-y-5">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-[#171717]">Login</h2>
+                  <h2 className="text-lg font-semibold text-[#171717]">
+                    Login
+                  </h2>
                   <button
                     type="button"
-                    onClick={() => setMode(mode === "password" ? "email-only" : "password")}
+                    onClick={() =>
+                      setMode(mode === "password" ? "email-only" : "password")
+                    }
                     className="text-xs font-semibold text-[#d97706] hover:text-[#b45309] transition-colors"
                   >
-                    {mode === "password" ? "Use email only instead" : "Use password instead"}
+                    {mode === "password"
+                      ? "Use email only instead"
+                      : "Use password instead"}
                   </button>
                 </div>
 
@@ -227,7 +240,9 @@ export default function AdminLoginPage() {
             <>
               {/* Heading */}
               <div className="text-center mb-10">
-                <h1 className="text-3xl font-bold text-[#171717] mb-2">Check your email</h1>
+                <h1 className="text-3xl font-bold text-[#171717] mb-2">
+                  Check your email
+                </h1>
                 <p className="text-sm text-[#a09880]">
                   Enter the verification code sent to{" "}
                   <span className="text-[#d97706] font-medium">{email}</span>
@@ -259,7 +274,9 @@ export default function AdminLoginPage() {
                   disabled={verify.isPending}
                   className="w-full inline-flex items-center justify-center gap-2 bg-[#171717] hover:bg-black text-white py-3.5 rounded-full font-semibold text-sm transition-all disabled:opacity-60 disabled:cursor-not-allowed mt-2"
                 >
-                  {verify.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {verify.isPending && (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  )}
                   {verify.isPending ? "Verifying…" : "Verify"}
                 </button>
 

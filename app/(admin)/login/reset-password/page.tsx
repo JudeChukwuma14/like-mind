@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useAdminResetPassword, getStoredAdminResetEmail } from "../../admin/useAdminResetPassword";
 
@@ -41,15 +42,7 @@ export default function AdminResetPasswordPage() {
       <header className="w-full bg-[#f4efe6]">
         <div className="flex items-center px-5 py-3 md:px-8">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-[#f5c518] rounded-lg flex items-center justify-center shrink-0">
-              <span className="text-[10px] font-black text-[#171717] tracking-tight">LM</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-sm text-[#171717] tracking-tight">LikeMind</span>
-              <span className="text-xs font-mono text-[#a09880] uppercase tracking-widest ml-1">
-                Setup
-              </span>
-            </div>
+            <Image src="/Likemind.png" alt="LikeMind" width={120} height={40} style={{ width: "auto", height: "auto" }} className="h-8 w-auto object-contain" />
           </div>
         </div>
       </header>

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Image from "next/image";
 import { HelpCircle } from "lucide-react";
 
 const steps = [
@@ -31,12 +32,7 @@ export function Sidebar() {
     <aside className="w-72 bg-[#111111] text-white flex flex-col h-screen sticky top-0 shrink-0 border-r border-[#222]">
       {/* Header / Logo */}
       <div className="p-6 flex items-center gap-3 mt-2">
-        <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
-          <div className="w-4 h-4 rounded-full border-2 border-yellow-400"></div>
-        </div>
-        <span className="font-semibold text-lg tracking-tight">
-          LikeMinds Cooperative
-        </span>
+        <Image src="/Likemind.png" alt="LikeMinds Cooperative" width={120} height={40} style={{ width: "auto", height: "auto" }} className="h-8 w-auto object-contain" />
       </div>
 
       {/* Progress Section */}

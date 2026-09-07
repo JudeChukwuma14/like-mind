@@ -12,7 +12,7 @@ import { useMemberLogin } from "./useMemberLogin";
 
 export default function SignInPage() {
   const router = useRouter();
-  const { login, loginByEmailOnly, verify2fa } = useMemberLogin();
+  const { login, loginByEmailOnly, verify2fa, resendOtp } = useMemberLogin();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
@@ -60,6 +60,16 @@ export default function SignInPage() {
     onSuccess: (res) => {
       toast.success(res.message ?? "Welcome back!");
       router.push("/dashboard");
+    },
+    onError: (err) => {
+      toast.error(getApiErrorMessage(err));
+    },
+  });
+
+  const resend = useMutation({
+    mutationFn: () => resendOtp(email),
+    onSuccess: (res) => {
+      toast.success(res.message ?? "A new code has been sent.");
     },
     onError: (err) => {
       toast.error(getApiErrorMessage(err));
@@ -116,14 +126,24 @@ export default function SignInPage() {
             {verify.isPending ? "Verifying…" : "Verify"}
           </button>
 
-          <button
-            type="button"
-            onClick={() => setStep("credentials")}
-            className="flex items-center justify-center gap-1.5 text-sm text-gray-600 hover:text-[#171717] transition-colors"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            Back
-          </button>
+          <div className="flex items-center justify-between pt-1">
+            <button
+              type="button"
+              onClick={() => setStep("credentials")}
+              className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-[#171717] transition-colors"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              Back
+            </button>
+            <button
+              type="button"
+              onClick={() => resend.mutate()}
+              disabled={resend.isPending}
+              className="text-sm font-semibold text-indigo-600 hover:text-indigo-700 transition-colors disabled:opacity-60"
+            >
+              {resend.isPending ? "Sending…" : "Resend code"}
+            </button>
+          </div>
         </form>
       </>
     );

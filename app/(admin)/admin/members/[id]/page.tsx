@@ -1,13 +1,20 @@
 "use client";
 
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import {
   ArrowLeft,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  KeyRound,
   Loader2,
-  ShieldCheck,
+  Shield,
   ShieldAlert,
+  ShieldCheck,
+  ShieldOff,
   User,
   Phone,
   MapPin,
@@ -15,9 +22,19 @@ import {
   Users,
   FileCheck,
   Monitor,
+  X,
 } from "lucide-react";
 import { adminApiFetch, getApiErrorMessage } from "@/app/lib/api-client";
 import { pluckMember, formatDate, formatDateTime } from "@/app/lib/member-profile";
+import {
+  getAllRoles,
+  getAllPermissions,
+  getUserAccess,
+  assignRole,
+  setRoleInheritance,
+  setUserPermission,
+  removeUserOverride,
+} from "@/app/lib/authorization-api";
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -78,6 +95,726 @@ function BoolBadge({
     >
       {value ? trueLabel : falseLabel}
     </span>
+  );
+}
+
+// ─── Access & Permissions section ────────────────────────────────────────────
+
+/** Accessible toggle switch — controlled, no local state. */
+function ToggleSwitch({
+  checked,
+  onChange,
+  disabled,
+  id,
+}: {
+  checked: boolean;
+  onChange: (next: boolean) => void;
+  disabled?: boolean;
+  id: string;
+}) {
+  return (
+    <button
+      id={id}
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      disabled={disabled}
+      onClick={() => onChange(!checked)}
+      className="relative inline-flex w-11 h-6 rounded-full transition-colors shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+      style={{ background: checked ? "var(--admin-text)" : "var(--admin-border)" }}
+    >
+      <span
+        className="absolute top-1 left-1 w-4 h-4 rounded-full transition-transform"
+        style={{
+          background: checked ? "var(--admin-bg)" : "var(--admin-muted)",
+          transform: checked ? "translateX(20px)" : "translateX(0)",
+        }}
+      />
+    </button>
+  );
+}
+
+type AccessTab = "effective" | "role" | "granted" | "revoked" | "manage";
+
+function TabButton({
+  active,
+  onClick,
+  label,
+  count,
+  highlight,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  count?: number;
+  highlight?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0"
+      style={
+        active
+          ? { background: "var(--admin-text)", color: "var(--admin-bg)" }
+          : { background: "transparent", color: "var(--admin-muted)" }
+      }
+    >
+      {label}
+      {count !== undefined && (
+        <span
+          className="px-1.5 py-0.5 rounded text-[10px] font-bold tabular-nums"
+          style={
+            active
+              ? { background: "rgba(255,255,255,0.2)", color: "var(--admin-bg)" }
+              : highlight && count > 0
+              ? { background: "rgba(252,211,77,0.2)", color: "var(--admin-primary)" }
+              : { background: "var(--admin-border)", color: "var(--admin-muted)" }
+          }
+        >
+          {count}
+        </span>
+      )}
+    </button>
+  );
+}
+
+/**
+ * A permission row used inside the tab panels.
+ * Shows permission name + code + optional action button.
+ */
+function PermRow({
+  code,
+  permissionMap,
+  actionSlot,
+}: {
+  code: string;
+  permissionMap: Map<string, { name: string; category: string }>;
+  actionSlot?: React.ReactNode;
+}) {
+  const info = permissionMap.get(code.toLowerCase());
+  return (
+    <div
+      className="flex items-center justify-between gap-3 py-2.5"
+      style={{ borderBottom: "1px solid var(--admin-border)" }}
+    >
+      <div className="min-w-0 flex-1">
+        <p className="text-xs font-medium truncate" style={{ color: "var(--admin-text)" }}>
+          {info?.name ?? code}
+        </p>
+        <p className="text-[10px] font-mono" style={{ color: "var(--admin-muted)" }}>
+          {info?.category ? `${info.category} · ` : ""}{code}
+        </p>
+      </div>
+      {actionSlot}
+    </div>
+  );
+}
+
+function EmptyTabState({ message }: { message: string }) {
+  return (
+    <p className="py-5 text-center text-xs" style={{ color: "var(--admin-muted)" }}>
+      {message}
+    </p>
+  );
+}
+
+/** Stateful permission override picker (select + Grant / Revoke buttons). */
+function AddOverrideControls({
+  allPermissions,
+  onGrant,
+  onRevoke,
+  disabled,
+}: {
+  allPermissions: { id: string; code: string; name: string; category: string }[];
+  onGrant: (code: string) => void;
+  onRevoke: (code: string) => void;
+  disabled?: boolean;
+}) {
+  const [selectedCode, setSelectedCode] = useState("");
+
+  const groups = new Map<string, typeof allPermissions>();
+  for (const p of allPermissions) {
+    const list = groups.get(p.category) ?? [];
+    list.push(p);
+    groups.set(p.category, list);
+  }
+  const sortedGroups = Array.from(groups.entries()).sort(([a], [b]) =>
+    a.localeCompare(b),
+  );
+
+  return (
+    <div className="space-y-3">
+      <select
+        id="member-permission-override-select"
+        value={selectedCode}
+        onChange={(e) => setSelectedCode(e.target.value)}
+        disabled={disabled}
+        className="w-full px-3 py-2 rounded-xl text-sm outline-none border"
+        style={{
+          background: "var(--admin-bg)",
+          color: "var(--admin-text)",
+          borderColor: "var(--admin-border)",
+        }}
+      >
+        <option value="">Choose a permission…</option>
+        {sortedGroups.map(([category, perms]) => (
+          <optgroup key={category} label={category}>
+            {perms.map((p) => (
+              <option key={p.id} value={p.code}>
+                {p.name}
+              </option>
+            ))}
+          </optgroup>
+        ))}
+      </select>
+      <div className="flex gap-2">
+        <button
+          id="member-grant-permission-btn"
+          type="button"
+          disabled={!selectedCode || disabled}
+          onClick={() => {
+            onGrant(selectedCode);
+            setSelectedCode("");
+          }}
+          className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+          style={{ background: "#dcfce7", color: "#166534" }}
+        >
+          <Check className="w-3.5 h-3.5" />
+          Grant
+        </button>
+        <button
+          id="member-revoke-permission-btn"
+          type="button"
+          disabled={!selectedCode || disabled}
+          onClick={() => {
+            onRevoke(selectedCode);
+            setSelectedCode("");
+          }}
+          className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+          style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444" }}
+        >
+          <ShieldOff className="w-3.5 h-3.5" />
+          Revoke
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function AccessAndPermissionsSection({ userId }: { userId: string }) {
+  const queryClient = useQueryClient();
+  const ACCESS_KEY = ["admin-user-access", userId] as const;
+
+  // ── Queries ────────────────────────────────────────────────────────────────
+  const accessQuery = useQuery({
+    queryKey: ACCESS_KEY,
+    queryFn: () => getUserAccess(userId),
+    enabled: Boolean(userId),
+  });
+  const rolesQuery = useQuery({ queryKey: ["admin-roles"], queryFn: getAllRoles });
+  const permissionsQuery = useQuery({
+    queryKey: ["admin-permissions"],
+    queryFn: getAllPermissions,
+  });
+
+  // ── Lookup map: lowercase code -> { name, category } ──────────────────────
+  const permissionMap = new Map<string, { name: string; category: string }>();
+  for (const p of permissionsQuery.data ?? []) {
+    permissionMap.set(p.code.toLowerCase(), { name: p.name, category: p.category });
+  }
+
+  // ── Tab state ──────────────────────────────────────────────────────────────
+  const [activeTab, setActiveTab] = useState<AccessTab>("effective");
+
+  // ── Assign role state ──────────────────────────────────────────────────────
+  const [selectedRoleId, setSelectedRoleId] = useState("");
+  const [inheritOnAssign, setInheritOnAssign] = useState(true);
+  const [showAssignPanel, setShowAssignPanel] = useState(false);
+
+  // Permission count for the currently-selected role in the assign dropdown
+  const selectedRole = (rolesQuery.data ?? []).find((r) => r.id === selectedRoleId);
+  const selectedRolePermCount =
+    selectedRole?.permissions != null
+      ? Array.isArray(selectedRole.permissions)
+        ? selectedRole.permissions.length
+        : 0
+      : 0;
+
+  // ── Mutations ──────────────────────────────────────────────────────────────
+  function refresh() {
+    queryClient.invalidateQueries({ queryKey: ACCESS_KEY });
+  }
+
+  const assignRoleMutation = useMutation({
+    mutationFn: () =>
+      assignRole({ userId, roleId: selectedRoleId, inheritRolePermissions: inheritOnAssign }),
+    onSuccess: () => {
+      toast.success("Role assigned.");
+      setSelectedRoleId("");
+      setShowAssignPanel(false);
+      refresh();
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err)),
+  });
+
+  const inheritMutation = useMutation({
+    mutationFn: (inherit: boolean) =>
+      setRoleInheritance({ userId, inheritRolePermissions: inherit }),
+    onSuccess: () => { toast.success("Inheritance setting updated."); refresh(); },
+    onError: (err) => toast.error(getApiErrorMessage(err)),
+  });
+
+  const grantPermission = useMutation({
+    mutationFn: (code: string) =>
+      setUserPermission({ userId, permissionCode: code, isGranted: true }),
+    onSuccess: () => { toast.success("Permission granted."); refresh(); },
+    onError: (err) => toast.error(getApiErrorMessage(err)),
+  });
+
+  const revokePermission = useMutation({
+    mutationFn: (code: string) =>
+      setUserPermission({ userId, permissionCode: code, isGranted: false }),
+    onSuccess: () => { toast.success("Permission revoked."); refresh(); },
+    onError: (err) => toast.error(getApiErrorMessage(err)),
+  });
+
+  const removeOverride = useMutation({
+    mutationFn: (code: string) => removeUserOverride({ userId, permissionCode: code }),
+    onSuccess: () => { toast.success("Override removed."); refresh(); },
+    onError: (err) => toast.error(getApiErrorMessage(err)),
+  });
+
+  // ── Derived ────────────────────────────────────────────────────────────────
+  const isLoading = accessQuery.isLoading || rolesQuery.isLoading || permissionsQuery.isLoading;
+  const isError = accessQuery.isError;
+  const access = accessQuery.data;
+  const roles = rolesQuery.data ?? [];
+  const anyMutating =
+    assignRoleMutation.isPending ||
+    inheritMutation.isPending ||
+    grantPermission.isPending ||
+    revokePermission.isPending ||
+    removeOverride.isPending;
+
+  // Small remove-override button used in both Granted and Revoked tabs
+  const RemoveBtn = ({ code }: { code: string }) => (
+    <button
+      type="button"
+      title="Remove override"
+      disabled={removeOverride.isPending}
+      onClick={() => removeOverride.mutate(code)}
+      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all hover:opacity-80 disabled:opacity-40 shrink-0"
+      style={{ background: "var(--admin-border)", color: "var(--admin-muted)" }}
+    >
+      {removeOverride.isPending ? (
+        <Loader2 className="w-3 h-3 animate-spin" />
+      ) : (
+        <X className="w-3 h-3" />
+      )}
+      Remove
+    </button>
+  );
+
+  return (
+    <div
+      className="rounded-2xl border overflow-hidden"
+      style={{ background: "var(--admin-surface)", borderColor: "var(--admin-border)" }}
+    >
+      {/* ── Section header ── */}
+      <div
+        className="px-5 py-4 border-b flex items-center gap-2"
+        style={{ borderColor: "var(--admin-border)" }}
+      >
+        <Shield className="w-4 h-4 shrink-0" style={{ color: "var(--admin-primary)" }} />
+        <p
+          className="text-[10px] font-bold tracking-widest uppercase flex-1"
+          style={{ color: "var(--admin-muted)" }}
+        >
+          Access &amp; Permissions
+        </p>
+        {access && (
+          <span
+            className="inline-flex items-center gap-1 text-xs font-medium"
+            style={{ color: "var(--admin-muted)" }}
+          >
+            <ShieldCheck className="w-3.5 h-3.5" style={{ color: "#16a34a" }} />
+            {access.effectivePermissions.length} effective
+          </span>
+        )}
+      </div>
+
+      {/* ── Loading ── */}
+      {isLoading && (
+        <div
+          className="py-8 flex items-center justify-center gap-2 text-sm"
+          style={{ color: "var(--admin-muted)" }}
+        >
+          <Loader2 className="w-4 h-4 animate-spin" />
+          Loading access data…
+        </div>
+      )}
+
+      {/* ── Error ── */}
+      {isError && (
+        <div className="p-6 text-center">
+          <Shield
+            className="w-8 h-8 mx-auto mb-2"
+            style={{ color: "var(--admin-border)" }}
+          />
+          <p className="text-sm font-medium mb-1" style={{ color: "var(--admin-accent)" }}>
+            Unable to load access data
+          </p>
+          <p className="text-xs" style={{ color: "var(--admin-muted)" }}>
+            {getApiErrorMessage(accessQuery.error)}
+          </p>
+        </div>
+      )}
+
+      {/* ── Empty ── */}
+      {!isLoading && !isError && !access && (
+        <div className="p-6 text-center text-sm" style={{ color: "var(--admin-muted)" }}>
+          No access data available for this user.
+        </div>
+      )}
+
+      {access && (
+        <>
+          {/* ── Status bar: role + inheritance toggle ── */}
+          <div
+            className="px-5 py-4 border-b grid grid-cols-1 sm:grid-cols-2 gap-4"
+            style={{ borderColor: "var(--admin-border)", background: "var(--admin-bg)" }}
+          >
+            {/* Current role */}
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p
+                  className="text-[10px] uppercase tracking-widest font-bold mb-0.5"
+                  style={{ color: "var(--admin-muted)" }}
+                >
+                  Assigned role
+                </p>
+                <span
+                  className="inline-flex items-center gap-1.5 text-sm font-semibold"
+                  style={{ color: "var(--admin-text)" }}
+                >
+                  <KeyRound
+                    className="w-3.5 h-3.5"
+                    style={{ color: "var(--admin-primary)" }}
+                  />
+                  {access.roleName ?? "None"}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAssignPanel((s) => !s)}
+                className="text-xs font-medium px-3 py-1.5 rounded-lg border transition-opacity hover:opacity-80 shrink-0"
+                style={{
+                  borderColor: "var(--admin-border)",
+                  color: "var(--admin-muted)",
+                  background: "var(--admin-surface)",
+                }}
+              >
+                Change role
+              </button>
+            </div>
+
+            {/* Inheritance toggle */}
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <p
+                  className="text-[10px] uppercase tracking-widest font-bold mb-0.5"
+                  style={{ color: "var(--admin-muted)" }}
+                >
+                  Role inheritance
+                </p>
+                <p className="text-xs" style={{ color: "var(--admin-muted)" }}>
+                  {access.inheritRolePermissions
+                    ? "User receives all permissions from their role."
+                    : "User does not inherit role permissions."}
+                </p>
+              </div>
+              <ToggleSwitch
+                id="member-inherit-toggle"
+                checked={access.inheritRolePermissions}
+                disabled={inheritMutation.isPending || anyMutating}
+                onChange={(next) => inheritMutation.mutate(next)}
+              />
+            </div>
+          </div>
+
+          {/* ── Assign role panel (collapsible) ── */}
+          {showAssignPanel && (
+            <div
+              className="px-5 py-4 border-b space-y-3"
+              style={{
+                borderColor: "var(--admin-border)",
+                background: "var(--admin-surface)",
+              }}
+            >
+              <p
+                className="text-[10px] uppercase tracking-widest font-bold"
+                style={{ color: "var(--admin-muted)" }}
+              >
+                Assign new role
+              </p>
+              <select
+                id="member-role-select"
+                value={selectedRoleId}
+                onChange={(e) => setSelectedRoleId(e.target.value)}
+                disabled={assignRoleMutation.isPending}
+                className="w-full px-3 py-2 rounded-xl text-sm outline-none border"
+                style={{
+                  background: "var(--admin-bg)",
+                  color: "var(--admin-text)",
+                  borderColor: "var(--admin-border)",
+                }}
+              >
+                <option value="">Select a role…</option>
+                {roles.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name}
+                  </option>
+                ))}
+              </select>
+
+              {/* Role permission count preview */}
+              {selectedRoleId && (
+                <p className="text-xs" style={{ color: "var(--admin-muted)" }}>
+                  This role has{" "}
+                  <span className="font-semibold" style={{ color: "var(--admin-text)" }}>
+                    {selectedRolePermCount} permission
+                    {selectedRolePermCount !== 1 ? "s" : ""}
+                  </span>{" "}
+                  configured.
+                </p>
+              )}
+
+              <label
+                className="flex items-center gap-2 cursor-pointer text-xs"
+                style={{ color: "var(--admin-muted)" }}
+              >
+                <input
+                  id="member-inherit-on-assign"
+                  type="checkbox"
+                  checked={inheritOnAssign}
+                  onChange={(e) => setInheritOnAssign(e.target.checked)}
+                  className="w-4 h-4 rounded"
+                />
+                Inherit role permissions on assignment
+              </label>
+
+              <div className="flex gap-2 justify-end pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAssignPanel(false);
+                    setSelectedRoleId("");
+                  }}
+                  className="text-xs font-medium px-3 py-1.5 rounded-lg transition-opacity hover:opacity-70"
+                  style={{ color: "var(--admin-muted)" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  id="member-assign-role-btn"
+                  type="button"
+                  disabled={!selectedRoleId || assignRoleMutation.isPending}
+                  onClick={() => assignRoleMutation.mutate()}
+                  className="inline-flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-semibold transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                  style={{ background: "var(--admin-text)", color: "var(--admin-bg)" }}
+                >
+                  {assignRoleMutation.isPending ? (
+                    <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Assigning…</>
+                  ) : (
+                    "Assign role"
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Tabs ── */}
+          <div
+            className="flex items-center gap-1 px-5 py-3 border-b overflow-x-auto"
+            style={{ borderColor: "var(--admin-border)" }}
+          >
+            <TabButton
+              active={activeTab === "effective"}
+              onClick={() => setActiveTab("effective")}
+              label="Effective"
+              count={access.effectivePermissions.length}
+              highlight
+            />
+            <TabButton
+              active={activeTab === "role"}
+              onClick={() => setActiveTab("role")}
+              label="Role"
+              count={access.rolePermissions.length}
+            />
+            <TabButton
+              active={activeTab === "granted"}
+              onClick={() => setActiveTab("granted")}
+              label="Granted"
+              count={access.granted.length}
+              highlight
+            />
+            <TabButton
+              active={activeTab === "revoked"}
+              onClick={() => setActiveTab("revoked")}
+              label="Revoked"
+              count={access.revoked.length}
+            />
+            <TabButton
+              active={activeTab === "manage"}
+              onClick={() => setActiveTab("manage")}
+              label="Add override"
+            />
+          </div>
+
+          {/* ── Tab content ── */}
+          <div className="px-5 pt-3 pb-5">
+            {/* EFFECTIVE */}
+            {activeTab === "effective" && (
+              <>
+                {access.effectivePermissions.length === 0 ? (
+                  <EmptyTabState message="This user has no effective permissions." />
+                ) : (
+                  <>
+                    <p
+                      className="text-xs mb-3"
+                      style={{ color: "var(--admin-muted)" }}
+                    >
+                      The final set of permissions this user currently has, as
+                      determined by the backend.
+                    </p>
+                    <div>
+                      {access.effectivePermissions.map((code) => (
+                        <PermRow key={code} code={code} permissionMap={permissionMap} />
+                      ))}
+                      <div className="h-px" />{/* Remove bottom border on last item */}
+                    </div>
+                  </>
+                )}
+              </>
+            )}
+
+            {/* ROLE PERMISSIONS */}
+            {activeTab === "role" && (
+              <>
+                {access.rolePermissions.length === 0 ? (
+                  <EmptyTabState message="No permissions are assigned to this user's role." />
+                ) : (
+                  <div>
+                    {access.rolePermissions.map((code) => {
+                      const isRevoked = access.revoked
+                        .map((r) => r.toLowerCase())
+                        .includes(code.toLowerCase());
+                      return (
+                        <PermRow
+                          key={code}
+                          code={code}
+                          permissionMap={permissionMap}
+                          actionSlot={
+                            isRevoked ? (
+                              <span
+                                className="text-[10px] font-bold px-2 py-0.5 rounded shrink-0"
+                                style={{
+                                  background: "rgba(239,68,68,0.1)",
+                                  color: "#ef4444",
+                                }}
+                              >
+                                Revoked
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                disabled={anyMutating}
+                                onClick={() => revokePermission.mutate(code)}
+                                className="text-[10px] font-bold px-2.5 py-1 rounded-lg transition-all hover:opacity-80 disabled:opacity-40 shrink-0"
+                                style={{
+                                  background: "rgba(239,68,68,0.1)",
+                                  color: "#ef4444",
+                                }}
+                              >
+                                {revokePermission.isPending ? (
+                                  <Loader2 className="w-3 h-3 animate-spin inline" />
+                                ) : (
+                                  "Revoke"
+                                )}
+                              </button>
+                            )
+                          }
+                        />
+                      );
+                    })}
+                    <div className="h-px" />
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* GRANTED */}
+            {activeTab === "granted" && (
+              <>
+                {access.granted.length === 0 ? (
+                  <EmptyTabState message="No directly-granted permission overrides." />
+                ) : (
+                  <div>
+                    {access.granted.map((code) => (
+                      <PermRow
+                        key={code}
+                        code={code}
+                        permissionMap={permissionMap}
+                        actionSlot={<RemoveBtn code={code} />}
+                      />
+                    ))}
+                    <div className="h-px" />
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* REVOKED */}
+            {activeTab === "revoked" && (
+              <>
+                {access.revoked.length === 0 ? (
+                  <EmptyTabState message="No explicitly revoked permission overrides." />
+                ) : (
+                  <div>
+                    {access.revoked.map((code) => (
+                      <PermRow
+                        key={code}
+                        code={code}
+                        permissionMap={permissionMap}
+                        actionSlot={<RemoveBtn code={code} />}
+                      />
+                    ))}
+                    <div className="h-px" />
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* MANAGE — add override */}
+            {activeTab === "manage" && (
+              <div className="space-y-3 pt-1">
+                <p className="text-xs" style={{ color: "var(--admin-muted)" }}>
+                  Select a permission and grant or revoke it directly for this user,
+                  regardless of their role.
+                </p>
+                <AddOverrideControls
+                  allPermissions={permissionsQuery.data ?? []}
+                  onGrant={(code) => grantPermission.mutate(code)}
+                  onRevoke={(code) => revokePermission.mutate(code)}
+                  disabled={anyMutating}
+                />
+              </div>
+            )}
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 
@@ -532,6 +1269,9 @@ export default function MemberDetailPage() {
               </div>
             </Card>
           )}
+
+          {/* ── Access & Permissions ── */}
+          <AccessAndPermissionsSection userId={member.id ?? id} />
 
           {/* Member ID footer */}
           {member.id && (

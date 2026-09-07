@@ -86,5 +86,13 @@ export function useMemberLogin() {
     return { message: extractAuthMessage(res) };
   };
 
-  return { login, loginByEmailOnly, verify2fa };
+  const resendOtp = async (email: string) => {
+    const res = await apiFetch<unknown>("/api/Auth/ResendOtp", {
+      method: "POST",
+      body: { email },
+    });
+    return { message: extractAuthMessage(res) };
+  };
+
+  return { login, loginByEmailOnly, verify2fa, resendOtp };
 }

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, ChevronDown, Mail, MapPin, Info } from "lucide-react";
 import { City, State } from "country-state-city";
 import PhoneInput, { type Country as PhoneCountry } from "react-phone-number-input";
+import { useSession } from "next-auth/react";
 import { StepHeader } from "../StepHeader";
 import { useApplyStore } from "../useApplyStore";
 import { CountrySelect } from "./CountrySelect";
@@ -14,11 +15,31 @@ import { SearchableSelect } from "./SearchableSelect";
 export default function ContactInformationPage() {
   const router = useRouter();
   const { data, setData, isClient, lastSaved } = useApplyStore();
+  const { data: session } = useSession();
   const [mounted, setMounted] = useState(false);
+  // Track whether email was pre-filled from Google so we can show a badge
+  const [googlePrefilled, setGooglePrefilled] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Pre-fill email from the Google session if the store doesn't already have one.
+  // This covers the case where the Google OAuth redirect happened but the
+  // welcome page's onSuccess handler had no JWT email claim.
+  useEffect(() => {
+    const googleEmail = session?.user?.email;
+    if (googleEmail && !data.email) {
+      setData({ email: googleEmail });
+      setGooglePrefilled(true);
+    }
+    // Also mark as pre-filled if email is already in the store from Google
+    // (welcome page's onSuccess wrote it)
+    if (data.email && googleEmail && data.email === googleEmail) {
+      setGooglePrefilled(true);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.email]);
 
   const states = useMemo(() => State.getStatesOfCountry(data.countryCode), [data.countryCode]);
   const cities = useMemo(
@@ -159,14 +180,25 @@ export default function ContactInformationPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Personal email</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Personal email
+                  {googlePrefilled && (
+                    <span className="ml-2 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-full">
+                      <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="currentColor"><path d="M12.545 10.239v3.821h5.445c-.712 2.315-2.647 3.972-5.445 3.972a6.033 6.033 0 110-12.064c1.498 0 2.866.549 3.921 1.453l2.814-2.814A9.969 9.969 0 0012.545 2C7.021 2 2.543 6.477 2.543 12s4.478 10 10.002 10c8.396 0 10.249-7.85 9.426-11.748l-9.426-.013z"/></svg>
+                      Pre-filled from Google
+                    </span>
+                  )}
+                </label>
                 <div className="relative">
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="email"
                     required
                     value={data.email}
-                    onChange={(e) => setData({ email: e.target.value })}
+                    onChange={(e) => {
+                      setGooglePrefilled(false);
+                      setData({ email: e.target.value });
+                    }}
                     className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white"
                     placeholder="alex.morgan@gmail.com"
                   />
