@@ -87,12 +87,32 @@ function IconChevron({ right }: { right?: boolean }) {
       stroke="currentColor"
       strokeWidth="2"
       strokeLinecap="round"
+      strokeLinejoin="round"
     >
       {right ? (
         <polyline points="9 18 15 12 9 6" />
       ) : (
         <polyline points="15 18 9 12 15 6" />
       )}
+    </svg>
+  );
+}
+
+function IconLogout() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
     </svg>
   );
 }
@@ -140,19 +160,23 @@ function Sidebar({
         }}
       >
         <Link href="/" className="flex items-center gap-3 min-w-0">
-          {/* <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold shrink-0 text-white"
-            style={{ background: "linear-gradient(135deg, #f59e0b, #ef4444)" }}
-          >
-            L
-          </div>
-          {!collapsed && (
-            <span className="font-bold text-white truncate text-sm">
-              LikeMind
-            </span>
-          )} */}
-
-          <Image src="/Likemind.png" alt="Logo" width={100} height={100} className="w-20 h-auto object-cover" style={{ width: "auto", height: "auto" }}/>
+          {collapsed ? (
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold shrink-0 text-white shadow-md"
+              style={{ background: "linear-gradient(135deg, #f59e0b, #ef4444)" }}
+            >
+              L
+            </div>
+          ) : (
+            <Image 
+              src="/Likemind.png" 
+              alt="Logo" 
+              width={140} 
+              height={40} 
+              className="w-32 max-h-8 object-contain drop-shadow-sm transition-transform hover:scale-[1.02]" 
+              priority
+            />
+          )}
         </Link>
 
         {/* collapse toggle — only visible on desktop */}
@@ -232,45 +256,63 @@ function Sidebar({
 
       {/* Bottom: AI + User Info */}
       <div
-        className="shrink-0 p-3 space-y-2"
+        className="shrink-0 p-3 space-y-3"
         style={{ borderTop: "1px solid var(--dash-border)" }}
       >
         {/* Ask AI button */}
         {!collapsed && (
           <button
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors"
+            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-medium transition-all duration-300 hover:shadow-sm hover:-translate-y-0.5"
             style={{
-              background: "rgba(245,158,11,0.1)",
+              background: "linear-gradient(135deg, rgba(245,158,11,0.1), rgba(239,68,68,0.05))",
               color: "#f59e0b",
               border: "1px solid rgba(245,158,11,0.2)",
             }}
           >
-            <span>✦</span>
-            <span>Ask LikeMind AI</span>
+            <span className="text-amber-500 text-sm">✦</span>
+            <span className="font-semibold tracking-wide">Ask LikeMind AI</span>
           </button>
         )}
 
-        {/* Avatar row */}
-        <div className="flex items-center gap-2 px-1 py-1">
-          <div
-            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
-            style={{ background: "linear-gradient(135deg, #f59e0b, #ef4444)", color: "#fff" }}
-          >
-            {avatarInitials}
-          </div>
-          {!collapsed && (
-            <div className="min-w-0">
-              <p className="text-xs font-semibold truncate" style={{ color: "var(--dash-text)" }}>
-                {displayName}
-              </p>
-              <p
-                className="text-[10px] truncate"
-                style={{ color: "var(--dash-muted)" }}
-              >
-                {displayRole}
-              </p>
+        {/* Avatar row & Logout */}
+        <div className="flex flex-col gap-1">
+          <div className="hover-dash-border-mix flex items-center gap-3 px-2 py-2 rounded-xl transition-colors cursor-pointer">
+            <div
+              className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 shadow-sm"
+              style={{ background: "linear-gradient(135deg, #f59e0b, #ef4444)", color: "#fff" }}
+            >
+              {avatarInitials}
             </div>
-          )}
+            {!collapsed && (
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold truncate" style={{ color: "var(--dash-text)" }}>
+                  {displayName}
+                </p>
+                <p
+                  className="text-[10px] uppercase tracking-wider font-medium truncate opacity-80"
+                  style={{ color: "var(--dash-muted)" }}
+                >
+                  {displayRole}
+                </p>
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={() => {
+              window.location.href = "/signin";
+            }}
+            className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+              collapsed ? "justify-center hover:bg-red-500/10" : "hover:bg-red-500/10"
+            }`}
+            style={{ color: "var(--dash-muted)" }}
+            title={collapsed ? "Logout" : undefined}
+          >
+            <span className="group-hover:text-red-500 transition-colors flex items-center justify-center">
+              <IconLogout />
+            </span>
+            {!collapsed && <span className="group-hover:text-red-500 transition-colors">Logout</span>}
+          </button>
         </div>
       </div>
 

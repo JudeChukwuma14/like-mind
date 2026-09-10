@@ -26,12 +26,7 @@ export function clearApiToken() {
   }
 }
 
-/**
- * Admin dashboard JWT, from /api/Auth/AdminLogin. Kept separate from
- * API_TOKEN_KEY above — the admin backend (NEXT_PUBLIC_ADMIN_API_BASE_URL)
- * is a different deployment/security domain from the member Kajola+ API,
- * so the two tokens must never be sent to each other's requests.
- */
+
 const ADMIN_API_TOKEN_KEY = "kajola_admin_api_token";
 
 export function getAdminApiToken(): string | null {

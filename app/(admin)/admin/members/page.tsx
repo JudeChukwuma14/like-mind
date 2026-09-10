@@ -180,7 +180,6 @@ export default function MembersPage() {
       const params = new URLSearchParams({ page: String(page), pageSize: String(PAGE_SIZE) });
       if (isActiveParam !== undefined) params.set("isActive", String(isActiveParam));
 
-      // Plain browsing uses /api/User; a typed search term uses /api/User/search.
       if (mode === "text") {
         params.set("q", search);
         const res = await adminApiFetch<ApiEnvelope<MemberPage>>(`/api/User/search?${params.toString()}`);
@@ -194,7 +193,6 @@ export default function MembersPage() {
   const result = data;
   const members = result?.items ?? [];
   const exactLookup = mode === "id" || mode === "email";
-  // SearchUsersByRole doesn't take isActive, so status filtering doesn't apply while a role is selected.
   const statusTabsDisabled = exactLookup || Boolean(roleId);
   const roles = rolesQuery.data ?? [];
   const selectedRoleName = roles.find((r) => r.id === roleId)?.name;

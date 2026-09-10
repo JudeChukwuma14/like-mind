@@ -1,9 +1,4 @@
-// Shared between the admin member-detail page and the member-facing
-// Profile page — both read/write the same /api/User/GetById and
-// /api/User/UpdateUserData/{userId} endpoints, confirmed against real
-// responses and the live swagger schema (EditUserDto and friends).
 
-// ─── View model (GET /api/User/GetById) ───────────────────────────────────
 
 export type BasicInfo = {
   firstName: string | null;
@@ -227,10 +222,7 @@ export function formatDateTime(iso: string | null | undefined): string {
   });
 }
 
-// ─── Edit model (PUT /api/User/UpdateUserData/{userId}) ───────────────────
-// Confirmed against the live swagger schema (EditUserDto). Field names and
-// casing (editcontactInfo, DeviceInfo) are exactly what the backend binds
-// on — not a typo to "fix".
+
 
 export const GENDERS = ["Female", "Male", "NonBinary", "PreferNotToSay"] as const;
 export type Gender = (typeof GENDERS)[number];
@@ -307,13 +299,7 @@ export type EditUserDto = {
   title: string;
 };
 
-/**
- * UpdateUserData replaces the whole DTO in one PUT (confirmed: everything
- * in EditUserDto is required except a few nullable leaf fields) — there's
- * no partial-patch endpoint. So editing one section still means sending
- * the full body, built from what's currently loaded plus the section the
- * user actually changed.
- */
+
 export function buildEditUserDto(
   current: MemberDetail,
   overrides: Partial<{

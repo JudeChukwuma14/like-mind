@@ -23,6 +23,7 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  MessageSquare,
   type LucideIcon,
 } from "lucide-react";
 import { ThemeToggle } from "@/app/components/ThemeToggle";
@@ -61,6 +62,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
       { href: "/admin/loans", label: "Loans", icon: HandCoins, badge: 3 },
       { href: "/admin/investments", label: "Investment", icon: TrendingUp },
       { href: "/admin/withdrawals", label: "Withdrawals", icon: ArrowUpRight, badge: 5 },
+      { href: "/admin/contacts", label: "Contact Messages", icon: MessageSquare },
     ],
   },
   {

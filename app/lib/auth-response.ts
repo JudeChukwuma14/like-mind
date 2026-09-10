@@ -2,19 +2,7 @@ function looksLikeJwt(value: string): boolean {
   return value.split(".").length === 3;
 }
 
-/**
- * Every login/verify-2fa endpoint on this backend shares the outer
- * envelope `{ success, message, data, statusCode, errors, timestamp,
- * correlationId }`, but `data` itself varies by endpoint — confirmed
- * against real responses:
- *  - Login/AdminLogin:          data: { token, requires2FA }  (an object)
- *  - Verify-2fa/AdminVerify2fa: data: "<jwt>"                 (a bare string)
- * Also checks a couple of nearby shapes (bare top-level `{ token }`,
- * `accessToken` instead of `token`) rather than hard-failing if a future
- * response varies slightly. Shared by both AdminAuthProvider and the
- * member-side useMemberLogin hook, since both backends use the same
- * conventions.
- */
+
 export function extractAuthToken(raw: unknown): string | null {
   if (!raw || typeof raw !== "object") return null;
   const obj = raw as Record<string, unknown>;

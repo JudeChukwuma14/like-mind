@@ -45,7 +45,8 @@ export type UpdateRolePermissionsPayload = {
   permissionCodes: string[];
 };
 
-export type AssignRolePayload = {
+/** Payload for the maker step of role assignment. */
+export type InitiateRoleAssignmentPayload = {
   userId: string;
   roleId: string;
   inheritRolePermissions: boolean;
@@ -56,10 +57,17 @@ export type SetRoleInheritancePayload = {
   inheritRolePermissions: boolean;
 };
 
-export type SetUserPermissionPayload = {
+/** Payload for the maker step of a permission change (grant or revoke). */
+export type InitiateUserPermissionChangePayload = {
   userId: string;
   permissionCode: string;
+  /** true = grant this permission; false = revoke it */
   isGranted: boolean;
+};
+
+/** Payload for the checker approve/reject steps. */
+export type ApprovalNotePayload = {
+  note: string;
 };
 
 export type RemoveUserOverridePayload = {
@@ -112,13 +120,101 @@ export async function updateRolePermissions(
   });
 }
 
-/** POST /api/admin/authorization/users/assign-role */
-export async function assignRole(payload: AssignRolePayload): Promise<unknown> {
-  return adminApiFetch<unknown>("/api/admin/authorization/users/assign-role", {
-    method: "POST",
-    body: payload,
-  });
+// ─── Maker-checker: Role assignment ──────────────────────────────────────────
+
+/**
+ * MAKER — POST /api/admin/authorization/users/assign-role/initiate
+ *
+ * Initiates a role-assignment request. The user does NOT immediately receive
+ * the role; a checker must approve or reject it.
+ */
+export async function initiateRoleAssignment(
+  payload: InitiateRoleAssignmentPayload,
+): Promise<unknown> {
+  return adminApiFetch<unknown>(
+    "/api/admin/authorization/users/assign-role/initiate",
+    { method: "POST", body: payload },
+  );
 }
+
+/**
+ * CHECKER — POST /api/admin/authorization/users/assign-role/{userId}/approve
+ *
+ * Approves the pending role-assignment request for the given user.
+ */
+export async function approveRoleAssignment(
+  userId: string,
+  note: string,
+): Promise<unknown> {
+  return adminApiFetch<unknown>(
+    `/api/admin/authorization/users/assign-role/${encodeURIComponent(userId)}/approve`,
+    { method: "POST", body: { note } satisfies ApprovalNotePayload },
+  );
+}
+
+/**
+ * CHECKER — POST /api/admin/authorization/users/assign-role/{userId}/reject
+ *
+ * Rejects the pending role-assignment request for the given user.
+ */
+export async function rejectRoleAssignment(
+  userId: string,
+  note: string,
+): Promise<unknown> {
+  return adminApiFetch<unknown>(
+    `/api/admin/authorization/users/assign-role/${encodeURIComponent(userId)}/reject`,
+    { method: "POST", body: { note } satisfies ApprovalNotePayload },
+  );
+}
+
+// ─── Maker-checker: User permission change ───────────────────────────────────
+
+/**
+ * MAKER — POST /api/admin/authorization/users/set-permission/initiate
+ *
+ * Initiates a permission-change request (grant or revoke).  The permission is
+ * NOT immediately applied; a checker must approve or reject it.
+ */
+export async function initiateUserPermissionChange(
+  payload: InitiateUserPermissionChangePayload,
+): Promise<unknown> {
+  return adminApiFetch<unknown>(
+    "/api/admin/authorization/users/set-permission/initiate",
+    { method: "POST", body: payload },
+  );
+}
+
+/**
+ * CHECKER — POST /api/admin/authorization/users/set-permission/{userId}/approve
+ *
+ * Approves the pending permission-change request for the given user.
+ */
+export async function approveUserPermissionChange(
+  userId: string,
+  note: string,
+): Promise<unknown> {
+  return adminApiFetch<unknown>(
+    `/api/admin/authorization/users/set-permission/${encodeURIComponent(userId)}/approve`,
+    { method: "POST", body: { note } satisfies ApprovalNotePayload },
+  );
+}
+
+/**
+ * CHECKER — POST /api/admin/authorization/users/set-permission/{userId}/reject
+ *
+ * Rejects the pending permission-change request for the given user.
+ */
+export async function rejectUserPermissionChange(
+  userId: string,
+  note: string,
+): Promise<unknown> {
+  return adminApiFetch<unknown>(
+    `/api/admin/authorization/users/set-permission/${encodeURIComponent(userId)}/reject`,
+    { method: "POST", body: { note } satisfies ApprovalNotePayload },
+  );
+}
+
+// ─── Unchanged endpoints ──────────────────────────────────────────────────────
 
 /** POST /api/admin/authorization/users/set-role-inheritance */
 export async function setRoleInheritance(
@@ -130,17 +226,13 @@ export async function setRoleInheritance(
   );
 }
 
-/** POST /api/admin/authorization/users/set-permission */
-export async function setUserPermission(
-  payload: SetUserPermissionPayload,
-): Promise<unknown> {
-  return adminApiFetch<unknown>(
-    "/api/admin/authorization/users/set-permission",
-    { method: "POST", body: payload },
-  );
-}
-
-/** POST /api/admin/authorization/users/remove-override */
+/**
+ * POST /api/admin/authorization/users/remove-override
+ *
+ * Removes a user-level permission override (grant or revoke).
+ * No maker-checker variant has been provided for this endpoint — it continues
+ * to apply immediately.
+ */
 export async function removeUserOverride(
   payload: RemoveUserOverridePayload,
 ): Promise<unknown> {

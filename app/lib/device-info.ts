@@ -41,13 +41,7 @@ export async function computeFingerprint(): Promise<string> {
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-/**
- * The browser has no API for its own public IP — the only way to get it
- * client-side is asking a third party that can see the request's source
- * address. ipify is free, keyless, and widely used for exactly this.
- * Falls back to "" on failure (offline, blocked, service down) rather than
- * throwing, since this shouldn't be able to block the whole submission.
- */
+
 async function fetchClientIp(): Promise<string> {
   try {
     const controller = new AbortController();
