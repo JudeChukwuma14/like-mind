@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Search, X } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
+import { ChevronLeft, ChevronRight, Search, X, Upload, Loader2, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
 import { adminApiFetch, getApiErrorMessage, type ApiEnvelope } from "@/app/lib/api-client";
+import { bulkImportUsers, type BulkImportResult } from "@/app/lib/user-admin-api";
 
 // Confirmed against the live /api/User swagger schema (UserListItemDto /
 // UserListItemDtoPagedResult) — this is the full set of fields the backend
@@ -16,6 +18,7 @@ type MemberListItem = {
   lastName: string | null;
   isActive: boolean;
   createdAt: string;
+  roleName?: string | null;
 };
 
 type MemberPage = {
@@ -118,11 +121,41 @@ function pluckSingleResult(raw: unknown): MemberListItem | null {
 }
 
 export default function MembersPage() {
+  const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState<StatusFilter>("all");
   const [roleId, setRoleId] = useState("");
+  const [importResult, setImportResult] = useState<BulkImportResult | null>(null);
+  const [showImportResult, setShowImportResult] = useState(false);
+
+  const bulkImport = useMutation({
+    mutationFn: (file: File) => bulkImportUsers(file),
+    onSuccess: (res) => {
+      const result = res.data ?? {};
+      setImportResult(result);
+      setShowImportResult(true);
+      // Refresh member list
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      toast.success("Bulk import completed.");
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err)),
+  });
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    if (ext !== "csv" && ext !== "xlsx") {
+      toast.error("Please select a .csv or .xlsx file.");
+      e.target.value = "";
+      return;
+    }
+    bulkImport.mutate(file);
+    e.target.value = "";
+  };
 
   // Debounce so exact-lookup/search calls don't fire on every keystroke.
   useEffect(() => {
@@ -204,6 +237,102 @@ export default function MembersPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-10">
+      {/* ── Bulk Import Result Modal ── */}
+      {showImportResult && importResult && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
+        >
+          <div
+            className="w-full max-w-sm rounded-3xl border p-6 space-y-4 shadow-2xl"
+            style={{ background: "var(--admin-surface)", borderColor: "var(--admin-border)" }}
+          >
+            <div className="flex items-start gap-3">
+              <div
+                className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
+                style={{ background: "#dcfce7" }}
+              >
+                <CheckCircle2 className="w-5 h-5" style={{ color: "#16a34a" }} />
+              </div>
+              <div>
+                <h2 className="text-base font-bold" style={{ color: "var(--admin-text)" }}>Import Complete</h2>
+                <p className="text-xs mt-0.5" style={{ color: "var(--admin-muted)" }}>Bulk user import finished.</p>
+              </div>
+            </div>
+
+            <div
+              className="rounded-2xl border p-4 space-y-2 text-xs"
+              style={{ background: "var(--admin-bg)", borderColor: "var(--admin-border)" }}
+            >
+              {importResult.totalRows !== undefined && importResult.totalRows !== null && (
+                <div className="flex justify-between gap-4">
+                  <span style={{ color: "var(--admin-muted)" }}>Total rows</span>
+                  <span className="font-semibold" style={{ color: "var(--admin-text)" }}>{importResult.totalRows}</span>
+                </div>
+              )}
+              {importResult.created !== undefined && importResult.created !== null && (
+                <div className="flex justify-between gap-4">
+                  <span style={{ color: "var(--admin-muted)" }}>Created</span>
+                  <span className="font-bold" style={{ color: "#166534" }}>{importResult.created}</span>
+                </div>
+              )}
+              {importResult.skipped !== undefined && importResult.skipped !== null && (
+                <div className="flex justify-between gap-4">
+                  <span style={{ color: "var(--admin-muted)" }}>Skipped (duplicate email)</span>
+                  <span className="font-bold" style={{ color: "#d97706" }}>{importResult.skipped}</span>
+                </div>
+              )}
+              {importResult.failed !== undefined && importResult.failed !== null && (
+                <div className="flex justify-between gap-4">
+                  <span style={{ color: "var(--admin-muted)" }}>Failed validation</span>
+                  <span className="font-bold" style={{ color: "#ef4444" }}>{importResult.failed}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Error details */}
+            {importResult.errors && importResult.errors.length > 0 && (
+              <div className="space-y-1.5">
+                <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "var(--admin-muted)" }}>
+                  Validation Errors
+                </p>
+                <ul className="max-h-32 overflow-y-auto space-y-1">
+                  {importResult.errors.map((e, i) => (
+                    <li key={i} className="flex gap-2 items-start text-xs">
+                      <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: "#ef4444" }} />
+                      <span style={{ color: "var(--admin-text)" }}>
+                        {e.row !== null && e.row !== undefined ? `Row ${e.row}: ` : ""}{e.message}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <div className="flex justify-end">
+              <button
+                id="bulk-import-close-btn"
+                type="button"
+                onClick={() => setShowImportResult(false)}
+                className="px-5 py-2 rounded-xl text-xs font-semibold transition-all hover:opacity-90"
+                style={{ background: "var(--admin-text)", color: "var(--admin-bg)" }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
+        className="hidden"
+        onChange={handleFileSelect}
+      />
+
       {/* Header */}
       <div>
         <p
@@ -212,14 +341,36 @@ export default function MembersPage() {
         >
           Directory
         </p>
-        <h1 className="text-4xl font-bold tracking-tight" style={{ color: "var(--admin-text)" }}>
-          Members
-        </h1>
-        {result && (
-          <p className="text-sm mt-1" style={{ color: "var(--admin-muted)" }}>
-            {result.totalCount} member{result.totalCount === 1 ? "" : "s"}
-          </p>
-        )}
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <h1 className="text-4xl font-bold tracking-tight" style={{ color: "var(--admin-text)" }}>
+              Members
+            </h1>
+            {result && (
+              <p className="text-sm mt-1" style={{ color: "var(--admin-muted)" }}>
+                {result.totalCount} member{result.totalCount === 1 ? "" : "s"}
+              </p>
+            )}
+          </div>
+          <button
+            id="members-bulk-import-btn"
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={bulkImport.isPending}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border transition-all hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+            style={{
+              background: "var(--admin-surface)",
+              borderColor: "var(--admin-border)",
+              color: "var(--admin-text)",
+            }}
+          >
+            {bulkImport.isPending ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Importing…</>
+            ) : (
+              <><Upload className="w-4 h-4" /> Bulk Import</>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Search + status tabs */}
@@ -303,9 +454,10 @@ export default function MembersPage() {
           className="grid grid-cols-12 gap-4 px-6 py-4 border-b text-[10px] font-bold tracking-widest uppercase"
           style={{ borderColor: "var(--admin-border)", color: "var(--admin-muted)" }}
         >
-          <div className="col-span-6 md:col-span-5">Member</div>
-          <div className="col-span-3 hidden md:block">Joined</div>
-          <div className="col-span-6 md:col-span-4 text-right">Status</div>
+          <div className="col-span-6 md:col-span-4">Member</div>
+          <div className="col-span-3 hidden md:block">Role</div>
+          <div className="col-span-2 hidden md:block">Joined</div>
+          <div className="col-span-6 md:col-span-3 text-right">Status</div>
         </div>
 
         {isLoading && (
@@ -333,7 +485,7 @@ export default function MembersPage() {
               key={m.id}
               className="hover-admin-border grid grid-cols-12 gap-4 items-center px-6 py-4 transition-colors"
             >
-              <div className="col-span-6 md:col-span-5 flex items-center gap-3 min-w-0">
+              <div className="col-span-6 md:col-span-4 flex items-center gap-3 min-w-0">
                 <div
                   className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
                   style={{ background: "var(--admin-primary)", color: "#000" }}
@@ -350,11 +502,15 @@ export default function MembersPage() {
                 </div>
               </div>
 
-              <div className="col-span-3 hidden md:block text-sm" style={{ color: "var(--admin-muted)" }}>
+              <div className="col-span-3 hidden md:block text-sm truncate capitalize" style={{ color: "var(--admin-muted)" }}>
+                {m.roleName ? m.roleName.replace(/([A-Z])/g, ' $1').trim() : "Member"}
+              </div>
+
+              <div className="col-span-2 hidden md:block text-sm" style={{ color: "var(--admin-muted)" }}>
                 {formatDate(m.createdAt)}
               </div>
 
-              <div className="col-span-6 md:col-span-4 flex items-center justify-end gap-3">
+              <div className="col-span-6 md:col-span-3 flex items-center justify-end gap-3">
                 <span
                   className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase"
                   style={

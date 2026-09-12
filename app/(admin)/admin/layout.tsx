@@ -24,6 +24,7 @@ import {
   ChevronLeft,
   ChevronRight,
   MessageSquare,
+  ClipboardCheck,
   type LucideIcon,
 } from "lucide-react";
 import { ThemeToggle } from "@/app/components/ThemeToggle";
@@ -55,13 +56,14 @@ const navGroups: { label: string; items: NavItem[] }[] = [
   {
     label: "MANAGEMENT",
     items: [
-      { href: "/admin/applications", label: "Applications", icon: FileText, badge: 7 },
+      { href: "/admin/applications", label: "Applications", icon: FileText },
       { href: "/admin/members", label: "Members", icon: Users },
+      { href: "/admin/approvals", label: "Approvals", icon: ClipboardCheck },
       { href: "/admin/roles", label: "Roles", icon: KeyRound },
-      { href: "/admin/contributions", label: "Contributions", icon: PiggyBank, badge: 12 },
-      { href: "/admin/loans", label: "Loans", icon: HandCoins, badge: 3 },
+      { href: "/admin/contributions", label: "Contributions", icon: PiggyBank },
+      { href: "/admin/loans", label: "Loans", icon: HandCoins },
       { href: "/admin/investments", label: "Investment", icon: TrendingUp },
-      { href: "/admin/withdrawals", label: "Withdrawals", icon: ArrowUpRight, badge: 5 },
+      { href: "/admin/withdrawals", label: "Withdrawals", icon: ArrowUpRight },
       { href: "/admin/contacts", label: "Contact Messages", icon: MessageSquare },
     ],
   },

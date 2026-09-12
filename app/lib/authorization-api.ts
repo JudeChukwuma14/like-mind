@@ -40,10 +40,6 @@ export type UserAccess = {
 
 // ─── Payload types ────────────────────────────────────────────────────────────
 
-export type UpdateRolePermissionsPayload = {
-  roleId: string;
-  permissionCodes: string[];
-};
 
 /** Payload for the maker step of role assignment. */
 export type InitiateRoleAssignmentPayload = {
@@ -75,6 +71,11 @@ export type RemoveUserOverridePayload = {
   permissionCode: string;
 };
 
+export type InitiateSetRolePermissionsPayload = {
+  userId: string;
+  permissionCodes: string[];
+};
+
 // ─── API functions ────────────────────────────────────────────────────────────
 
 /** GET /api/admin/authorization/GetAllRoles */
@@ -95,11 +96,15 @@ export async function getAllPermissions(): Promise<Permission[]> {
 
 /** GET /api/admin/authorization/roles/{roleId}/permissions */
 export async function getRolePermissions(roleId: string): Promise<string[]> {
-  const res = await adminApiFetch<ApiEnvelope<string[]>>(
+  const res = await adminApiFetch<ApiEnvelope<any[]>>(
     `/api/admin/authorization/roles/${encodeURIComponent(roleId)}/permissions`,
   );
-  // Backend may return bare strings (codes) or nothing — normalise to string[].
-  return (res.data ?? []).map((p) => (typeof p === "string" ? p : String(p)));
+  // Backend may return bare strings (codes), full Permission objects, or nothing.
+  return (res.data ?? []).map((p) => {
+    if (typeof p === "string") return p;
+    if (p && typeof p === "object" && typeof p.code === "string") return p.code;
+    return String(p);
+  });
 }
 
 /** GET /api/admin/authorization/users/{userId}/access */
@@ -110,15 +115,6 @@ export async function getUserAccess(userId: string): Promise<UserAccess> {
   return res.data;
 }
 
-/** PUT /api/admin/authorization/roles/permissions */
-export async function updateRolePermissions(
-  payload: UpdateRolePermissionsPayload,
-): Promise<unknown> {
-  return adminApiFetch<unknown>("/api/admin/authorization/roles/permissions", {
-    method: "PUT",
-    body: payload,
-  });
-}
 
 // ─── Maker-checker: Role assignment ──────────────────────────────────────────
 
@@ -130,8 +126,8 @@ export async function updateRolePermissions(
  */
 export async function initiateRoleAssignment(
   payload: InitiateRoleAssignmentPayload,
-): Promise<unknown> {
-  return adminApiFetch<unknown>(
+): Promise<ApiEnvelope<unknown>> {
+  return adminApiFetch<ApiEnvelope<unknown>>(
     "/api/admin/authorization/users/assign-role/initiate",
     { method: "POST", body: payload },
   );
@@ -177,8 +173,8 @@ export async function rejectRoleAssignment(
  */
 export async function initiateUserPermissionChange(
   payload: InitiateUserPermissionChangePayload,
-): Promise<unknown> {
-  return adminApiFetch<unknown>(
+): Promise<ApiEnvelope<unknown>> {
+  return adminApiFetch<ApiEnvelope<unknown>>(
     "/api/admin/authorization/users/set-permission/initiate",
     { method: "POST", body: payload },
   );
@@ -210,6 +206,37 @@ export async function rejectUserPermissionChange(
 ): Promise<unknown> {
   return adminApiFetch<unknown>(
     `/api/admin/authorization/users/set-permission/${encodeURIComponent(userId)}/reject`,
+    { method: "POST", body: { note } satisfies ApprovalNotePayload },
+  );
+}
+
+// ─── Set Role Permissions ─────────────────────────────────────────────────────
+
+/**
+ * MAKER — POST /api/admin/authorization/users/set-role-permissions/initiate
+ *
+ * Initiates setting specific handpicked permissions under a role assignment.
+ */
+export async function initiateSetRolePermissions(
+  payload: InitiateSetRolePermissionsPayload,
+): Promise<ApiEnvelope<unknown>> {
+  return adminApiFetch<ApiEnvelope<unknown>>(
+    "/api/admin/authorization/users/set-role-permissions/initiate",
+    { method: "POST", body: payload },
+  );
+}
+
+/**
+ * CHECKER — POST /api/admin/authorization/users/set-role-permissions/{userId}/approve
+ *
+ * Approves a pending request to set handpicked role permissions.
+ */
+export async function approveSetRolePermissions(
+  userId: string,
+  note: string,
+): Promise<ApiEnvelope<unknown>> {
+  return adminApiFetch<ApiEnvelope<unknown>>(
+    `/api/admin/authorization/users/set-role-permissions/${encodeURIComponent(userId)}/approve`,
     { method: "POST", body: { note } satisfies ApprovalNotePayload },
   );
 }

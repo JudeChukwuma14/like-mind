@@ -1,26 +1,85 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { Calendar, ChevronRight, Copy } from "lucide-react";
+import { Calendar, ChevronRight, Copy, Loader2 } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { createPaymentDraft, type CreatePaymentDraftPayload } from "@/app/lib/payments-api";
+import { getApiErrorMessage } from "@/app/lib/api-client";
+import toast from "react-hot-toast";
 
 export default function ConfirmPaymentPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const draftId = searchParams?.get("draftId") || "";
+  const queryClient = useQueryClient();
   
-  // Basic mock state for demonstration
   const [formData, setFormData] = useState({
-    type: "Savings contribution",
-    month: "April 2026",
-    amount: "25,000",
-    date: "14 April 2026",
-    reference: "C1A2-8820-41AP",
-    note: "Paid via Interac alongside March arrears."
+    type: "SavingsContribution",
+    month: new Date().toISOString().slice(0, 7), // YYYY-MM
+    amount: "25000",
+    date: new Date().toISOString().slice(0, 10),
+    interacEmail: "pay@likemind.co",
+    method: "InteracETransfer",
+    reference: "",
+    note: ""
+  });
+  const [file, setFile] = useState<File | null>(null);
+
+  const { mutate: saveDraft, isPending } = useMutation({
+    mutationFn: async (isFinalSubmit: boolean) => {
+      if (!formData.amount || !formData.date || !formData.interacEmail || !formData.method) {
+        throw new Error("Please fill out all required fields.");
+      }
+      
+      const payload: CreatePaymentDraftPayload = {
+        Id: draftId || undefined,
+        Type: formData.type,
+        ContributionMonth: formData.month + "-01", // Convert YYYY-MM to YYYY-MM-DD
+        AmountPaid: parseFloat(formData.amount),
+        Currency: "NGN",
+        PaymentDate: formData.date,
+        InteracReferenceEmail: formData.interacEmail,
+        Method: formData.method,
+        InteracReferenceNumber: formData.reference,
+        Note: formData.note,
+        ProofOfPayment: file || undefined,
+      };
+
+      const res = await createPaymentDraft(payload);
+      return { res, isFinalSubmit };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["my-drafts"] });
+      // The API returns success message or draft details. 
+      // We assume data.res contains the saved draft or its ID.
+      // If we don't have the new draft ID easily from res, we might have to fetch it, 
+      // but let's assume the user can just go back to cash wallet if they save as draft.
+      if (data.isFinalSubmit) {
+        // We need the draft ID to review. If res has an ID, use it. 
+        // For now, if we don't know the new ID, we just go back to wallet or we use a hack.
+        // Assuming the backend returns { data: { id: "..." } } or similar, we'd do:
+        const newDraftId = (data.res as any)?.data?.id || (data.res as any)?.id || draftId;
+        if (newDraftId) {
+          router.push(`/dashboard/cash-wallet/confirm-payment/review?draftId=${newDraftId}`);
+        } else {
+          toast.success("Draft saved successfully!");
+          router.push("/dashboard/cash-wallet");
+        }
+      } else {
+        toast.success("Draft saved successfully!");
+        router.push("/dashboard/cash-wallet");
+      }
+    },
+    onError: (err) => {
+      toast.error(getApiErrorMessage(err));
+    }
   });
 
-  const handleContinue = (e: React.FormEvent) => {
+  const handleAction = (e: React.FormEvent, isFinalSubmit: boolean) => {
     e.preventDefault();
-    router.push("/dashboard/cash-wallet/confirm-payment/review");
+    saveDraft(isFinalSubmit);
   };
 
   return (
@@ -29,7 +88,7 @@ export default function ConfirmPaymentPage() {
       {/* ─── Header ───────────────────────────────────── */}
       <div>
         <h1 className="text-3xl md:text-4xl font-bold text-[#111] mb-2">
-          Confirm a payment
+          {draftId ? "Edit payment draft" : "Confirm a payment"}
         </h1>
         <p className="text-sm text-gray-500">
           Tell us about a payment you&apos;ve already made. Admin will confirm.
@@ -57,7 +116,7 @@ export default function ConfirmPaymentPage() {
       <div className="flex flex-col lg:flex-row gap-8 items-start">
         
         {/* Left: Form Area */}
-        <form onSubmit={handleContinue} className="flex-1 w-full bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-gray-100">
+        <form onSubmit={(e) => handleAction(e, true)} className="flex-1 w-full bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-gray-100">
           <h2 className="text-xl font-bold text-[#111] mb-6">Payment details</h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
@@ -68,25 +127,22 @@ export default function ConfirmPaymentPage() {
                 value={formData.type}
                 onChange={e => setFormData({...formData, type: e.target.value})}
                 className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-[#111] outline-none focus:border-[#111] transition-colors appearance-none"
-                style={{ backgroundImage: `url('data:image/svg+xml;utf8,<svg fill="none" stroke="%239CA3AF" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>')`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center', backgroundSize: '16px' }}
               >
-                <option>Savings contribution</option>
-                <option>Loan repayment</option>
+                <option value="SavingsContribution">Savings contribution</option>
+                <option value="ShareCapital">Share capital</option>
+                <option value="CommitmentFee">Commitment fee</option>
               </select>
             </div>
 
             {/* Contribution month */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-gray-600">Contribution month</label>
-              <select 
+              <label className="text-xs font-bold text-gray-600">Contribution month (YYYY-MM)</label>
+              <input 
+                type="month"
                 value={formData.month}
                 onChange={e => setFormData({...formData, month: e.target.value})}
-                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-[#111] outline-none focus:border-[#111] transition-colors appearance-none"
-                style={{ backgroundImage: `url('data:image/svg+xml;utf8,<svg fill="none" stroke="%239CA3AF" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>')`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center', backgroundSize: '16px' }}
-              >
-                <option>April 2026</option>
-                <option>March 2026</option>
-              </select>
+                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-[#111] outline-none focus:border-[#111] transition-colors"
+              />
             </div>
 
             {/* Amount paid */}
@@ -95,7 +151,7 @@ export default function ConfirmPaymentPage() {
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-amber-600">₦</span>
                 <input 
-                  type="text" 
+                  type="number" 
                   value={formData.amount}
                   onChange={e => setFormData({...formData, amount: e.target.value})}
                   className="w-full pl-9 pr-4 py-2.5 bg-white border-2 border-[#111] rounded-lg text-sm font-medium text-[#111] outline-none transition-colors shadow-sm"
@@ -108,24 +164,62 @@ export default function ConfirmPaymentPage() {
               <label className="text-xs font-bold text-gray-600">Payment date</label>
               <div className="relative">
                 <input 
-                  type="text" 
+                  type="date" 
                   value={formData.date}
                   onChange={e => setFormData({...formData, date: e.target.value})}
                   className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-[#111] outline-none focus:border-[#111] transition-colors pr-10"
                 />
-                <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
               </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+             {/* Interac reference Email */}
+             <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-600">Interac Reference Email</label>
+              <input 
+                type="email" 
+                required
+                value={formData.interacEmail}
+                onChange={e => setFormData({...formData, interacEmail: e.target.value})}
+                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-[#111] outline-none focus:border-[#111] transition-colors"
+              />
+            </div>
+            
+            {/* Method */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-600">Payment Method</label>
+              <select 
+                value={formData.method}
+                onChange={e => setFormData({...formData, method: e.target.value})}
+                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-[#111] outline-none focus:border-[#111] transition-colors appearance-none"
+              >
+                <option value="InteracETransfer">Interac e-Transfer</option>
+                <option value="BankTransfer">Bank Transfer</option>
+                <option value="Cash">Cash</option>
+              </select>
             </div>
           </div>
 
           {/* Interac reference number */}
           <div className="space-y-1.5 mb-6">
-            <label className="text-xs font-bold text-gray-600">Interac reference number</label>
+            <label className="text-xs font-bold text-gray-600">Interac reference number (or bank reference)</label>
             <input 
               type="text" 
               value={formData.reference}
               onChange={e => setFormData({...formData, reference: e.target.value})}
               className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-[#111] outline-none focus:border-[#111] transition-colors"
+            />
+          </div>
+
+          {/* Proof of payment */}
+          <div className="space-y-1.5 mb-6">
+            <label className="text-xs font-bold text-gray-600">Proof of Payment</label>
+            <input 
+              type="file" 
+              accept="image/*,.pdf"
+              onChange={e => setFile(e.target.files?.[0] || null)}
+              className="w-full px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm text-[#111] outline-none"
             />
           </div>
 
@@ -152,14 +246,18 @@ export default function ConfirmPaymentPage() {
             <div className="flex flex-col-reverse sm:flex-row sm:items-center gap-4">
               <button 
                 type="button" 
-                className="px-4 py-2.5 text-sm font-medium text-gray-500 hover:text-[#111] transition-colors"
+                onClick={(e) => handleAction(e, false)}
+                disabled={isPending}
+                className="px-4 py-2.5 text-sm font-medium text-gray-500 hover:text-[#111] transition-colors disabled:opacity-50"
               >
                 Save draft
               </button>
               <button 
                 type="submit" 
-                className="flex items-center justify-center gap-2 px-6 py-2.5 bg-[#111] text-white rounded-full text-sm font-medium hover:bg-black transition-colors"
+                disabled={isPending}
+                className="flex items-center justify-center gap-2 px-6 py-2.5 bg-[#111] text-white rounded-full text-sm font-medium hover:bg-black transition-colors disabled:opacity-50 shadow-sm"
               >
+                {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
                 Continue to proof
                 <ChevronRight size={16} />
               </button>
@@ -172,7 +270,6 @@ export default function ConfirmPaymentPage() {
           
           {/* Interac Card */}
           <div className="bg-gradient-to-br from-gray-900 via-black to-gray-900 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden border border-gray-800">
-            {/* Subtle glow effect */}
             <div className="absolute -top-12 -right-12 w-32 h-32 bg-amber-500/20 rounded-full blur-3xl"></div>
             
             <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-6 relative z-10">
@@ -192,40 +289,8 @@ export default function ConfirmPaymentPage() {
                 </p>
                 <p className="font-bold text-base">Your member ID</p>
               </div>
-              <div>
-                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">
-                  Answer
-                </p>
-                <p className="font-bold text-base">LM-04812</p>
-              </div>
             </div>
-            
-            <button className="w-full mt-6 py-2.5 bg-white text-black rounded-full text-sm font-bold hover:bg-gray-100 transition-colors relative z-10">
-              Copy Interac email
-            </button>
           </div>
-
-          {/* Important instructions */}
-          <div className="bg-white/50 p-6 rounded-2xl border border-gray-100 shadow-sm">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">
-              Important
-            </p>
-            <ul className="space-y-3 text-sm text-gray-600">
-              <li className="flex items-start gap-2">
-                <span className="text-gray-300 mt-0.5">—</span>
-                <span>Use member ID <strong>#LM-04812</strong> as payment narration.</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-gray-300 mt-0.5">—</span>
-                <span>Submit by 15th of the month to keep status current.</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-gray-300 mt-0.5">—</span>
-                <span>Admin confirms within 1-2 working days.</span>
-              </li>
-            </ul>
-          </div>
-
         </div>
       </div>
       

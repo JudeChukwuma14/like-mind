@@ -2,10 +2,11 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { ThemeToggle } from "@/app/components/ThemeToggle";
-import { useCurrentUser } from "@/app/lib/useCurrentUser";
+import { UserAuthProvider, useUserAuth } from "@/app/providers/UserAuthProvider";
+import { useRequireUserAuth } from "./useUserGuard";
 
 /** "Member" claim role strings arrive as-is (e.g. "Member"); this just guards odd casing like "MEMBER". */
 function humanizeRole(role: string): string {
@@ -130,10 +131,16 @@ function Sidebar({
   onMobileClose: () => void;
 }) {
   const pathname = usePathname();
-  const user = useCurrentUser();
+  const router = useRouter();
+  const { user, logout } = useUserAuth();
   const displayName = user?.name || user?.email || "Member";
   const displayRole = user?.role ? humanizeRole(user.role) : "Member";
   const avatarInitials = initialsFor(displayName);
+
+  const handleLogout = () => {
+    logout();
+    router.push("/signin");
+  };
 
   /* Close mobile menu on route change */
   useEffect(() => {
@@ -299,14 +306,13 @@ function Sidebar({
           </div>
 
           <button
-            onClick={() => {
-              window.location.href = "/signin";
-            }}
+            onClick={handleLogout}
             className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
               collapsed ? "justify-center hover:bg-red-500/10" : "hover:bg-red-500/10"
             }`}
             style={{ color: "var(--dash-muted)" }}
             title={collapsed ? "Logout" : undefined}
+            aria-label="Logout"
           >
             <span className="group-hover:text-red-500 transition-colors flex items-center justify-center">
               <IconLogout />
@@ -375,7 +381,7 @@ function Topbar({
   onMobileToggle: () => void;
 }) {
   const pathname = usePathname();
-  const user = useCurrentUser();
+  const { user } = useUserAuth();
   const avatarInitials = initialsFor(user?.name || user?.email || "Member");
 
   /* Derive page title and category from pathname */
@@ -502,15 +508,16 @@ function Topbar({
 }
 
 /* ─── Layout ────────────────────────────────────────────────── */
-export default function UserDashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function UserDashboardInner({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { isLoading, isAuthenticated } = useRequireUserAuth();
 
   const sidebarWidth = collapsed ? 72 : 220;
+
+  // While auth initialises (or after a redirect fires) render nothing to
+  // prevent flashing protected content to unauthenticated users.
+  if (isLoading || !isAuthenticated) return null;
 
   return (
     <div
@@ -556,5 +563,13 @@ export default function UserDashboardLayout({
         </div>
       </main>
     </div>
+  );
+}
+
+export default function UserDashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <UserAuthProvider>
+      <UserDashboardInner>{children}</UserDashboardInner>
+    </UserAuthProvider>
   );
 }

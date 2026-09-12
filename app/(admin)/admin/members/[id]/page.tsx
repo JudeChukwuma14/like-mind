@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
@@ -28,7 +28,11 @@ import {
   XCircle,
 } from "lucide-react";
 import { adminApiFetch, getApiErrorMessage } from "@/app/lib/api-client";
-import { pluckMember, formatDate, formatDateTime } from "@/app/lib/member-profile";
+import {
+  pluckMember,
+  formatDate,
+  formatDateTime,
+} from "@/app/lib/member-profile";
 import {
   getAllRoles,
   getAllPermissions,
@@ -41,15 +45,37 @@ import {
   initiateUserPermissionChange,
   approveUserPermissionChange,
   rejectUserPermissionChange,
+  initiateSetRolePermissions,
 } from "@/app/lib/authorization-api";
+import {
+  initiateUserActivation,
+  approveUserActivation,
+  rejectUserActivation,
+  initiateUserDeactivation,
+  approveUserDeactivation,
+  rejectUserDeactivation,
+  activateStaff,
+} from "@/app/lib/user-admin-api";
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function SectionHeading({ icon: Icon, label }: { icon: React.ElementType; label: string }) {
+function SectionHeading({
+  icon: Icon,
+  label,
+}: {
+  icon: React.ElementType;
+  label: string;
+}) {
   return (
     <div className="flex items-center gap-2 mb-4">
-      <Icon className="w-4 h-4 shrink-0" style={{ color: "var(--admin-primary)" }} />
-      <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "var(--admin-muted)" }}>
+      <Icon
+        className="w-4 h-4 shrink-0"
+        style={{ color: "var(--admin-primary)" }}
+      />
+      <p
+        className="text-[10px] font-bold tracking-widest uppercase"
+        style={{ color: "var(--admin-muted)" }}
+      >
         {label}
       </p>
     </div>
@@ -62,8 +88,16 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
       className="flex justify-between items-start gap-4 py-2.5 border-b last:border-0"
       style={{ borderColor: "var(--admin-border)" }}
     >
-      <span className="text-xs shrink-0" style={{ color: "var(--admin-muted)" }}>{label}</span>
-      <span className="text-xs text-right font-medium" style={{ color: "var(--admin-text)" }}>
+      <span
+        className="text-xs shrink-0"
+        style={{ color: "var(--admin-muted)" }}
+      >
+        {label}
+      </span>
+      <span
+        className="text-xs text-right font-medium"
+        style={{ color: "var(--admin-text)" }}
+      >
         {value || "—"}
       </span>
     </div>
@@ -74,7 +108,10 @@ function Card({ children }: { children: React.ReactNode }) {
   return (
     <div
       className="rounded-2xl border p-5"
-      style={{ background: "var(--admin-surface)", borderColor: "var(--admin-border)" }}
+      style={{
+        background: "var(--admin-surface)",
+        borderColor: "var(--admin-border)",
+      }}
     >
       {children}
     </div>
@@ -90,7 +127,8 @@ function BoolBadge({
   trueLabel?: string;
   falseLabel?: string;
 }) {
-  if (value === null) return <span style={{ color: "var(--admin-muted)" }}>—</span>;
+  if (value === null)
+    return <span style={{ color: "var(--admin-muted)" }}>—</span>;
   return (
     <span
       className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase"
@@ -129,11 +167,91 @@ function DialogBackdrop({ children }: { children: React.ReactNode }) {
     >
       <div
         className="w-full max-w-md rounded-3xl border p-6 space-y-5 shadow-2xl"
-        style={{ background: "var(--admin-surface)", borderColor: "var(--admin-border)" }}
+        style={{
+          background: "var(--admin-surface)",
+          borderColor: "var(--admin-border)",
+        }}
       >
         {children}
       </div>
     </div>
+  );
+}
+
+/**
+ * Reusable note textarea + Cancel/Confirm button row used inside dialogs.
+ * Avoids duplicating the same structure across every lifecycle dialog.
+ */
+function NoteDialogBody({
+  label,
+  placeholder,
+  inputId,
+  isPending,
+  confirmLabel,
+  confirmStyle,
+  onConfirm,
+  onCancel,
+}: {
+  label: string;
+  placeholder: string;
+  inputId: string;
+  isPending: boolean;
+  confirmLabel: string;
+  confirmStyle: React.CSSProperties;
+  onConfirm: (note: string) => void;
+  onCancel: () => void;
+}) {
+  const [note, setNote] = useState("");
+  return (
+    <>
+      <div className="space-y-1.5">
+        <label
+          className="text-[10px] font-bold tracking-widest uppercase"
+          style={{ color: "var(--admin-muted)" }}
+        >
+          {label}
+        </label>
+        <textarea
+          id={inputId}
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          rows={3}
+          placeholder={placeholder}
+          className="w-full px-3 py-2 rounded-xl text-sm outline-none border resize-none"
+          style={{
+            background: "var(--admin-bg)",
+            color: "var(--admin-text)",
+            borderColor: "var(--admin-border)",
+          }}
+        />
+      </div>
+      <div className="flex gap-2 justify-end pt-1">
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={isPending}
+          className="text-xs font-medium px-4 py-2 rounded-xl transition-opacity hover:opacity-70 disabled:opacity-40"
+          style={{ color: "var(--admin-muted)" }}
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          disabled={isPending}
+          onClick={() => onConfirm(note)}
+          className="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-semibold transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+          style={confirmStyle}
+        >
+          {isPending ? (
+            <>
+              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Please wait…
+            </>
+          ) : (
+            confirmLabel
+          )}
+        </button>
+      </div>
+    </>
   );
 }
 
@@ -165,7 +283,10 @@ function ApproveRoleDialog({
           <CheckCircle2 className="w-5 h-5" style={{ color: "#16a34a" }} />
         </div>
         <div>
-          <h2 className="text-base font-bold" style={{ color: "var(--admin-text)" }}>
+          <h2
+            className="text-base font-bold"
+            style={{ color: "var(--admin-text)" }}
+          >
             Approve Role Assignment
           </h2>
           <p className="text-xs mt-0.5" style={{ color: "var(--admin-muted)" }}>
@@ -177,25 +298,46 @@ function ApproveRoleDialog({
       {/* Summary */}
       <div
         className="rounded-2xl border p-4 space-y-2"
-        style={{ background: "var(--admin-bg)", borderColor: "var(--admin-border)" }}
+        style={{
+          background: "var(--admin-bg)",
+          borderColor: "var(--admin-border)",
+        }}
       >
         <div className="flex justify-between items-center gap-4">
-          <span className="text-xs" style={{ color: "var(--admin-muted)" }}>User</span>
-          <span className="text-xs font-semibold" style={{ color: "var(--admin-text)" }}>{userName}</span>
+          <span className="text-xs" style={{ color: "var(--admin-muted)" }}>
+            User
+          </span>
+          <span
+            className="text-xs font-semibold"
+            style={{ color: "var(--admin-text)" }}
+          >
+            {userName}
+          </span>
         </div>
         <div className="flex justify-between items-center gap-4">
-          <span className="text-xs" style={{ color: "var(--admin-muted)" }}>Requested role</span>
+          <span className="text-xs" style={{ color: "var(--admin-muted)" }}>
+            Requested role
+          </span>
           <span
             className="inline-flex items-center gap-1 text-xs font-semibold"
             style={{ color: "var(--admin-text)" }}
           >
-            <KeyRound className="w-3 h-3" style={{ color: "var(--admin-primary)" }} />
+            <KeyRound
+              className="w-3 h-3"
+              style={{ color: "var(--admin-primary)" }}
+            />
             {requestedRoleName}
           </span>
         </div>
         <div className="flex justify-between items-center gap-4">
-          <span className="text-xs" style={{ color: "var(--admin-muted)" }}>Inherit role permissions</span>
-          <BoolBadge value={inheritPermissions} trueLabel="Yes" falseLabel="No" />
+          <span className="text-xs" style={{ color: "var(--admin-muted)" }}>
+            Inherit role permissions
+          </span>
+          <BoolBadge
+            value={inheritPermissions}
+            trueLabel="Yes"
+            falseLabel="No"
+          />
         </div>
       </div>
 
@@ -240,7 +382,15 @@ function ApproveRoleDialog({
           className="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-semibold transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
           style={{ background: "#16a34a", color: "#fff" }}
         >
-          {isPending ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Approving…</> : <><CheckCircle2 className="w-3.5 h-3.5" /> Approve Request</>}
+          {isPending ? (
+            <>
+              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Approving…
+            </>
+          ) : (
+            <>
+              <CheckCircle2 className="w-3.5 h-3.5" /> Approve Request
+            </>
+          )}
         </button>
       </div>
     </DialogBackdrop>
@@ -273,7 +423,10 @@ function RejectRoleDialog({
           <XCircle className="w-5 h-5" style={{ color: "#ef4444" }} />
         </div>
         <div>
-          <h2 className="text-base font-bold" style={{ color: "var(--admin-text)" }}>
+          <h2
+            className="text-base font-bold"
+            style={{ color: "var(--admin-text)" }}
+          >
             Reject Role Assignment
           </h2>
           <p className="text-xs mt-0.5" style={{ color: "var(--admin-muted)" }}>
@@ -285,19 +438,34 @@ function RejectRoleDialog({
       {/* Summary */}
       <div
         className="rounded-2xl border p-4 space-y-2"
-        style={{ background: "var(--admin-bg)", borderColor: "var(--admin-border)" }}
+        style={{
+          background: "var(--admin-bg)",
+          borderColor: "var(--admin-border)",
+        }}
       >
         <div className="flex justify-between items-center gap-4">
-          <span className="text-xs" style={{ color: "var(--admin-muted)" }}>User</span>
-          <span className="text-xs font-semibold" style={{ color: "var(--admin-text)" }}>{userName}</span>
+          <span className="text-xs" style={{ color: "var(--admin-muted)" }}>
+            User
+          </span>
+          <span
+            className="text-xs font-semibold"
+            style={{ color: "var(--admin-text)" }}
+          >
+            {userName}
+          </span>
         </div>
         <div className="flex justify-between items-center gap-4">
-          <span className="text-xs" style={{ color: "var(--admin-muted)" }}>Requested role</span>
+          <span className="text-xs" style={{ color: "var(--admin-muted)" }}>
+            Requested role
+          </span>
           <span
             className="inline-flex items-center gap-1 text-xs font-semibold"
             style={{ color: "var(--admin-text)" }}
           >
-            <KeyRound className="w-3 h-3" style={{ color: "var(--admin-primary)" }} />
+            <KeyRound
+              className="w-3 h-3"
+              style={{ color: "var(--admin-primary)" }}
+            />
             {requestedRoleName}
           </span>
         </div>
@@ -344,7 +512,15 @@ function RejectRoleDialog({
           className="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-semibold transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
           style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444" }}
         >
-          {isPending ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Rejecting…</> : <><XCircle className="w-3.5 h-3.5" /> Reject Request</>}
+          {isPending ? (
+            <>
+              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Rejecting…
+            </>
+          ) : (
+            <>
+              <XCircle className="w-3.5 h-3.5" /> Reject Request
+            </>
+          )}
         </button>
       </div>
     </DialogBackdrop>
@@ -381,7 +557,10 @@ function ApprovePermDialog({
           <CheckCircle2 className="w-5 h-5" style={{ color: "#16a34a" }} />
         </div>
         <div>
-          <h2 className="text-base font-bold" style={{ color: "var(--admin-text)" }}>
+          <h2
+            className="text-base font-bold"
+            style={{ color: "var(--admin-text)" }}
+          >
             Approve Permission Change
           </h2>
           <p className="text-xs mt-0.5" style={{ color: "var(--admin-muted)" }}>
@@ -393,20 +572,37 @@ function ApprovePermDialog({
       {/* Summary */}
       <div
         className="rounded-2xl border p-4 space-y-2"
-        style={{ background: "var(--admin-bg)", borderColor: "var(--admin-border)" }}
+        style={{
+          background: "var(--admin-bg)",
+          borderColor: "var(--admin-border)",
+        }}
       >
         <div className="flex justify-between items-center gap-4">
-          <span className="text-xs" style={{ color: "var(--admin-muted)" }}>User</span>
-          <span className="text-xs font-semibold" style={{ color: "var(--admin-text)" }}>{userName}</span>
+          <span className="text-xs" style={{ color: "var(--admin-muted)" }}>
+            User
+          </span>
+          <span
+            className="text-xs font-semibold"
+            style={{ color: "var(--admin-text)" }}
+          >
+            {userName}
+          </span>
         </div>
         <div className="flex justify-between items-center gap-4">
-          <span className="text-xs" style={{ color: "var(--admin-muted)" }}>Permission</span>
-          <span className="text-xs font-mono font-semibold" style={{ color: "var(--admin-text)" }}>
+          <span className="text-xs" style={{ color: "var(--admin-muted)" }}>
+            Permission
+          </span>
+          <span
+            className="text-xs font-mono font-semibold"
+            style={{ color: "var(--admin-text)" }}
+          >
             {permissionName || permissionCode}
           </span>
         </div>
         <div className="flex justify-between items-center gap-4">
-          <span className="text-xs" style={{ color: "var(--admin-muted)" }}>Requested action</span>
+          <span className="text-xs" style={{ color: "var(--admin-muted)" }}>
+            Requested action
+          </span>
           <span
             className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider"
             style={
@@ -461,7 +657,15 @@ function ApprovePermDialog({
           className="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-semibold transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
           style={{ background: "#16a34a", color: "#fff" }}
         >
-          {isPending ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Approving…</> : <><CheckCircle2 className="w-3.5 h-3.5" /> Approve Request</>}
+          {isPending ? (
+            <>
+              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Approving…
+            </>
+          ) : (
+            <>
+              <CheckCircle2 className="w-3.5 h-3.5" /> Approve Request
+            </>
+          )}
         </button>
       </div>
     </DialogBackdrop>
@@ -498,7 +702,10 @@ function RejectPermDialog({
           <XCircle className="w-5 h-5" style={{ color: "#ef4444" }} />
         </div>
         <div>
-          <h2 className="text-base font-bold" style={{ color: "var(--admin-text)" }}>
+          <h2
+            className="text-base font-bold"
+            style={{ color: "var(--admin-text)" }}
+          >
             Reject Permission Change
           </h2>
           <p className="text-xs mt-0.5" style={{ color: "var(--admin-muted)" }}>
@@ -510,20 +717,37 @@ function RejectPermDialog({
       {/* Summary */}
       <div
         className="rounded-2xl border p-4 space-y-2"
-        style={{ background: "var(--admin-bg)", borderColor: "var(--admin-border)" }}
+        style={{
+          background: "var(--admin-bg)",
+          borderColor: "var(--admin-border)",
+        }}
       >
         <div className="flex justify-between items-center gap-4">
-          <span className="text-xs" style={{ color: "var(--admin-muted)" }}>User</span>
-          <span className="text-xs font-semibold" style={{ color: "var(--admin-text)" }}>{userName}</span>
+          <span className="text-xs" style={{ color: "var(--admin-muted)" }}>
+            User
+          </span>
+          <span
+            className="text-xs font-semibold"
+            style={{ color: "var(--admin-text)" }}
+          >
+            {userName}
+          </span>
         </div>
         <div className="flex justify-between items-center gap-4">
-          <span className="text-xs" style={{ color: "var(--admin-muted)" }}>Permission</span>
-          <span className="text-xs font-mono font-semibold" style={{ color: "var(--admin-text)" }}>
+          <span className="text-xs" style={{ color: "var(--admin-muted)" }}>
+            Permission
+          </span>
+          <span
+            className="text-xs font-mono font-semibold"
+            style={{ color: "var(--admin-text)" }}
+          >
             {permissionName || permissionCode}
           </span>
         </div>
         <div className="flex justify-between items-center gap-4">
-          <span className="text-xs" style={{ color: "var(--admin-muted)" }}>Requested action</span>
+          <span className="text-xs" style={{ color: "var(--admin-muted)" }}>
+            Requested action
+          </span>
           <span
             className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider"
             style={
@@ -578,7 +802,15 @@ function RejectPermDialog({
           className="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-semibold transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
           style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444" }}
         >
-          {isPending ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Rejecting…</> : <><XCircle className="w-3.5 h-3.5" /> Reject Request</>}
+          {isPending ? (
+            <>
+              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Rejecting…
+            </>
+          ) : (
+            <>
+              <XCircle className="w-3.5 h-3.5" /> Reject Request
+            </>
+          )}
         </button>
       </div>
     </DialogBackdrop>
@@ -608,7 +840,9 @@ function ToggleSwitch({
       disabled={disabled}
       onClick={() => onChange(!checked)}
       className="relative inline-flex w-11 h-6 rounded-full transition-colors shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
-      style={{ background: checked ? "var(--admin-text)" : "var(--admin-border)" }}
+      style={{
+        background: checked ? "var(--admin-text)" : "var(--admin-border)",
+      }}
     >
       <span
         className="absolute top-1 left-1 w-4 h-4 rounded-full transition-transform"
@@ -653,10 +887,19 @@ function TabButton({
           className="px-1.5 py-0.5 rounded text-[10px] font-bold tabular-nums"
           style={
             active
-              ? { background: "rgba(255,255,255,0.2)", color: "var(--admin-bg)" }
+              ? {
+                  background: "rgba(255,255,255,0.2)",
+                  color: "var(--admin-bg)",
+                }
               : highlight && count > 0
-              ? { background: "rgba(252,211,77,0.2)", color: "var(--admin-primary)" }
-              : { background: "var(--admin-border)", color: "var(--admin-muted)" }
+                ? {
+                    background: "rgba(252,211,77,0.2)",
+                    color: "var(--admin-primary)",
+                  }
+                : {
+                    background: "var(--admin-border)",
+                    color: "var(--admin-muted)",
+                  }
           }
         >
           {count}
@@ -686,11 +929,18 @@ function PermRow({
       style={{ borderBottom: "1px solid var(--admin-border)" }}
     >
       <div className="min-w-0 flex-1">
-        <p className="text-xs font-medium truncate" style={{ color: "var(--admin-text)" }}>
+        <p
+          className="text-xs font-medium truncate"
+          style={{ color: "var(--admin-text)" }}
+        >
           {info?.name ?? code}
         </p>
-        <p className="text-[10px] font-mono" style={{ color: "var(--admin-muted)" }}>
-          {info?.category ? `${info.category} · ` : ""}{code}
+        <p
+          className="text-[10px] font-mono"
+          style={{ color: "var(--admin-muted)" }}
+        >
+          {info?.category ? `${info.category} · ` : ""}
+          {code}
         </p>
       </div>
       {actionSlot}
@@ -700,7 +950,10 @@ function PermRow({
 
 function EmptyTabState({ message }: { message: string }) {
   return (
-    <p className="py-5 text-center text-xs" style={{ color: "var(--admin-muted)" }}>
+    <p
+      className="py-5 text-center text-xs"
+      style={{ color: "var(--admin-muted)" }}
+    >
       {message}
     </p>
   );
@@ -713,7 +966,12 @@ function AddOverrideControls({
   onRequestRevoke,
   disabled,
 }: {
-  allPermissions: { id: string; code: string; name: string; category: string }[];
+  allPermissions: {
+    id: string;
+    code: string;
+    name: string;
+    category: string;
+  }[];
   onRequestGrant: (code: string) => void;
   onRequestRevoke: (code: string) => void;
   disabled?: boolean;
@@ -796,6 +1054,12 @@ function AddOverrideControls({
 
 type RoleDialogKind = "approve" | "reject";
 type PermDialogKind = "approve" | "reject";
+type LifecycleDialogKind =
+  | "approve-activate"
+  | "reject-activate"
+  | "approve-deactivate"
+  | "reject-deactivate"
+  | "confirm-activate-staff";
 
 type RoleDialogState = {
   kind: RoleDialogKind;
@@ -809,6 +1073,10 @@ type PermDialogState = {
   permissionCode: string;
   permissionName: string;
   isGrant: boolean;
+} | null;
+
+type LifecycleDialogState = {
+  kind: LifecycleDialogKind;
 } | null;
 
 // ─── Main section component ───────────────────────────────────────────────────
@@ -828,7 +1096,10 @@ function AccessAndPermissionsSection({
     queryFn: () => getUserAccess(userId),
     enabled: Boolean(userId),
   });
-  const rolesQuery = useQuery({ queryKey: ["admin-roles"], queryFn: getAllRoles });
+  const rolesQuery = useQuery({
+    queryKey: ["admin-roles"],
+    queryFn: getAllRoles,
+  });
   const permissionsQuery = useQuery({
     queryKey: ["admin-permissions"],
     queryFn: getAllPermissions,
@@ -836,7 +1107,10 @@ function AccessAndPermissionsSection({
 
   const permissionMap = new Map<string, { name: string; category: string }>();
   for (const p of permissionsQuery.data ?? []) {
-    permissionMap.set(p.code.toLowerCase(), { name: p.name, category: p.category });
+    permissionMap.set(p.code.toLowerCase(), {
+      name: p.name,
+      category: p.category,
+    });
   }
 
   // ── Tab state ──
@@ -863,13 +1137,38 @@ function AccessAndPermissionsSection({
     isGrant: boolean;
   } | null>(null);
 
-  const selectedRole = (rolesQuery.data ?? []).find((r) => r.id === selectedRoleId);
-  const selectedRolePermCount =
-    selectedRole?.permissions != null
-      ? Array.isArray(selectedRole.permissions)
-        ? selectedRole.permissions.length
-        : 0
-      : 0;
+  const selectedRole = (rolesQuery.data ?? []).find(
+    (r) => r.id === selectedRoleId,
+  );
+  const selectedRolePermsSource = selectedRole?.permissions != null && Array.isArray(selectedRole.permissions) 
+    ? selectedRole.permissions 
+    : [];
+  const selectedRolePermCount = selectedRolePermsSource.length;
+
+  const [selectedRolePerms, setSelectedRolePerms] = useState<Set<string>>(new Set());
+
+  // Auto-populate when role changes
+  useEffect(() => {
+    if (selectedRoleId && rolesQuery.data) {
+      const role = rolesQuery.data.find(r => r.id === selectedRoleId);
+      const perms = role?.permissions ?? [];
+      const codes = perms
+        .map(p => (typeof p === "string" ? p : p?.code))
+        .filter((c): c is string => Boolean(c)); // safe filter — no nulls
+      setSelectedRolePerms(new Set(codes));
+      setInheritOnAssign(true);
+    } else {
+      setSelectedRolePerms(new Set());
+    }
+  }, [selectedRoleId, rolesQuery.data]);
+
+  const handleToggleRolePerm = (code: string) => {
+    const next = new Set(selectedRolePerms);
+    if (next.has(code)) next.delete(code);
+    else next.add(code);
+    setSelectedRolePerms(next);
+    setInheritOnAssign(false); // They handpicked, override inheritance
+  };
 
   function refresh() {
     queryClient.invalidateQueries({ queryKey: ACCESS_KEY });
@@ -887,13 +1186,60 @@ function AccessAndPermissionsSection({
         roleId: selectedRoleId,
         inheritRolePermissions: inheritOnAssign,
       }),
-    onSuccess: () => {
-      toast.success("Role assignment request submitted for approval.");
+    onSuccess: (res) => {
+      const msg = (res as any)?.message?.toLowerCase() || "";
+      const isAutoApproved = msg.includes("already") || msg.includes("auto-approved") || msg.includes("assigned") || msg.includes("success");
+      
       const roleName = selectedRole?.name ?? selectedRoleId;
-      setPendingRoleRequest({ roleId: selectedRoleId, roleName, inherit: inheritOnAssign });
+
+      if (isAutoApproved) {
+        toast.success((res as any)?.message || "Role assigned directly.");
+        setPendingRoleRequest(null);
+      } else {
+        toast.success((res as any)?.message || "Role assignment request submitted for approval.");
+        setPendingRoleRequest({
+          roleId: selectedRoleId,
+          roleName,
+          inherit: inheritOnAssign,
+        });
+      }
+
+      if (!inheritOnAssign && selectedRolePerms.size > 0) {
+        // Chain the custom permissions request!
+        initiateSetRolePermsMutation.mutate({
+          userId,
+          permissionCodes: Array.from(selectedRolePerms)
+        });
+      } else {
+        // No custom permissions requested, finish up.
+        setSelectedRoleId("");
+        setShowAssignPanel(false);
+        queryClient.invalidateQueries({ queryKey: ACCESS_KEY });
+        queryClient.invalidateQueries({ queryKey: ["admin-user", userId] });
+      }
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err)),
+  });
+
+  const initiateSetRolePermsMutation = useMutation({
+    mutationFn: ({ userId, permissionCodes }: { userId: string; permissionCodes: string[] }) => {
+      const cleaned = permissionCodes.filter(Boolean); // hard guard against nulls
+      return initiateSetRolePermissions({ userId, permissionCodes: cleaned });
+    },
+    onSuccess: (res) => {
+      const msg = (res as any)?.message?.toLowerCase() || "";
+      const isAutoApproved = msg.includes("already") || msg.includes("auto-approved") || msg.includes("success");
+      
+      if (isAutoApproved) {
+        toast.success((res as any)?.message || "Role permissions handpicked directly.");
+      } else {
+        toast.success((res as any)?.message || "Role permissions request submitted for approval.");
+        // We could track pending state for this, but the role itself is pending.
+      }
       setSelectedRoleId("");
       setShowAssignPanel(false);
       queryClient.invalidateQueries({ queryKey: ACCESS_KEY });
+      queryClient.invalidateQueries({ queryKey: ["admin-user", userId] });
     },
     onError: (err) => toast.error(getApiErrorMessage(err)),
   });
@@ -905,19 +1251,26 @@ function AccessAndPermissionsSection({
     }: {
       permissionCode: string;
       isGranted: boolean;
-    }) =>
-      initiateUserPermissionChange({ userId, permissionCode, isGranted }),
-    onSuccess: (_data, variables) => {
+    }) => initiateUserPermissionChange({ userId, permissionCode, isGranted }),
+    onSuccess: (res, variables) => {
       const { permissionCode, isGranted } = variables;
       const info = permissionMap.get(permissionCode.toLowerCase());
-      toast.success(
-        `Permission change request submitted for approval. (${isGranted ? "Grant" : "Revoke"} · ${info?.name ?? permissionCode})`,
-      );
-      setPendingPermRequest({
-        code: permissionCode,
-        name: info?.name ?? permissionCode,
-        isGrant: isGranted,
-      });
+      
+      const msg = (res as any)?.message?.toLowerCase() || "";
+      const isAutoApproved = msg.includes("already") || msg.includes("auto-approved") || msg.includes("granted") || msg.includes("revoked") || msg.includes("success");
+      
+      if (isAutoApproved) {
+        toast.success((res as any)?.message || `Permission ${isGranted ? "granted" : "revoked"} directly.`);
+      } else {
+        toast.success(
+          (res as any)?.message || `Permission change request submitted for approval. (${isGranted ? "Grant" : "Revoke"} · ${info?.name ?? permissionCode})`
+        );
+        setPendingPermRequest({
+          code: permissionCode,
+          name: info?.name ?? permissionCode,
+          isGrant: isGranted,
+        });
+      }
       queryClient.invalidateQueries({ queryKey: ACCESS_KEY });
     },
     onError: (err) => toast.error(getApiErrorMessage(err)),
@@ -980,19 +1333,27 @@ function AccessAndPermissionsSection({
   const inheritMutation = useMutation({
     mutationFn: (inherit: boolean) =>
       setRoleInheritance({ userId, inheritRolePermissions: inherit }),
-    onSuccess: () => { toast.success("Inheritance setting updated."); refresh(); },
+    onSuccess: () => {
+      toast.success("Inheritance setting updated.");
+      refresh();
+    },
     onError: (err) => toast.error(getApiErrorMessage(err)),
   });
 
   const removeOverride = useMutation({
-    mutationFn: (code: string) => removeUserOverride({ userId, permissionCode: code }),
-    onSuccess: () => { toast.success("Override removed."); refresh(); },
+    mutationFn: (code: string) =>
+      removeUserOverride({ userId, permissionCode: code }),
+    onSuccess: () => {
+      toast.success("Override removed.");
+      refresh();
+    },
     onError: (err) => toast.error(getApiErrorMessage(err)),
   });
 
   // ── Derived state ──
 
-  const isLoading = accessQuery.isLoading || rolesQuery.isLoading || permissionsQuery.isLoading;
+  const isLoading =
+    accessQuery.isLoading || rolesQuery.isLoading || permissionsQuery.isLoading;
   const isError = accessQuery.isError;
   const access = accessQuery.data;
   const roles = rolesQuery.data ?? [];
@@ -1073,14 +1434,20 @@ function AccessAndPermissionsSection({
 
       <div
         className="rounded-2xl border overflow-hidden"
-        style={{ background: "var(--admin-surface)", borderColor: "var(--admin-border)" }}
+        style={{
+          background: "var(--admin-surface)",
+          borderColor: "var(--admin-border)",
+        }}
       >
         {/* ── Section header ── */}
         <div
           className="px-5 py-4 border-b flex items-center gap-2"
           style={{ borderColor: "var(--admin-border)" }}
         >
-          <Shield className="w-4 h-4 shrink-0" style={{ color: "var(--admin-primary)" }} />
+          <Shield
+            className="w-4 h-4 shrink-0"
+            style={{ color: "var(--admin-primary)" }}
+          />
           <p
             className="text-[10px] font-bold tracking-widest uppercase flex-1"
             style={{ color: "var(--admin-muted)" }}
@@ -1092,7 +1459,10 @@ function AccessAndPermissionsSection({
               className="inline-flex items-center gap-1 text-xs font-medium"
               style={{ color: "var(--admin-muted)" }}
             >
-              <ShieldCheck className="w-3.5 h-3.5" style={{ color: "#16a34a" }} />
+              <ShieldCheck
+                className="w-3.5 h-3.5"
+                style={{ color: "#16a34a" }}
+              />
               {access.effectivePermissions.length} effective
             </span>
           )}
@@ -1116,7 +1486,10 @@ function AccessAndPermissionsSection({
               className="w-8 h-8 mx-auto mb-2"
               style={{ color: "var(--admin-border)" }}
             />
-            <p className="text-sm font-medium mb-1" style={{ color: "var(--admin-accent)" }}>
+            <p
+              className="text-sm font-medium mb-1"
+              style={{ color: "var(--admin-accent)" }}
+            >
               Unable to load access data
             </p>
             <p className="text-xs" style={{ color: "var(--admin-muted)" }}>
@@ -1127,7 +1500,10 @@ function AccessAndPermissionsSection({
 
         {/* ── Empty ── */}
         {!isLoading && !isError && !access && (
-          <div className="p-6 text-center text-sm" style={{ color: "var(--admin-muted)" }}>
+          <div
+            className="p-6 text-center text-sm"
+            style={{ color: "var(--admin-muted)" }}
+          >
             No access data available for this user.
           </div>
         )}
@@ -1137,7 +1513,10 @@ function AccessAndPermissionsSection({
             {/* ── Status bar: role + inheritance toggle ── */}
             <div
               className="px-5 py-4 border-b grid grid-cols-1 sm:grid-cols-2 gap-4"
-              style={{ borderColor: "var(--admin-border)", background: "var(--admin-bg)" }}
+              style={{
+                borderColor: "var(--admin-border)",
+                background: "var(--admin-bg)",
+              }}
             >
               {/* Current role */}
               <div className="flex items-center justify-between gap-4">
@@ -1187,7 +1566,10 @@ function AccessAndPermissionsSection({
                   >
                     Role inheritance
                   </p>
-                  <p className="text-xs" style={{ color: "var(--admin-muted)" }}>
+                  <p
+                    className="text-xs"
+                    style={{ color: "var(--admin-muted)" }}
+                  >
                     {access.inheritRolePermissions
                       ? "User receives all permissions from their role."
                       : "User does not inherit role permissions."}
@@ -1212,8 +1594,14 @@ function AccessAndPermissionsSection({
                 }}
               >
                 <div className="flex items-center gap-2 min-w-0">
-                  <Clock className="w-3.5 h-3.5 shrink-0" style={{ color: "#d97706" }} />
-                  <p className="text-xs font-medium" style={{ color: "var(--admin-text)" }}>
+                  <Clock
+                    className="w-3.5 h-3.5 shrink-0"
+                    style={{ color: "#d97706" }}
+                  />
+                  <p
+                    className="text-xs font-medium"
+                    style={{ color: "var(--admin-text)" }}
+                  >
                     Pending role change request:{" "}
                     <span className="font-semibold">
                       {pendingRoleRequest.roleName}
@@ -1252,7 +1640,10 @@ function AccessAndPermissionsSection({
                       })
                     }
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all hover:opacity-90 disabled:opacity-40"
-                    style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444" }}
+                    style={{
+                      background: "rgba(239,68,68,0.1)",
+                      color: "#ef4444",
+                    }}
                   >
                     <XCircle className="w-3 h-3" />
                     Reject
@@ -1265,7 +1656,10 @@ function AccessAndPermissionsSection({
             {!pendingRoleRequest && (
               <div
                 className="px-5 py-3 border-b"
-                style={{ borderColor: "var(--admin-border)", background: "var(--admin-bg)" }}
+                style={{
+                  borderColor: "var(--admin-border)",
+                  background: "var(--admin-bg)",
+                }}
               >
                 <p
                   className="text-[10px] uppercase tracking-widest font-bold mb-2"
@@ -1307,7 +1701,10 @@ function AccessAndPermissionsSection({
                       });
                     }}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all hover:opacity-90 disabled:opacity-40"
-                    style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444" }}
+                    style={{
+                      background: "rgba(239,68,68,0.1)",
+                      color: "#ef4444",
+                    }}
                   >
                     <XCircle className="w-3 h-3" />
                     Reject Role Assignment
@@ -1343,7 +1740,10 @@ function AccessAndPermissionsSection({
                       })
                     }
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all hover:opacity-90 disabled:opacity-40"
-                    style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444" }}
+                    style={{
+                      background: "rgba(239,68,68,0.1)",
+                      color: "#ef4444",
+                    }}
                   >
                     <XCircle className="w-3 h-3" />
                     Reject Permission Change
@@ -1362,11 +1762,18 @@ function AccessAndPermissionsSection({
                 }}
               >
                 <div className="flex items-center gap-2 min-w-0">
-                  <Clock className="w-3.5 h-3.5 shrink-0" style={{ color: "#d97706" }} />
-                  <p className="text-xs font-medium" style={{ color: "var(--admin-text)" }}>
+                  <Clock
+                    className="w-3.5 h-3.5 shrink-0"
+                    style={{ color: "#d97706" }}
+                  />
+                  <p
+                    className="text-xs font-medium"
+                    style={{ color: "var(--admin-text)" }}
+                  >
                     Pending permission change:{" "}
                     <span className="font-semibold">
-                      {pendingPermRequest.isGrant ? "Grant" : "Revoke"} · {pendingPermRequest.name}
+                      {pendingPermRequest.isGrant ? "Grant" : "Revoke"} ·{" "}
+                      {pendingPermRequest.name}
                     </span>
                   </p>
                 </div>
@@ -1402,7 +1809,10 @@ function AccessAndPermissionsSection({
                       })
                     }
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all hover:opacity-90 disabled:opacity-40"
-                    style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444" }}
+                    style={{
+                      background: "rgba(239,68,68,0.1)",
+                      color: "#ef4444",
+                    }}
                   >
                     <XCircle className="w-3 h-3" />
                     Reject
@@ -1449,16 +1859,105 @@ function AccessAndPermissionsSection({
                   ))}
                 </select>
 
-                {/* Role permission count preview */}
+                {/* ─── Permission checklist (only shown when a role is selected) ─── */}
                 {selectedRoleId && (
-                  <p className="text-xs" style={{ color: "var(--admin-muted)" }}>
-                    This role has{" "}
-                    <span className="font-semibold" style={{ color: "var(--admin-text)" }}>
-                      {selectedRolePermCount} permission
-                      {selectedRolePermCount !== 1 ? "s" : ""}
-                    </span>{" "}
-                    configured.
-                  </p>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p
+                        className="text-[10px] uppercase tracking-widest font-bold"
+                        style={{ color: "var(--admin-muted)" }}
+                      >
+                        Handpick permissions
+                      </p>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const allCodes = selectedRolePermsSource
+                              .map(p => typeof p === "string" ? p : p?.code)
+                              .filter((c): c is string => Boolean(c));
+                            setSelectedRolePerms(new Set(allCodes));
+                            setInheritOnAssign(false);
+                          }}
+                          className="text-[10px] px-2 py-0.5 rounded-lg font-semibold transition-opacity hover:opacity-70"
+                          style={{ background: "var(--admin-border)", color: "var(--admin-text)" }}
+                        >
+                          All
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedRolePerms(new Set());
+                            setInheritOnAssign(false);
+                          }}
+                          className="text-[10px] px-2 py-0.5 rounded-lg font-semibold transition-opacity hover:opacity-70"
+                          style={{ background: "var(--admin-border)", color: "var(--admin-text)" }}
+                        >
+                          None
+                        </button>
+                      </div>
+                    </div>
+                    {selectedRolePermsSource.length === 0 ? (
+                      <p className="text-xs" style={{ color: "var(--admin-muted)" }}>
+                        This role has no permissions configured.
+                      </p>
+                    ) : (
+                      <div
+                        className="rounded-xl border divide-y overflow-y-auto"
+                        style={{
+                          maxHeight: "180px",
+                          borderColor: "var(--admin-border)",
+                          background: "var(--admin-bg)",
+                        }}
+                      >
+                        {selectedRolePermsSource.map((perm, idx) => {
+                          const code = typeof perm === "string" ? perm : perm?.code;
+                          const name = typeof perm === "object" && perm !== null && (perm as any).name
+                            ? (perm as any).name
+                            : code;
+                          if (!code) return null;
+                          const isSelected = selectedRolePerms.has(code);
+                          return (
+                            <label
+                              key={code ?? idx}
+                              className="flex items-center gap-3 px-3 py-2 cursor-pointer transition-colors hover:opacity-80"
+                              style={{ borderColor: "var(--admin-border)" }}
+                            >
+                              <div
+                                className="w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-all"
+                                style={
+                                  isSelected
+                                    ? { background: "#166534", borderColor: "#166534" }
+                                    : { background: "transparent", borderColor: "var(--admin-border)" }
+                                }
+                              >
+                                {isSelected && (
+                                  <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
+                                )}
+                              </div>
+                              <input
+                                type="checkbox"
+                                className="sr-only"
+                                checked={isSelected}
+                                onChange={() => handleToggleRolePerm(code)}
+                              />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-medium truncate" style={{ color: "var(--admin-text)" }}>
+                                  {name}
+                                </p>
+                                <p className="text-[10px] font-mono" style={{ color: "var(--admin-muted)" }}>
+                                  {code}
+                                </p>
+                              </div>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
+                    <p className="text-[10px]" style={{ color: "var(--admin-muted)" }}>
+                      {selectedRolePerms.size} of {selectedRolePermCount} selected
+                    </p>
+                  </div>
                 )}
 
                 <label
@@ -1490,13 +1989,22 @@ function AccessAndPermissionsSection({
                   <button
                     id="member-submit-role-request-btn"
                     type="button"
-                    disabled={!selectedRoleId || initiateRoleAssignmentMutation.isPending}
+                    disabled={
+                      !selectedRoleId ||
+                      initiateRoleAssignmentMutation.isPending
+                    }
                     onClick={() => initiateRoleAssignmentMutation.mutate()}
                     className="inline-flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-semibold transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
-                    style={{ background: "var(--admin-text)", color: "var(--admin-bg)" }}
+                    style={{
+                      background: "var(--admin-text)",
+                      color: "var(--admin-bg)",
+                    }}
                   >
                     {initiateRoleAssignmentMutation.isPending ? (
-                      <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Submitting…</>
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />{" "}
+                        Submitting…
+                      </>
                     ) : (
                       "Submit for Approval"
                     )}
@@ -1561,9 +2069,14 @@ function AccessAndPermissionsSection({
                       </p>
                       <div>
                         {access.effectivePermissions.map((code) => (
-                          <PermRow key={code} code={code} permissionMap={permissionMap} />
+                          <PermRow
+                            key={code}
+                            code={code}
+                            permissionMap={permissionMap}
+                          />
                         ))}
-                        <div className="h-px" />{/* Remove bottom border on last item */}
+                        <div className="h-px" />
+                        {/* Remove bottom border on last item */}
                       </div>
                     </>
                   )}
@@ -1582,8 +2095,8 @@ function AccessAndPermissionsSection({
                           .map((r) => r.toLowerCase())
                           .includes(code.toLowerCase());
                         const isPendingRevoke =
-                          pendingPermRequest?.code.toLowerCase() === code.toLowerCase() &&
-                          !pendingPermRequest.isGrant;
+                          pendingPermRequest?.code.toLowerCase() ===
+                            code.toLowerCase() && !pendingPermRequest.isGrant;
                         return (
                           <PermRow
                             key={code}
@@ -1680,9 +2193,12 @@ function AccessAndPermissionsSection({
               {/* REQUEST CHANGE — initiate permission override */}
               {activeTab === "manage" && (
                 <div className="space-y-3 pt-1">
-                  <p className="text-xs" style={{ color: "var(--admin-muted)" }}>
-                    Select a permission and submit a grant or revoke request. The change
-                    will be applied once a checker approves it.
+                  <p
+                    className="text-xs"
+                    style={{ color: "var(--admin-muted)" }}
+                  >
+                    Select a permission and submit a grant or revoke request.
+                    The change will be applied once a checker approves it.
                   </p>
                   {pendingPermRequest && (
                     <div
@@ -1692,20 +2208,29 @@ function AccessAndPermissionsSection({
                         border: "1px solid rgba(251,191,36,0.3)",
                       }}
                     >
-                      <Clock className="w-3.5 h-3.5 shrink-0" style={{ color: "#d97706" }} />
+                      <Clock
+                        className="w-3.5 h-3.5 shrink-0"
+                        style={{ color: "#d97706" }}
+                      />
                       <p className="text-xs" style={{ color: "#92400e" }}>
-                        A permission change request is currently pending approval.
-                        New requests can still be submitted.
+                        A permission change request is currently pending
+                        approval. New requests can still be submitted.
                       </p>
                     </div>
                   )}
                   <AddOverrideControls
                     allPermissions={permissionsQuery.data ?? []}
                     onRequestGrant={(code) =>
-                      initiatePermChangeMutation.mutate({ permissionCode: code, isGranted: true })
+                      initiatePermChangeMutation.mutate({
+                        permissionCode: code,
+                        isGranted: true,
+                      })
                     }
                     onRequestRevoke={(code) =>
-                      initiatePermChangeMutation.mutate({ permissionCode: code, isGranted: false })
+                      initiatePermChangeMutation.mutate({
+                        permissionCode: code,
+                        isGranted: false,
+                      })
                     }
                     disabled={anyMutating}
                   />
@@ -1734,19 +2259,21 @@ export default function MemberDetailPage() {
   } = useQuery({
     queryKey: ["admin-user", id],
     queryFn: async () => {
-      // The members list (/api/User/Users) mixes regular members and staff
-      // together with no isStaff field to tell them apart in advance, so
-      // there's no way to know which detail endpoint applies before trying.
-      // GetById is the common case; if the target turns out to be staff,
-      // fall back to the staff-specific lookup.
       try {
-        const res = await adminApiFetch<unknown>(`/api/User/GetById?userId=${encodeURIComponent(id)}`);
+        const res = await adminApiFetch<unknown>(
+          `/api/User/GetById?userId=${encodeURIComponent(id)}`,
+        );
         console.info("[AdminUsers] GET /api/User/GetById raw response:", res);
         return pluckMember(res);
       } catch (primaryErr) {
         try {
-          const res = await adminApiFetch<unknown>(`/api/User/GetStaffById?userId=${encodeURIComponent(id)}`);
-          console.info("[AdminUsers] GET /api/User/GetStaffById raw response:", res);
+          const res = await adminApiFetch<unknown>(
+            `/api/User/GetStaffById?userId=${encodeURIComponent(id)}`,
+          );
+          console.info(
+            "[AdminUsers] GET /api/User/GetStaffById raw response:",
+            res,
+          );
           return pluckMember(res);
         } catch {
           throw primaryErr;
@@ -1756,9 +2283,17 @@ export default function MemberDetailPage() {
     enabled: Boolean(id),
   });
 
+  // ── Lifecycle: pending state (cleared on data refresh) ──
+  const [pendingActivation, setPendingActivation] = useState(false);
+  const [pendingDeactivation, setPendingDeactivation] = useState(false);
+  const [deactivateReason, setDeactivateReason] = useState("");
+  const [showDeactivateForm, setShowDeactivateForm] = useState(false);
+  const [lifecycleDialog, setLifecycleDialog] =
+    useState<LifecycleDialogState>(null);
+
   const verify = useMutation({
     mutationFn: () =>
-      adminApiFetch<unknown>(`/api/Auth/${id}/VerifyUser`, { method: "POST" }),
+      adminApiFetch<unknown>(`/api/User/${id}/Verify`, { method: "POST" }),
     onSuccess: () => {
       toast.success("Member verified.");
       queryClient.invalidateQueries({ queryKey: ["admin-user", id] });
@@ -1769,18 +2304,121 @@ export default function MemberDetailPage() {
     },
   });
 
-  const activate = useMutation({
-    mutationFn: () =>
-      adminApiFetch<unknown>(`/api/Auth/${id}/activate`, { method: "POST" }),
-    onSuccess: () => {
-      toast.success("Member activated.");
+  // ── Maker: Initiate activation ──
+  const initiateActivate = useMutation({
+    mutationFn: () => initiateUserActivation(id),
+    onSuccess: (res) => {
+      // Check if the backend auto-approved it (e.g. because we are RootAdmin)
+      const msg = res.message?.toLowerCase() || "";
+      const isAutoApproved = msg.includes("already") || msg.includes("auto-approved") || msg.includes("activated");
+
+      if (isAutoApproved) {
+        toast.success(res.message || "User activated directly.");
+        setPendingActivation(false);
+      } else {
+        toast.success(res.message || "Activation request submitted for approval.");
+        setPendingActivation(true);
+      }
+      
+      // Always refetch to get the latest `isActive` status
       queryClient.invalidateQueries({ queryKey: ["admin-user", id] });
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
     },
-    onError: (err) => {
-      toast.error(getApiErrorMessage(err));
-    },
+    onError: (err) => toast.error(getApiErrorMessage(err)),
   });
+
+  // ── Checker: Approve activation ──
+  const approveActivate = useMutation({
+    mutationFn: (note: string) => approveUserActivation(id, note),
+    onSuccess: () => {
+      toast.success("Activation approved. Member is now active.");
+      setLifecycleDialog(null);
+      setPendingActivation(false);
+      queryClient.invalidateQueries({ queryKey: ["admin-user", id] });
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err)),
+  });
+
+  // ── Checker: Reject activation ──
+  const rejectActivate = useMutation({
+    mutationFn: (note: string) => rejectUserActivation(id, note),
+    onSuccess: () => {
+      toast.success("Activation rejected.");
+      setLifecycleDialog(null);
+      setPendingActivation(false);
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err)),
+  });
+
+  // ── Maker: Initiate deactivation ──
+  const initiateDeactivate = useMutation({
+    mutationFn: () =>
+      initiateUserDeactivation(id, { reason: deactivateReason }),
+    onSuccess: (res) => {
+      const msg = (res as any)?.message?.toLowerCase() || "";
+      const isAutoApproved = msg.includes("already") || msg.includes("auto-approved") || msg.includes("deactivated") || msg.includes("success");
+
+      if (isAutoApproved) {
+        toast.success((res as any)?.message || "User deactivated directly.");
+        setPendingDeactivation(false);
+      } else {
+        toast.success((res as any)?.message || "Deactivation request submitted for approval.");
+        setPendingDeactivation(true);
+      }
+      setShowDeactivateForm(false);
+      setDeactivateReason("");
+      queryClient.invalidateQueries({ queryKey: ["admin-user", id] });
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err)),
+  });
+
+  // ── Checker: Approve deactivation ──
+  const approveDeactivate = useMutation({
+    mutationFn: (note: string) => approveUserDeactivation(id, note),
+    onSuccess: () => {
+      toast.success("Deactivation approved. Member is now inactive.");
+      setLifecycleDialog(null);
+      setPendingDeactivation(false);
+      queryClient.invalidateQueries({ queryKey: ["admin-user", id] });
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err)),
+  });
+
+  // ── Checker: Reject deactivation ──
+  const rejectDeactivate = useMutation({
+    mutationFn: (note: string) => rejectUserDeactivation(id, note),
+    onSuccess: () => {
+      toast.success("Deactivation rejected.");
+      setLifecycleDialog(null);
+      setPendingDeactivation(false);
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err)),
+  });
+
+  const activateAsStaff = useMutation({
+    mutationFn: () => activateStaff(id),
+    onSuccess: (res) => {
+      const msg = (res as any)?.message?.toLowerCase() || "";
+      const isAlreadyStaff = msg.includes("already") || msg.includes("staff");
+      toast.success((res as any)?.message || (isAlreadyStaff ? "User is already a staff member." : "Staff activation successful."));
+      queryClient.invalidateQueries({ queryKey: ["admin-user", id] });
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      setLifecycleDialog(null);
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err)),
+  });
+
+  const anyLifecycleMutating =
+    initiateActivate.isPending ||
+    approveActivate.isPending ||
+    rejectActivate.isPending ||
+    initiateDeactivate.isPending ||
+    approveDeactivate.isPending ||
+    rejectDeactivate.isPending ||
+    activateAsStaff.isPending;
 
   const firstName = member?.basicInfo?.firstName ?? null;
   const lastName = member?.basicInfo?.lastName ?? null;
@@ -1814,12 +2452,18 @@ export default function MemberDetailPage() {
 
       {/* Loading / Error */}
       {isLoading && (
-        <div className="p-10 text-center text-sm" style={{ color: "var(--admin-muted)" }}>
+        <div
+          className="p-10 text-center text-sm"
+          style={{ color: "var(--admin-muted)" }}
+        >
           Loading member…
         </div>
       )}
       {isError && (
-        <div className="p-10 text-center text-sm" style={{ color: "var(--admin-accent)" }}>
+        <div
+          className="p-10 text-center text-sm"
+          style={{ color: "var(--admin-accent)" }}
+        >
           {getApiErrorMessage(error)}
         </div>
       )}
@@ -1829,7 +2473,10 @@ export default function MemberDetailPage() {
           {/* ── Hero card ── */}
           <div
             className="rounded-3xl border p-6 sm:p-8"
-            style={{ background: "var(--admin-surface)", borderColor: "var(--admin-border)" }}
+            style={{
+              background: "var(--admin-surface)",
+              borderColor: "var(--admin-border)",
+            }}
           >
             <div className="flex items-center gap-4">
               {/* Avatar */}
@@ -1841,14 +2488,23 @@ export default function MemberDetailPage() {
               </div>
               <div className="min-w-0">
                 {member.title && (
-                  <p className="text-xs font-semibold uppercase tracking-widest mb-0.5" style={{ color: "var(--admin-muted)" }}>
+                  <p
+                    className="text-xs font-semibold uppercase tracking-widest mb-0.5"
+                    style={{ color: "var(--admin-muted)" }}
+                  >
                     {member.title}
                   </p>
                 )}
-                <h1 className="text-2xl font-bold truncate" style={{ color: "var(--admin-text)" }}>
+                <h1
+                  className="text-2xl font-bold truncate"
+                  style={{ color: "var(--admin-text)" }}
+                >
                   {name}
                 </h1>
-                <p className="text-sm mt-0.5 truncate" style={{ color: "var(--admin-muted)" }}>
+                <p
+                  className="text-sm mt-0.5 truncate"
+                  style={{ color: "var(--admin-muted)" }}
+                >
                   {member.email ?? "—"}
                 </p>
                 {/* Badges */}
@@ -1858,16 +2514,26 @@ export default function MemberDetailPage() {
                     style={
                       member.isActive
                         ? { background: "#dcfce7", color: "#166534" }
-                        : { background: "var(--admin-border)", color: "var(--admin-muted)" }
+                        : {
+                            background: "var(--admin-border)",
+                            color: "var(--admin-muted)",
+                          }
                     }
                   >
-                    {member.isActive ? <ShieldCheck className="w-3 h-3" /> : <ShieldAlert className="w-3 h-3" />}
+                    {member.isActive ? (
+                      <ShieldCheck className="w-3 h-3" />
+                    ) : (
+                      <ShieldAlert className="w-3 h-3" />
+                    )}
                     {member.isActive ? "Active" : "Inactive"}
                   </span>
                   {member.status && (
                     <span
                       className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase"
-                      style={{ background: "var(--admin-border)", color: "var(--admin-muted)" }}
+                      style={{
+                        background: "var(--admin-border)",
+                        color: "var(--admin-muted)",
+                      }}
                     >
                       {member.status}
                     </span>
@@ -1898,26 +2564,211 @@ export default function MemberDetailPage() {
               style={{ borderColor: "var(--admin-border)" }}
             >
               <div>
-                <p className="text-[10px] uppercase tracking-widest font-bold mb-1" style={{ color: "var(--admin-muted)" }}>Joined</p>
-                <p className="text-sm" style={{ color: "var(--admin-text)" }}>{formatDate(member.createdAt)}</p>
+                <p
+                  className="text-[10px] uppercase tracking-widest font-bold mb-1"
+                  style={{ color: "var(--admin-muted)" }}
+                >
+                  Joined
+                </p>
+                <p className="text-sm" style={{ color: "var(--admin-text)" }}>
+                  {formatDate(member.createdAt)}
+                </p>
               </div>
               <div>
-                <p className="text-[10px] uppercase tracking-widest font-bold mb-1" style={{ color: "var(--admin-muted)" }}>Last login</p>
-                <p className="text-sm" style={{ color: "var(--admin-text)" }}>{formatDateTime(member.lastLogin)}</p>
+                <p
+                  className="text-[10px] uppercase tracking-widest font-bold mb-1"
+                  style={{ color: "var(--admin-muted)" }}
+                >
+                  Last login
+                </p>
+                <p className="text-sm" style={{ color: "var(--admin-text)" }}>
+                  {formatDateTime(member.lastLogin)}
+                </p>
               </div>
               <div>
-                <p className="text-[10px] uppercase tracking-widest font-bold mb-1" style={{ color: "var(--admin-muted)" }}>Terms accepted</p>
-                <p className="text-sm" style={{ color: "var(--admin-text)" }}>{member.termsAccepted ? "Yes" : "No"}</p>
+                <p
+                  className="text-[10px] uppercase tracking-widest font-bold mb-1"
+                  style={{ color: "var(--admin-muted)" }}
+                >
+                  Terms accepted
+                </p>
+                <p className="text-sm" style={{ color: "var(--admin-text)" }}>
+                  {member.termsAccepted ? "Yes" : "No"}
+                </p>
               </div>
             </div>
           </div>
 
+          {/* ── Lifecycle dialogs (activation / deactivation checker actions) ── */}
+          {lifecycleDialog?.kind === "approve-activate" && (
+            <DialogBackdrop>
+              <div className="flex items-start gap-3">
+                <div
+                  className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
+                  style={{ background: "#dcfce7" }}
+                >
+                  <CheckCircle2
+                    className="w-5 h-5"
+                    style={{ color: "#16a34a" }}
+                  />
+                </div>
+                <div>
+                  <h2
+                    className="text-base font-bold"
+                    style={{ color: "var(--admin-text)" }}
+                  >
+                    Approve Activation
+                  </h2>
+                  <p
+                    className="text-xs mt-0.5"
+                    style={{ color: "var(--admin-muted)" }}
+                  >
+                    Approve this member&apos;s activation request?
+                  </p>
+                </div>
+              </div>
+              <NoteDialogBody
+                label="Approval note (optional)"
+                placeholder="Add a note for the audit trail…"
+                inputId="approve-activate-note"
+                isPending={approveActivate.isPending}
+                confirmLabel="Approve Activation"
+                confirmStyle={{ background: "#16a34a", color: "#fff" }}
+                onConfirm={(note) => approveActivate.mutate(note)}
+                onCancel={() => setLifecycleDialog(null)}
+              />
+            </DialogBackdrop>
+          )}
+          {lifecycleDialog?.kind === "reject-activate" && (
+            <DialogBackdrop>
+              <div className="flex items-start gap-3">
+                <div
+                  className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
+                  style={{ background: "rgba(239,68,68,0.1)" }}
+                >
+                  <XCircle className="w-5 h-5" style={{ color: "#ef4444" }} />
+                </div>
+                <div>
+                  <h2
+                    className="text-base font-bold"
+                    style={{ color: "var(--admin-text)" }}
+                  >
+                    Reject Activation
+                  </h2>
+                  <p
+                    className="text-xs mt-0.5"
+                    style={{ color: "var(--admin-muted)" }}
+                  >
+                    Reject this member&apos;s activation request?
+                  </p>
+                </div>
+              </div>
+              <NoteDialogBody
+                label="Rejection note"
+                placeholder="Reason for rejection…"
+                inputId="reject-activate-note"
+                isPending={rejectActivate.isPending}
+                confirmLabel="Reject Activation"
+                confirmStyle={{
+                  background: "rgba(239,68,68,0.1)",
+                  color: "#ef4444",
+                }}
+                onConfirm={(note) => rejectActivate.mutate(note)}
+                onCancel={() => setLifecycleDialog(null)}
+              />
+            </DialogBackdrop>
+          )}
+          {lifecycleDialog?.kind === "approve-deactivate" && (
+            <DialogBackdrop>
+              <div className="flex items-start gap-3">
+                <div
+                  className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
+                  style={{ background: "#dcfce7" }}
+                >
+                  <CheckCircle2
+                    className="w-5 h-5"
+                    style={{ color: "#16a34a" }}
+                  />
+                </div>
+                <div>
+                  <h2
+                    className="text-base font-bold"
+                    style={{ color: "var(--admin-text)" }}
+                  >
+                    Approve Deactivation
+                  </h2>
+                  <p
+                    className="text-xs mt-0.5"
+                    style={{ color: "var(--admin-muted)" }}
+                  >
+                    Approve deactivation for <strong>{name}</strong>?
+                  </p>
+                </div>
+              </div>
+              <NoteDialogBody
+                label="Approval note (optional)"
+                placeholder="Add a note for the audit trail…"
+                inputId="approve-deactivate-note"
+                isPending={approveDeactivate.isPending}
+                confirmLabel="Approve Deactivation"
+                confirmStyle={{ background: "#16a34a", color: "#fff" }}
+                onConfirm={(note) => approveDeactivate.mutate(note)}
+                onCancel={() => setLifecycleDialog(null)}
+              />
+            </DialogBackdrop>
+          )}
+          {lifecycleDialog?.kind === "reject-deactivate" && (
+            <DialogBackdrop>
+              <div className="flex items-start gap-3">
+                <div
+                  className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
+                  style={{ background: "rgba(239,68,68,0.1)" }}
+                >
+                  <XCircle className="w-5 h-5" style={{ color: "#ef4444" }} />
+                </div>
+                <div>
+                  <h2
+                    className="text-base font-bold"
+                    style={{ color: "var(--admin-text)" }}
+                  >
+                    Reject Deactivation
+                  </h2>
+                  <p
+                    className="text-xs mt-0.5"
+                    style={{ color: "var(--admin-muted)" }}
+                  >
+                    Reject the deactivation request for <strong>{name}</strong>?
+                  </p>
+                </div>
+              </div>
+              <NoteDialogBody
+                label="Rejection note"
+                placeholder="Reason for rejection…"
+                inputId="reject-deactivate-note"
+                isPending={rejectDeactivate.isPending}
+                confirmLabel="Reject Deactivation"
+                confirmStyle={{
+                  background: "rgba(239,68,68,0.1)",
+                  color: "#ef4444",
+                }}
+                onConfirm={(note) => rejectDeactivate.mutate(note)}
+                onCancel={() => setLifecycleDialog(null)}
+              />
+            </DialogBackdrop>
+          )}
+
           {/* ── Actions ── */}
           <div
             className="rounded-2xl border p-5 space-y-3"
-            style={{ background: "var(--admin-surface)", borderColor: "var(--admin-border)" }}
+            style={{
+              background: "var(--admin-surface)",
+              borderColor: "var(--admin-border)",
+            }}
           >
-            <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "var(--admin-muted)" }}>
+            <p
+              className="text-[10px] font-bold tracking-widest uppercase"
+              style={{ color: "var(--admin-muted)" }}
+            >
               Actions
             </p>
 
@@ -1927,26 +2778,51 @@ export default function MemberDetailPage() {
               style={
                 member.isVerified
                   ? { background: "#f0fdf4", border: "1px solid #bbf7d0" }
-                  : { background: "var(--admin-bg)", border: "1px solid var(--admin-border)" }
+                  : {
+                      background: "var(--admin-bg)",
+                      border: "1px solid var(--admin-border)",
+                    }
               }
             >
               <div className="flex items-center gap-3">
-                {/* Step indicator */}
                 <div
                   className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
                   style={
                     member.isVerified
                       ? { background: "#16a34a", color: "#fff" }
-                      : { background: "var(--admin-border)", color: "var(--admin-muted)" }
+                      : {
+                          background: "var(--admin-border)",
+                          color: "var(--admin-muted)",
+                        }
                   }
                 >
-                  {member.isVerified ? <ShieldCheck className="w-3 h-3" /> : "1"}
+                  {member.isVerified ? (
+                    <ShieldCheck className="w-3 h-3" />
+                  ) : (
+                    "1"
+                  )}
                 </div>
                 <div>
-                  <p className="text-sm font-semibold" style={{ color: member.isVerified ? "#15803d" : "var(--admin-text)" }}>
-                    {member.isVerified ? "Identity verified" : "Step 1 — Verify member"}
+                  <p
+                    className="text-sm font-semibold"
+                    style={{
+                      color: member.isVerified
+                        ? "#15803d"
+                        : "var(--admin-text)",
+                    }}
+                  >
+                    {member.isVerified
+                      ? "Identity verified"
+                      : "Step 1 — Verify member"}
                   </p>
-                  <p className="text-xs" style={{ color: member.isVerified ? "#16a34a" : "var(--admin-muted)" }}>
+                  <p
+                    className="text-xs"
+                    style={{
+                      color: member.isVerified
+                        ? "#16a34a"
+                        : "var(--admin-muted)",
+                    }}
+                  >
                     {member.isVerified
                       ? "KYC and identity checks passed."
                       : "Confirm the member's identity before activation."}
@@ -1959,69 +2835,374 @@ export default function MemberDetailPage() {
                   onClick={() => verify.mutate()}
                   disabled={verify.isPending}
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-60 disabled:cursor-not-allowed shrink-0 hover:opacity-90 active:scale-95"
-                  style={{ background: "var(--admin-text)", color: "var(--admin-bg)" }}
+                  style={{
+                    background: "var(--admin-text)",
+                    color: "var(--admin-bg)",
+                  }}
                 >
                   {verify.isPending ? (
-                    <><Loader2 className="w-4 h-4 animate-spin" /> Verifying…</>
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" /> Verifying…
+                    </>
                   ) : (
-                    <><ShieldCheck className="w-4 h-4" /> Verify member</>
+                    <>
+                      <ShieldCheck className="w-4 h-4" /> Verify member
+                    </>
                   )}
                 </button>
               )}
             </div>
 
-            {/* Step 2 — Activate */}
+            {/* Step 2 — Activate (maker-checker) */}
             <div
-              className="flex items-center justify-between gap-4 px-4 py-3 rounded-xl"
+              className="space-y-2 px-4 py-3 rounded-xl"
               style={
                 member.isActive
                   ? { background: "#f0fdf4", border: "1px solid #bbf7d0" }
                   : member.isVerified
-                    ? { background: "var(--admin-bg)", border: "1px solid var(--admin-border)" }
-                    : { background: "var(--admin-bg)", border: "1px solid var(--admin-border)", opacity: 0.45 }
+                    ? {
+                        background: "var(--admin-bg)",
+                        border: "1px solid var(--admin-border)",
+                      }
+                    : {
+                        background: "var(--admin-bg)",
+                        border: "1px solid var(--admin-border)",
+                        opacity: 0.45,
+                      }
               }
             >
-              <div className="flex items-center gap-3">
-                {/* Step indicator */}
-                <div
-                  className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
-                  style={
-                    member.isActive
-                      ? { background: "#16a34a", color: "#fff" }
-                      : { background: "var(--admin-border)", color: "var(--admin-muted)" }
-                  }
-                >
-                  {member.isActive ? <ShieldCheck className="w-3 h-3" /> : "2"}
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
+                    style={
+                      member.isActive
+                        ? { background: "#16a34a", color: "#fff" }
+                        : {
+                            background: "var(--admin-border)",
+                            color: "var(--admin-muted)",
+                          }
+                    }
+                  >
+                    {member.isActive ? (
+                      <ShieldCheck className="w-3 h-3" />
+                    ) : (
+                      "2"
+                    )}
+                  </div>
+                  <div>
+                    <p
+                      className="text-sm font-semibold"
+                      style={{
+                        color: member.isActive
+                          ? "#15803d"
+                          : "var(--admin-text)",
+                      }}
+                    >
+                      {member.isActive
+                        ? "Account activated"
+                        : "Step 2 — Activate member"}
+                    </p>
+                    <p
+                      className="text-xs"
+                      style={{
+                        color: member.isActive
+                          ? "#16a34a"
+                          : "var(--admin-muted)",
+                      }}
+                    >
+                      {member.isActive
+                        ? "Member can log in and use the platform."
+                        : member.isVerified
+                          ? pendingActivation
+                            ? "Activation pending checker approval."
+                            : "Verified — ready to request activation."
+                          : "Complete Step 1 first."}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-semibold" style={{ color: member.isActive ? "#15803d" : "var(--admin-text)" }}>
-                    {member.isActive ? "Account activated" : "Step 2 — Activate member"}
-                  </p>
-                  <p className="text-xs" style={{ color: member.isActive ? "#16a34a" : "var(--admin-muted)" }}>
-                    {member.isActive
-                      ? "Member can log in and use the platform."
-                      : member.isVerified
-                        ? "Verified — ready to activate."
-                        : "Complete Step 1 first."}
-                  </p>
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
+                  {pendingActivation && <PendingBadge />}
+                  {!member.isActive &&
+                    member.isVerified &&
+                    !pendingActivation && (
+                      <button
+                        id="member-initiate-activate-btn"
+                        type="button"
+                        onClick={() => initiateActivate.mutate()}
+                        disabled={anyLifecycleMutating}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all disabled:opacity-60 disabled:cursor-not-allowed hover:opacity-90 active:scale-95"
+                        style={{
+                          background: "var(--admin-text)",
+                          color: "var(--admin-bg)",
+                        }}
+                      >
+                        {initiateActivate.isPending ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />{" "}
+                            Submitting…
+                          </>
+                        ) : (
+                          <>
+                            <ShieldCheck className="w-3.5 h-3.5" /> Request
+                            Activation
+                          </>
+                        )}
+                      </button>
+                    )}
+                  {/* Checker actions */}
+                  {pendingActivation && (
+                    <>
+                      <button
+                        id="member-approve-activation-btn"
+                        type="button"
+                        disabled={anyLifecycleMutating}
+                        onClick={() =>
+                          setLifecycleDialog({ kind: "approve-activate" })
+                        }
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all hover:opacity-90 disabled:opacity-40"
+                        style={{ background: "#dcfce7", color: "#166534" }}
+                      >
+                        <CheckCircle2 className="w-3 h-3" /> Approve
+                      </button>
+                      <button
+                        id="member-reject-activation-btn"
+                        type="button"
+                        disabled={anyLifecycleMutating}
+                        onClick={() =>
+                          setLifecycleDialog({ kind: "reject-activate" })
+                        }
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all hover:opacity-90 disabled:opacity-40"
+                        style={{
+                          background: "rgba(239,68,68,0.1)",
+                          color: "#ef4444",
+                        }}
+                      >
+                        <XCircle className="w-3 h-3" /> Reject
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
-              {!member.isActive && member.isVerified && (
-                <button
-                  type="button"
-                  onClick={() => activate.mutate()}
-                  disabled={activate.isPending}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-60 disabled:cursor-not-allowed shrink-0 hover:opacity-90 active:scale-95"
-                  style={{ background: "var(--admin-text)", color: "var(--admin-bg)" }}
-                >
-                  {activate.isPending ? (
-                    <><Loader2 className="w-4 h-4 animate-spin" /> Activating…</>
-                  ) : (
-                    <><ShieldCheck className="w-4 h-4" /> Activate member</>
-                  )}
-                </button>
-              )}
             </div>
+
+            {/* Step 3 — Activate as Staff (gated on isActive) */}
+            {member.isActive && (
+              <div
+                className="space-y-2 px-4 py-3 rounded-xl"
+                style={
+                  member.isStaff
+                    ? { background: "#f0fdf4", border: "1px solid #bbf7d0" }
+                    : {
+                        background: "var(--admin-bg)",
+                        border: "1px solid var(--admin-border)",
+                      }
+                }
+              >
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
+                      style=
+                        {member.isStaff
+                          ? { background: "#16a34a", color: "#fff" }
+                          : { background: "var(--admin-border)", color: "var(--admin-muted)" }
+                        }
+                    >
+                      {member.isStaff ? <ShieldCheck className="w-3 h-3" /> : "3"}
+                    </div>
+                    <div>
+                      <p
+                        className="text-sm font-semibold"
+                        style={{ color: member.isStaff ? "#15803d" : "var(--admin-text)" }}
+                      >
+                        {member.isStaff ? "Staff privileges granted" : "Step 3 — Activate as Staff"}
+                      </p>
+                      <p
+                        className="text-xs"
+                        style={{ color: member.isStaff ? "#16a34a" : "var(--admin-muted)" }}
+                      >
+                        {member.isStaff
+                          ? "This member has staff access and can be assigned a role."
+                          : "Required before a role can be assigned to this member."}
+                      </p>
+                    </div>
+                  </div>
+                  {!member.isStaff && (
+                    <button
+                      id="member-activate-staff-btn"
+                      type="button"
+                      disabled={anyLifecycleMutating}
+                      onClick={() => setLifecycleDialog({ kind: "confirm-activate-staff" })}
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all disabled:opacity-60 disabled:cursor-not-allowed hover:opacity-90 active:scale-95 shrink-0"
+                      style={{ background: "#fef9c3", color: "#854d0e", border: "1px solid #fde68a" }}
+                    >
+                      {activateAsStaff.isPending ? (
+                        <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Activating…</>
+                      ) : (
+                        <><KeyRound className="w-3.5 h-3.5" /> Activate as Staff</>
+                      )}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Step 4 — Deactivate (maker-checker) — only shown for active members */}
+            {member.isActive && (
+              <div
+                className="space-y-2 px-4 py-3 rounded-xl"
+                style={{
+                  background: "var(--admin-bg)",
+                  border: "1px solid var(--admin-border)",
+                }}
+              >
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
+                      style={{
+                        background: "var(--admin-border)",
+                        color: "var(--admin-muted)",
+                      }}
+                    >
+                      <ShieldAlert className="w-3 h-3" />
+                    </div>
+                    <div>
+                      <p
+                        className="text-sm font-semibold"
+                        style={{ color: "var(--admin-text)" }}
+                      >
+                        Deactivate member
+                      </p>
+                      <p
+                        className="text-xs"
+                        style={{ color: "var(--admin-muted)" }}
+                      >
+                        {pendingDeactivation
+                          ? "Deactivation pending checker approval."
+                          : "Submit a deactivation request for checker review."}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 shrink-0">
+                    {pendingDeactivation && <PendingBadge />}
+                    {!pendingDeactivation && (
+                      <button
+                        id="member-show-deactivate-form-btn"
+                        type="button"
+                        onClick={() => setShowDeactivateForm((v) => !v)}
+                        disabled={anyLifecycleMutating}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all hover:opacity-90 disabled:opacity-40"
+                        style={{
+                          background: "rgba(239,68,68,0.1)",
+                          color: "#ef4444",
+                        }}
+                      >
+                        <ShieldAlert className="w-3 h-3" />
+                        {showDeactivateForm ? "Cancel" : "Deactivate"}
+                      </button>
+                    )}
+                    {/* Checker actions */}
+                    {pendingDeactivation && (
+                      <>
+                        <button
+                          id="member-approve-deactivation-btn"
+                          type="button"
+                          disabled={anyLifecycleMutating}
+                          onClick={() =>
+                            setLifecycleDialog({ kind: "approve-deactivate" })
+                          }
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all hover:opacity-90 disabled:opacity-40"
+                          style={{ background: "#dcfce7", color: "#166534" }}
+                        >
+                          <CheckCircle2 className="w-3 h-3" /> Approve
+                        </button>
+                        <button
+                          id="member-reject-deactivation-btn"
+                          type="button"
+                          disabled={anyLifecycleMutating}
+                          onClick={() =>
+                            setLifecycleDialog({ kind: "reject-deactivate" })
+                          }
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all hover:opacity-90 disabled:opacity-40"
+                          style={{
+                            background: "rgba(239,68,68,0.1)",
+                            color: "#ef4444",
+                          }}
+                        >
+                          <XCircle className="w-3 h-3" /> Reject
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Deactivation reason input */}
+                {showDeactivateForm && !pendingDeactivation && (
+                  <div
+                    className="mt-2 space-y-2 pt-2"
+                    style={{ borderTop: "1px solid var(--admin-border)" }}
+                  >
+                    <label
+                      className="text-[10px] font-bold tracking-widest uppercase"
+                      style={{ color: "var(--admin-muted)" }}
+                    >
+                      Reason for deactivation
+                    </label>
+                    <textarea
+                      id="member-deactivate-reason"
+                      value={deactivateReason}
+                      onChange={(e) => setDeactivateReason(e.target.value)}
+                      rows={2}
+                      placeholder="Enter the reason for deactivation…"
+                      className="w-full px-3 py-2 rounded-xl text-sm outline-none border resize-none"
+                      style={{
+                        background: "var(--admin-surface)",
+                        color: "var(--admin-text)",
+                        borderColor: "var(--admin-border)",
+                      }}
+                    />
+                    <div className="flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowDeactivateForm(false);
+                          setDeactivateReason("");
+                        }}
+                        className="text-xs font-medium px-3 py-1.5 rounded-lg hover:opacity-70 transition-opacity"
+                        style={{ color: "var(--admin-muted)" }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        id="member-submit-deactivate-btn"
+                        type="button"
+                        disabled={
+                          !deactivateReason.trim() ||
+                          initiateDeactivate.isPending
+                        }
+                        onClick={() => initiateDeactivate.mutate()}
+                        className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-semibold transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                        style={{
+                          background: "rgba(239,68,68,0.15)",
+                          color: "#ef4444",
+                        }}
+                      >
+                        {initiateDeactivate.isPending ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />{" "}
+                            Submitting…
+                          </>
+                        ) : (
+                          "Submit for Approval"
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* ── Detail sections ── */}
@@ -2030,13 +3211,28 @@ export default function MemberDetailPage() {
             {member.basicInfo && (
               <Card>
                 <SectionHeading icon={User} label="Basic Information" />
-                <InfoRow label="First name" value={member.basicInfo.firstName} />
-                <InfoRow label="Middle name" value={member.basicInfo.middleName} />
+                <InfoRow
+                  label="First name"
+                  value={member.basicInfo.firstName}
+                />
+                <InfoRow
+                  label="Middle name"
+                  value={member.basicInfo.middleName}
+                />
                 <InfoRow label="Last name" value={member.basicInfo.lastName} />
                 <InfoRow label="Gender" value={member.basicInfo.gender} />
-                <InfoRow label="Date of birth" value={formatDate(member.basicInfo.dateOfBirth)} />
-                <InfoRow label="Residency status" value={member.basicInfo.residencyStatus} />
-                <InfoRow label="Province of residence" value={member.basicInfo.provinceOfResidence} />
+                <InfoRow
+                  label="Date of birth"
+                  value={formatDate(member.basicInfo.dateOfBirth)}
+                />
+                <InfoRow
+                  label="Residency status"
+                  value={member.basicInfo.residencyStatus}
+                />
+                <InfoRow
+                  label="Province of residence"
+                  value={member.basicInfo.provinceOfResidence}
+                />
               </Card>
             )}
 
@@ -2045,11 +3241,17 @@ export default function MemberDetailPage() {
               <Card>
                 <SectionHeading icon={Phone} label="Contact" />
                 <InfoRow label="Phone" value={member.contact.phoneNumber} />
-                <InfoRow label="Personal email" value={member.contact.personalEmail} />
+                <InfoRow
+                  label="Personal email"
+                  value={member.contact.personalEmail}
+                />
                 <InfoRow label="Address" value={member.contact.homeAddress} />
                 <InfoRow label="City" value={member.contact.city} />
                 <InfoRow label="Province" value={member.contact.province} />
-                <InfoRow label="Postal code" value={member.contact.postalCode} />
+                <InfoRow
+                  label="Postal code"
+                  value={member.contact.postalCode}
+                />
                 <InfoRow label="Country" value={member.contact.country} />
               </Card>
             )}
@@ -2059,10 +3261,16 @@ export default function MemberDetailPage() {
               <Card>
                 <SectionHeading icon={Briefcase} label="Employment" />
                 <InfoRow label="Status" value={member.employment.status} />
-                <InfoRow label="Employer" value={member.employment.employerName} />
+                <InfoRow
+                  label="Employer"
+                  value={member.employment.employerName}
+                />
                 <InfoRow label="Industry" value={member.employment.industry} />
                 <InfoRow label="Job title" value={member.employment.jobTitle} />
-                <InfoRow label="Work location" value={member.employment.workLocation} />
+                <InfoRow
+                  label="Work location"
+                  value={member.employment.workLocation}
+                />
                 <InfoRow
                   label="Years in role"
                   value={
@@ -2079,7 +3287,10 @@ export default function MemberDetailPage() {
               <Card>
                 <SectionHeading icon={Users} label="Next of Kin" />
                 <InfoRow label="Full name" value={member.nextOfKin.fullName} />
-                <InfoRow label="Relationship" value={member.nextOfKin.relationship} />
+                <InfoRow
+                  label="Relationship"
+                  value={member.nextOfKin.relationship}
+                />
                 <InfoRow label="Email" value={member.nextOfKin.email} />
                 <InfoRow label="Phone" value={member.nextOfKin.phoneNumber} />
                 <InfoRow
@@ -2092,7 +3303,9 @@ export default function MemberDetailPage() {
                 />
                 <InfoRow
                   label="Primary beneficiary"
-                  value={<BoolBadge value={member.nextOfKin.isPrimaryBeneficiary} />}
+                  value={
+                    <BoolBadge value={member.nextOfKin.isPrimaryBeneficiary} />
+                  }
                 />
               </Card>
             )}
@@ -2102,13 +3315,30 @@ export default function MemberDetailPage() {
               <Card>
                 <SectionHeading icon={MapPin} label="Referee" />
                 {member.referee.skipReferee ? (
-                  <p className="text-xs" style={{ color: "var(--admin-muted)" }}>Referee was skipped.</p>
+                  <p
+                    className="text-xs"
+                    style={{ color: "var(--admin-muted)" }}
+                  >
+                    Referee was skipped.
+                  </p>
                 ) : (
                   <>
-                    <InfoRow label="Full name" value={member.referee.refereeFullName} />
-                    <InfoRow label="Member ID" value={member.referee.memberId} />
-                    <InfoRow label="Email" value={member.referee.refereeEmail} />
-                    <InfoRow label="Relationship" value={member.referee.relationship} />
+                    <InfoRow
+                      label="Full name"
+                      value={member.referee.refereeFullName}
+                    />
+                    <InfoRow
+                      label="Member ID"
+                      value={member.referee.memberId}
+                    />
+                    <InfoRow
+                      label="Email"
+                      value={member.referee.refereeEmail}
+                    />
+                    <InfoRow
+                      label="Relationship"
+                      value={member.referee.relationship}
+                    />
                     <InfoRow
                       label="How long known"
                       value={
@@ -2126,14 +3356,48 @@ export default function MemberDetailPage() {
             {member.kycAttestation && (
               <Card>
                 <SectionHeading icon={FileCheck} label="KYC Attestation" />
-                <InfoRow label="Signature kind" value={member.kycAttestation.signatureKind} />
-                <InfoRow label="Signature name" value={member.kycAttestation.signatureName} />
-                <InfoRow label="Bylaws version" value={member.kycAttestation.bylawsVersion} />
-                <InfoRow label="Signed at" value={formatDateTime(member.kycAttestation.signedAtUtc)} />
-                <InfoRow label="Signed from IP" value={member.kycAttestation.signedFromIp} />
-                <InfoRow label="Info accurate" value={<BoolBadge value={member.kycAttestation.informationAccurate} />} />
-                <InfoRow label="Agreed to bylaws" value={<BoolBadge value={member.kycAttestation.agreedToBylaws} />} />
-                <InfoRow label="Data consent" value={<BoolBadge value={member.kycAttestation.consentToDataProcessing} />} />
+                <InfoRow
+                  label="Signature kind"
+                  value={member.kycAttestation.signatureKind}
+                />
+                <InfoRow
+                  label="Signature name"
+                  value={member.kycAttestation.signatureName}
+                />
+                <InfoRow
+                  label="Bylaws version"
+                  value={member.kycAttestation.bylawsVersion}
+                />
+                <InfoRow
+                  label="Signed at"
+                  value={formatDateTime(member.kycAttestation.signedAtUtc)}
+                />
+                <InfoRow
+                  label="Signed from IP"
+                  value={member.kycAttestation.signedFromIp}
+                />
+                <InfoRow
+                  label="Info accurate"
+                  value={
+                    <BoolBadge
+                      value={member.kycAttestation.informationAccurate}
+                    />
+                  }
+                />
+                <InfoRow
+                  label="Agreed to bylaws"
+                  value={
+                    <BoolBadge value={member.kycAttestation.agreedToBylaws} />
+                  }
+                />
+                <InfoRow
+                  label="Data consent"
+                  value={
+                    <BoolBadge
+                      value={member.kycAttestation.consentToDataProcessing}
+                    />
+                  }
+                />
               </Card>
             )}
           </div>
@@ -2141,7 +3405,10 @@ export default function MemberDetailPage() {
           {/* ── Devices ── */}
           {member.deviceInfos.length > 0 && (
             <Card>
-              <SectionHeading icon={Monitor} label={`Devices (${member.deviceInfos.length})`} />
+              <SectionHeading
+                icon={Monitor}
+                label={`Devices (${member.deviceInfos.length})`}
+              />
               <div className="space-y-3">
                 {member.deviceInfos.map((d) => (
                   <div
@@ -2150,20 +3417,42 @@ export default function MemberDetailPage() {
                     style={{ borderColor: "var(--admin-border)" }}
                   >
                     <div className="flex justify-between gap-2">
-                      <span style={{ color: "var(--admin-muted)" }}>Device OS</span>
-                      <span className="font-medium" style={{ color: "var(--admin-text)" }}>{d.deviceOS ?? "—"}</span>
+                      <span style={{ color: "var(--admin-muted)" }}>
+                        Device OS
+                      </span>
+                      <span
+                        className="font-medium"
+                        style={{ color: "var(--admin-text)" }}
+                      >
+                        {d.deviceOS ?? "—"}
+                      </span>
                     </div>
                     <div className="flex justify-between gap-2">
-                      <span style={{ color: "var(--admin-muted)" }}>Device ID</span>
-                      <span className="font-mono truncate max-w-[180px]" style={{ color: "var(--admin-text)" }}>{d.deviceID ?? "—"}</span>
+                      <span style={{ color: "var(--admin-muted)" }}>
+                        Device ID
+                      </span>
+                      <span
+                        className="font-mono truncate max-w-[180px]"
+                        style={{ color: "var(--admin-text)" }}
+                      >
+                        {d.deviceID ?? "—"}
+                      </span>
                     </div>
                     <div className="flex justify-between gap-2">
-                      <span style={{ color: "var(--admin-muted)" }}>Last IP</span>
-                      <span style={{ color: "var(--admin-text)" }}>{d.lastIp ?? "—"}</span>
+                      <span style={{ color: "var(--admin-muted)" }}>
+                        Last IP
+                      </span>
+                      <span style={{ color: "var(--admin-text)" }}>
+                        {d.lastIp ?? "—"}
+                      </span>
                     </div>
                     <div className="flex justify-between gap-2">
-                      <span style={{ color: "var(--admin-muted)" }}>Trusted until</span>
-                      <span style={{ color: "var(--admin-text)" }}>{formatDateTime(d.trustedUntil)}</span>
+                      <span style={{ color: "var(--admin-muted)" }}>
+                        Trusted until
+                      </span>
+                      <span style={{ color: "var(--admin-text)" }}>
+                        {formatDateTime(d.trustedUntil)}
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -2172,11 +3461,17 @@ export default function MemberDetailPage() {
           )}
 
           {/* ── Access & Permissions ── */}
-          <AccessAndPermissionsSection userId={member.id ?? id} userName={name} />
+          <AccessAndPermissionsSection
+            userId={member.id ?? id}
+            userName={name}
+          />
 
           {/* Member ID footer */}
           {member.id && (
-            <p className="pt-4 text-[10px] font-mono truncate" style={{ color: "var(--admin-muted)" }}>
+            <p
+              className="pt-4 text-[10px] font-mono truncate"
+              style={{ color: "var(--admin-muted)" }}
+            >
               ID: {member.id}
             </p>
           )}

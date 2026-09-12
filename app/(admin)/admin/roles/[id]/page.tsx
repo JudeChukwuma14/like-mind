@@ -21,7 +21,6 @@ import {
   getAllRoles,
   getAllPermissions,
   getRolePermissions,
-  updateRolePermissions,
   type Permission,
 } from "@/app/lib/authorization-api";
 
@@ -172,45 +171,40 @@ export default function RoleDetailPage() {
 
   // ── Edit state ──────────────────────────────────────────────────────────────
 
-  const [editingCodes, setEditingCodes] = useState<Set<string> | null>(null);
-  const isEditing = editingCodes !== null;
-  const displayedCodes = editingCodes ?? serverGrantedCodes;
-
-  const enterEdit = () => setEditingCodes(new Set(serverGrantedCodes));
-  const cancelEdit = () => {
-    setEditingCodes(null);
-    setPermissionSearch("");
-  };
-
-  const togglePermission = (code: string) => {
-    if (!editingCodes) return;
-    const next = new Set(editingCodes);
-    const lc = code.toLowerCase();
-    if (next.has(lc)) next.delete(lc);
-    else next.add(lc);
-    setEditingCodes(next);
-  };
+  const isEditing = false;
+  const displayedCodes = serverGrantedCodes;
 
   // ── Search state ─────────────────────────────────────────────────────────────
 
+  const [showOnlyGranted, setShowOnlyGranted] = useState(false);
   const [permissionSearch, setPermissionSearch] = useState("");
   const q = permissionSearch.trim().toLowerCase();
 
   const filteredCategories = useMemo<[string, Permission[]][]>(() => {
-    if (!q) return categories;
     return categories
       .map(([cat, perms]): [string, Permission[]] => {
-        const catMatches = cat.toLowerCase().includes(q);
-        const matchingPerms = catMatches
-          ? perms
-          : perms.filter(
+        let matching = perms;
+        
+        if (q) {
+          const catMatches = cat.toLowerCase().includes(q);
+          if (!catMatches) {
+            matching = matching.filter(
               (p) =>
                 p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q),
             );
-        return [cat, matchingPerms];
+          }
+        }
+        
+        if (showOnlyGranted) {
+          matching = matching.filter((p) =>
+            displayedCodes.has(p.id.toLowerCase()) || displayedCodes.has(p.code.toLowerCase())
+          );
+        }
+        
+        return [cat, matching];
       })
       .filter(([, perms]) => perms.length > 0);
-  }, [categories, q]);
+  }, [categories, q, showOnlyGranted, displayedCodes]);
 
   // ── Collapse state ───────────────────────────────────────────────────────────
 
@@ -225,22 +219,6 @@ export default function RoleDetailPage() {
     });
   };
 
-  // ── Per-category helpers ─────────────────────────────────────────────────────
-
-  const selectAll = (perms: Permission[]) => {
-    if (!editingCodes) return;
-    const next = new Set(editingCodes);
-    for (const p of perms) next.add(p.code.toLowerCase());
-    setEditingCodes(next);
-  };
-
-  const clearAll = (perms: Permission[]) => {
-    if (!editingCodes) return;
-    const next = new Set(editingCodes);
-    for (const p of perms) next.delete(p.code.toLowerCase());
-    setEditingCodes(next);
-  };
-
   const selectedInCategory = (perms: Permission[]) =>
     perms.filter(
       (p) =>
@@ -250,44 +228,15 @@ export default function RoleDetailPage() {
 
   const allInCategory = (perms: Permission[]) => selectedInCategory(perms) === perms.length;
 
-  // ── Save mutation ────────────────────────────────────────────────────────────
-
-  const savePermissions = useMutation({
-    mutationFn: () => {
-      if (!editingCodes) throw new Error("Not editing");
-      return updateRolePermissions({
-        roleId: id,
-        permissionCodes: (permissionsQuery.data ?? [])
-          .filter((p) => editingCodes.has(p.code.toLowerCase()))
-          .map((p) => p.code),
-      });
-    },
-    onSuccess: () => {
-      toast.success("Permissions saved successfully.");
-      setEditingCodes(null);
-      setPermissionSearch("");
-      queryClient.invalidateQueries({ queryKey: ["admin-role-permissions", id] });
-      queryClient.invalidateQueries({ queryKey: ["admin-roles"] });
-    },
-    onError: (err) => toast.error(getApiErrorMessage(err)),
-  });
-
   // ── Loading / error splits ───────────────────────────────────────────────────
 
   const isRoleLoading = rolesQuery.isLoading;
   const isPermsLoading = permissionsQuery.isLoading || rolePermsQuery.isLoading;
   const isError = rolesQuery.isError || permissionsQuery.isError || rolePermsQuery.isError;
   const error = rolesQuery.error ?? permissionsQuery.error ?? rolePermsQuery.error;
-  const isSaving = savePermissions.isPending;
 
-  const editedCount = editingCodes?.size ?? serverGrantedCodes.size;
-  const added = editingCodes
-    ? [...editingCodes].filter((c) => !serverGrantedCodes.has(c)).length
-    : 0;
-  const removed = editingCodes
-    ? [...serverGrantedCodes].filter((c) => !editingCodes.has(c)).length
-    : 0;
-  const hasChanges = added > 0 || removed > 0;
+  const editedCount = serverGrantedCodes.size;
+  const hasChanges = false;
 
   return (
     <div className={`max-w-3xl mx-auto space-y-5 ${isEditing ? "pb-28" : "pb-12"}`}>
@@ -368,18 +317,6 @@ export default function RoleDetailPage() {
                 )}
               </div>
             </div>
-
-            {/* Edit button */}
-            {!isEditing && !isPermsLoading && (
-              <button
-                type="button"
-                onClick={enterEdit}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all hover:opacity-90 active:scale-95 shrink-0"
-                style={{ background: "var(--admin-text)", color: "var(--admin-bg)" }}
-              >
-                Edit permissions
-              </button>
-            )}
           </div>
 
           {/* Stats */}
@@ -411,28 +348,6 @@ export default function RoleDetailPage() {
                 of {permissionsQuery.data?.length ?? 0} permissions
               </p>
             </div>
-
-            {isEditing && hasChanges && (
-              <div>
-                <p
-                  className="text-[10px] uppercase tracking-widest font-bold mb-0.5"
-                  style={{ color: "var(--admin-muted)" }}
-                >
-                  Unsaved
-                </p>
-                <p
-                  className="text-2xl font-bold tabular-nums"
-                  style={{ color: "var(--admin-primary)" }}
-                >
-                  {added > 0 && `+${added}`}
-                  {added > 0 && removed > 0 && " / "}
-                  {removed > 0 && `−${removed}`}
-                </p>
-                <p className="text-xs mt-0.5" style={{ color: "var(--admin-muted)" }}>
-                  pending changes
-                </p>
-              </div>
-            )}
           </div>
         </div>
       )}
@@ -440,33 +355,51 @@ export default function RoleDetailPage() {
       {/* ── Permission editor (only after role loads) ── */}
       {role && (
         <>
-          {/* Search */}
-          <div
-            className="flex items-center gap-2 px-4 py-2.5 rounded-full border text-sm"
-            style={{
-              borderColor: "var(--admin-border)",
-              background: "var(--admin-surface)",
-              color: "var(--admin-muted)",
-            }}
-          >
-            <Search className="w-3.5 h-3.5 shrink-0" />
-            <input
-              type="text"
-              value={permissionSearch}
-              onChange={(e) => setPermissionSearch(e.target.value)}
-              placeholder="Search permissions by name, code, or category…"
-              className="bg-transparent border-none outline-none w-full text-sm"
-              style={{ color: "var(--admin-text)" }}
-            />
-            {permissionSearch && (
-              <button
-                type="button"
-                onClick={() => setPermissionSearch("")}
-                className="shrink-0 transition-opacity hover:opacity-70"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
+          {/* Controls */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            {/* Search */}
+            <div
+              className="flex items-center gap-2 px-4 py-2.5 rounded-full border text-sm flex-1"
+              style={{
+                borderColor: "var(--admin-border)",
+                background: "var(--admin-surface)",
+                color: "var(--admin-muted)",
+              }}
+            >
+              <Search className="w-3.5 h-3.5 shrink-0" />
+              <input
+                type="text"
+                value={permissionSearch}
+                onChange={(e) => setPermissionSearch(e.target.value)}
+                placeholder="Search permissions by name, code, or category…"
+                className="bg-transparent border-none outline-none w-full text-sm"
+                style={{ color: "var(--admin-text)" }}
+              />
+              {permissionSearch && (
+                <button
+                  type="button"
+                  onClick={() => setPermissionSearch("")}
+                  className="shrink-0 transition-opacity hover:opacity-70"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Toggle Granted */}
+            <button
+              onClick={() => setShowOnlyGranted(!showOnlyGranted)}
+              className={`px-4 py-2.5 rounded-full border text-sm font-medium transition-colors whitespace-nowrap ${
+                showOnlyGranted ? "border-transparent" : "bg-transparent"
+              }`}
+              style={
+                showOnlyGranted
+                  ? { background: "var(--admin-primary)", color: "#000" }
+                  : { borderColor: "var(--admin-border)", color: "var(--admin-text)" }
+              }
+            >
+              {showOnlyGranted ? "Show all permissions" : "Show only assigned"}
+            </button>
           </div>
 
           {/* Permissions loading skeleton */}

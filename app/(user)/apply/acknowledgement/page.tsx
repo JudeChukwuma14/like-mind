@@ -62,7 +62,7 @@ export default function AcknowledgementPage() {
   const submitApplication = useMutation({
     mutationFn: async () => {
       const [body, fingerprint] = await Promise.all([buildRegisterRequest(data), computeFingerprint()]);
-      return apiFetch<ApiEnvelope<unknown>>("/api/User/Users/Register", {
+      return apiFetch<ApiEnvelope<unknown>>("/api/User/Register", {
         method: "POST",
         headers: {
           "X-Device-Id": getDeviceId(),

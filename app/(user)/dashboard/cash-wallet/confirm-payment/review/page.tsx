@@ -1,20 +1,69 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Check, FileText } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Check, FileText, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getMyDrafts } from "@/app/lib/savings-api";
+import { submitPayment } from "@/app/lib/payments-api";
+import { getApiErrorMessage } from "@/app/lib/api-client";
+import toast from "react-hot-toast";
+
+function fmt(n: number | null | undefined): string {
+  if (n == null) return "—";
+  return new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(n);
+}
 
 export default function ReviewPaymentPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const draftId = searchParams?.get("draftId") || "";
+  const queryClient = useQueryClient();
+
   const [confirmed, setConfirmed] = useState(true);
+
+  const { data: drafts = [], isLoading, error } = useQuery({
+    queryKey: ["my-drafts"],
+    queryFn: () => getMyDrafts(),
+  });
+
+  const draft = drafts.find((d: any) => d.id === draftId);
+
+  const { mutate: submit, isPending } = useMutation({
+    mutationFn: () => submitPayment(draftId),
+    onSuccess: () => {
+      toast.success("Payment submitted for confirmation!");
+      queryClient.invalidateQueries({ queryKey: ["my-drafts"] });
+      router.push("/dashboard/cash-wallet/confirm-payment/success");
+    },
+    onError: (err) => {
+      toast.error(getApiErrorMessage(err));
+    }
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (confirmed) {
-      router.push("/dashboard/cash-wallet/confirm-payment/success");
+      submit();
     }
   };
+
+  if (!draftId) {
+    return <div className="p-12 text-center text-gray-500">No draft selected.</div>;
+  }
+
+  if (isLoading) {
+    return <div className="p-12 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-gray-300" /></div>;
+  }
+
+  if (!draft) {
+    return <div className="p-12 text-center text-gray-500">Draft not found.</div>;
+  }
+
+  // Handle potentially mismatched type/contributionType fields gracefully
+  const typeStr = draft.type ?? draft.contributionType ?? "Unknown type";
+  const refStr = draft.referenceNumber || "No reference";
 
   return (
     <div className="space-y-8 pb-12">
@@ -58,36 +107,30 @@ export default function ReviewPaymentPage() {
           
           <div className="bg-gray-50/50 rounded-xl border border-gray-100 mb-6">
             <div className="flex items-center justify-between p-4 border-b border-gray-100">
-              <span className="text-sm text-gray-500">Contribution month</span>
-              <span className="text-sm font-bold text-[#111]">April 2026</span>
-            </div>
-            <div className="flex items-center justify-between p-4 border-b border-gray-100">
               <span className="text-sm text-gray-500">Type</span>
-              <span className="text-sm font-medium text-[#111]">Savings contribution</span>
+              <span className="text-sm font-medium text-[#111]">{typeStr}</span>
             </div>
             <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-white">
               <span className="text-sm text-gray-500">Amount paid</span>
-              <span className="text-lg font-bold text-[#111]">₦ 25,000</span>
+              <span className="text-lg font-bold text-[#111]">{fmt(draft.amount)}</span>
             </div>
             <div className="flex items-center justify-between p-4 border-b border-gray-100">
-              <span className="text-sm text-gray-500">Payment date</span>
-              <span className="text-sm font-medium text-[#111]">14 April 2026</span>
+              <span className="text-sm text-gray-500">Interac/Bank reference</span>
+              <span className="text-sm font-medium text-[#111]">{refStr}</span>
             </div>
             <div className="flex items-center justify-between p-4 border-b border-gray-100">
-              <span className="text-sm text-gray-500">Method</span>
-              <span className="text-sm font-medium text-[#111]">Interac e-Transfer</span>
+               <span className="text-sm text-gray-500">Note</span>
+               <span className="text-sm font-medium text-[#111] truncate max-w-[200px]">{draft.note || "None"}</span>
             </div>
-            <div className="flex items-center justify-between p-4 border-b border-gray-100">
-              <span className="text-sm text-gray-500">Interac reference</span>
-              <span className="text-sm font-medium text-[#111]">C1A2-8820-41AP</span>
-            </div>
-            <div className="flex items-center justify-between p-4">
-              <span className="text-sm text-gray-500">Proof</span>
-              <div className="flex items-center gap-1.5 text-sm font-medium text-[#111]">
-                <FileText size={16} className="text-gray-400" />
-                Interac-receipt-14Apr.pdf
+            {draft.proofUrl && (
+              <div className="flex items-center justify-between p-4">
+                <span className="text-sm text-gray-500">Proof</span>
+                <a href={draft.proofUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm font-medium text-amber-600 hover:underline">
+                  <FileText size={16} />
+                  View uploaded proof
+                </a>
               </div>
-            </div>
+            )}
           </div>
 
           <form onSubmit={handleSubmit}>
@@ -117,82 +160,23 @@ export default function ReviewPaymentPage() {
                 Back
               </button>
               <div className="flex flex-col-reverse sm:flex-row sm:items-center gap-4">
-                <button 
-                  type="button"
-                  onClick={() => router.back()}
+                <Link 
+                  href={`/dashboard/cash-wallet/confirm-payment?draftId=${draftId}`}
                   className="px-4 py-2.5 text-sm font-medium text-gray-500 hover:text-[#111] transition-colors"
                 >
                   Edit details
-                </button>
+                </Link>
                 <button 
                   type="submit" 
-                  disabled={!confirmed}
+                  disabled={!confirmed || isPending}
                   className="flex items-center justify-center gap-2 px-6 py-2.5 bg-emerald-600 text-white rounded-full text-sm font-medium hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                 >
-                  <Check size={16} strokeWidth={3} />
+                  {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check size={16} strokeWidth={3} />}
                   Submit confirmation
                 </button>
               </div>
             </div>
           </form>
-        </div>
-
-        {/* Right: Instructions (Same as form step) */}
-        <div className="w-full lg:w-[320px] xl:w-[360px] space-y-4 shrink-0">
-          
-          <div className="bg-gradient-to-br from-gray-900 via-black to-gray-900 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden border border-gray-800">
-            <div className="absolute -top-12 -right-12 w-32 h-32 bg-amber-500/20 rounded-full blur-3xl"></div>
-            
-            <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-6 relative z-10">
-              Send Interac E-Transfer to
-            </p>
-            
-            <div className="space-y-4 relative z-10">
-              <div>
-                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">
-                  Interac Email
-                </p>
-                <p className="font-bold text-base">pay@likemind.co</p>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">
-                  Security Question
-                </p>
-                <p className="font-bold text-base">Your member ID</p>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">
-                  Answer
-                </p>
-                <p className="font-bold text-base">LM-04812</p>
-              </div>
-            </div>
-            
-            <button className="w-full mt-6 py-2.5 bg-white text-black rounded-full text-sm font-bold hover:bg-gray-100 transition-colors relative z-10">
-              Copy Interac email
-            </button>
-          </div>
-
-          <div className="bg-white/50 p-6 rounded-2xl border border-gray-100 shadow-sm">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">
-              Important
-            </p>
-            <ul className="space-y-3 text-sm text-gray-600">
-              <li className="flex items-start gap-2">
-                <span className="text-gray-300 mt-0.5">—</span>
-                <span>Use member ID <strong>#LM-04812</strong> as payment narration.</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-gray-300 mt-0.5">—</span>
-                <span>Submit by 15th of the month to keep status current.</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-gray-300 mt-0.5">—</span>
-                <span>Admin confirms within 1-2 working days.</span>
-              </li>
-            </ul>
-          </div>
-
         </div>
       </div>
       

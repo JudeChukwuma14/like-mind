@@ -1,10 +1,26 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { Mail, Phone, ShieldCheck, ShieldAlert } from "lucide-react";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  Mail,
+  Phone,
+  ShieldCheck,
+  ShieldAlert,
+  Plus,
+  Trash2,
+  Loader2,
+  Info,
+} from "lucide-react";
 import { adminApiFetch, getApiErrorMessage } from "@/app/lib/api-client";
 import { useAdminAuth } from "@/app/providers/AdminAuthProvider";
 import { pluckMember, formatDate } from "@/app/lib/member-profile";
+import {
+  getWithdrawalApprovalTiers,
+  updateWithdrawalApprovalTiers,
+  type ApprovalTier,
+} from "@/app/lib/withdrawal-tiers-api";
+import toast from "react-hot-toast";
 
 const toggleSettings = [
   {
@@ -44,6 +60,225 @@ const toggleSettings = [
 /** "RootAdmin" -> "Root Admin" */
 function humanizeRole(role: string): string {
   return role.replace(/([a-z0-9])([A-Z])/g, "$1 $2");
+}
+
+function fmt(n: number | null | undefined): string {
+  if (n == null) return "—";
+  return new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(n);
+}
+
+// ─── Withdrawal Approval Tiers Card ──────────────────────────────────────────
+
+function WithdrawalApprovalTiersCard() {
+  const queryClient = useQueryClient();
+
+  const { data: tiers = [], isLoading, isError, error } = useQuery({
+    queryKey: ["withdrawal-approval-tiers"],
+    queryFn: getWithdrawalApprovalTiers,
+  });
+
+  // Local editable copy
+  const [localTiers, setLocalTiers] = useState<ApprovalTier[] | null>(null);
+  const workingTiers: ApprovalTier[] = localTiers ?? tiers;
+
+  const { mutate: save, isPending } = useMutation({
+    mutationFn: (t: ApprovalTier[]) => updateWithdrawalApprovalTiers(t),
+    onSuccess: () => {
+      toast.success("Approval tiers saved.");
+      setLocalTiers(null);
+      queryClient.invalidateQueries({ queryKey: ["withdrawal-approval-tiers"] });
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err)),
+  });
+
+  function addTier() {
+    const base: ApprovalTier[] = localTiers ?? tiers;
+    setLocalTiers([...base, { minAmount: 0, maxAmount: null, requiredApprovals: 1 }]);
+  }
+
+  function removeTier(idx: number) {
+    setLocalTiers(workingTiers.filter((_, i) => i !== idx));
+  }
+
+  function updateTier(idx: number, patch: Partial<ApprovalTier>) {
+    setLocalTiers(workingTiers.map((t, i) => (i === idx ? { ...t, ...patch } : t)));
+  }
+
+  function handleSave() {
+    // Basic validation
+    for (const t of workingTiers) {
+      if (t.minAmount < 0) { toast.error("Min amount cannot be negative."); return; }
+      if (t.maxAmount != null && t.maxAmount < t.minAmount) { toast.error("Max amount must be ≥ min amount."); return; }
+      if (t.requiredApprovals < 1) { toast.error("Required approvals must be at least 1."); return; }
+    }
+    save(workingTiers);
+  }
+
+  const isDirty = localTiers !== null;
+
+  return (
+    <div
+      className="p-6 rounded-2xl border"
+      style={{ background: "var(--admin-surface)", borderColor: "var(--admin-border)" }}
+    >
+      <div className="flex items-start justify-between gap-4 mb-1">
+        <h2 className="font-semibold" style={{ color: "var(--admin-text)" }}>
+          Withdrawal Approval Tiers
+        </h2>
+        <button
+          id="admin-add-tier-btn"
+          type="button"
+          onClick={addTier}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all hover:opacity-90"
+          style={{ background: "var(--admin-primary)", color: "#000" }}
+        >
+          <Plus className="w-3.5 h-3.5" /> Add tier
+        </button>
+      </div>
+      <p className="text-sm mb-2" style={{ color: "var(--admin-muted)" }}>
+        Define how many approvals are required based on withdrawal or deduction amount.
+      </p>
+
+      {/* Snapshot notice */}
+      <div
+        className="flex items-start gap-2 px-3 py-2.5 rounded-xl mb-6 text-xs leading-relaxed"
+        style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", color: "var(--admin-text)" }}
+      >
+        <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: "#f59e0b" }} />
+        <span>
+          Changing these rules <strong>only affects new requests</strong>. Existing pending or approving
+          requests retain the approval count that was set when they were created.
+        </span>
+      </div>
+
+      {isLoading && (
+        <p className="text-sm py-4 text-center" style={{ color: "var(--admin-muted)" }}>
+          Loading tiers…
+        </p>
+      )}
+      {isError && (
+        <p className="text-sm py-4 text-center" style={{ color: "var(--admin-accent)" }}>
+          {getApiErrorMessage(error)}
+        </p>
+      )}
+
+      {!isLoading && !isError && workingTiers.length === 0 && (
+        <p className="text-sm py-6 text-center" style={{ color: "var(--admin-muted)" }}>
+          No tiers configured. Click <strong>Add tier</strong> to create one.
+        </p>
+      )}
+
+      {workingTiers.length > 0 && (
+        <div className="space-y-3 mb-5">
+          {/* Column headers */}
+          <div
+            className="hidden sm:grid grid-cols-[1fr_1fr_auto_auto] gap-3 text-[10px] font-bold tracking-widest uppercase px-1"
+            style={{ color: "var(--admin-muted)" }}
+          >
+            <span>Min Amount (₦)</span>
+            <span>Max Amount (₦, blank = unlimited)</span>
+            <span>Approvals</span>
+            <span />
+          </div>
+
+          {workingTiers.map((tier, idx) => (
+            <div
+              key={idx}
+              className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto_auto] gap-3 items-center p-3 rounded-xl"
+              style={{ background: "var(--admin-bg)", border: "1px solid var(--admin-border)" }}
+            >
+              <div className="flex flex-col gap-1">
+                <span className="sm:hidden text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--admin-muted)" }}>Min Amount (₦)</span>
+                <input
+                  id={`tier-min-${idx}`}
+                  type="number"
+                  min={0}
+                  value={tier.minAmount}
+                  onChange={(e) => updateTier(idx, { minAmount: Number(e.target.value) })}
+                  className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                  style={{
+                    background: "var(--admin-surface)",
+                    border: "1px solid var(--admin-border)",
+                    color: "var(--admin-text)",
+                  }}
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="sm:hidden text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--admin-muted)" }}>Max Amount (₦)</span>
+                <input
+                  id={`tier-max-${idx}`}
+                  type="number"
+                  min={0}
+                  placeholder="Unlimited"
+                  value={tier.maxAmount ?? ""}
+                  onChange={(e) =>
+                    updateTier(idx, { maxAmount: e.target.value === "" ? null : Number(e.target.value) })
+                  }
+                  className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                  style={{
+                    background: "var(--admin-surface)",
+                    border: "1px solid var(--admin-border)",
+                    color: "var(--admin-text)",
+                  }}
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="sm:hidden text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--admin-muted)" }}>Approvals</span>
+                <input
+                  id={`tier-approvals-${idx}`}
+                  type="number"
+                  min={1}
+                  value={tier.requiredApprovals}
+                  onChange={(e) => updateTier(idx, { requiredApprovals: Number(e.target.value) })}
+                  className="w-20 px-3 py-2 rounded-lg text-sm outline-none"
+                  style={{
+                    background: "var(--admin-surface)",
+                    border: "1px solid var(--admin-border)",
+                    color: "var(--admin-text)",
+                  }}
+                />
+              </div>
+              <button
+                id={`tier-remove-${idx}`}
+                type="button"
+                onClick={() => removeTier(idx)}
+                className="p-2 rounded-lg transition-colors hover:opacity-80"
+                style={{ color: "#ef4444", background: "rgba(239,68,68,0.1)" }}
+                aria-label="Remove tier"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {(isDirty || workingTiers.length > 0) && (
+        <div className="flex justify-end gap-3">
+          {isDirty && (
+            <button
+              type="button"
+              onClick={() => setLocalTiers(null)}
+              className="px-4 py-2 rounded-lg text-sm font-medium transition-all hover:opacity-70"
+              style={{ color: "var(--admin-muted)" }}
+            >
+              Discard
+            </button>
+          )}
+          <button
+            id="admin-save-tiers-btn"
+            type="button"
+            onClick={handleSave}
+            disabled={isPending || !isDirty}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{ background: "linear-gradient(135deg, #f59e0b, #ef4444)", color: "#fff" }}
+          >
+            {isPending ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</> : "Save tiers"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function MyAccountCard() {
@@ -309,6 +544,9 @@ export function SettingsClient() {
           ))}
         </ul>
       </div>
+
+      {/* Withdrawal Approval Tiers */}
+      <WithdrawalApprovalTiersCard />
 
       {/* Danger zone */}
       <div
