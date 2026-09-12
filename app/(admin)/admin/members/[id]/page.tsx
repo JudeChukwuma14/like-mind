@@ -2756,6 +2756,57 @@ export default function MemberDetailPage() {
               />
             </DialogBackdrop>
           )}
+          {lifecycleDialog?.kind === "confirm-activate-staff" && (
+            <DialogBackdrop>
+              <div className="flex items-start gap-3 mb-6">
+                <div
+                  className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
+                  style={{ background: "#fef9c3" }}
+                >
+                  <KeyRound className="w-5 h-5" style={{ color: "#854d0e" }} />
+                </div>
+                <div>
+                  <h2
+                    className="text-base font-bold"
+                    style={{ color: "var(--admin-text)" }}
+                  >
+                    Activate as Staff
+                  </h2>
+                  <p
+                    className="text-xs mt-0.5"
+                    style={{ color: "var(--admin-muted)" }}
+                  >
+                    Are you sure you want to activate <strong>{name}</strong> as staff? 
+                    This will allow them to be assigned administrative roles.
+                  </p>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setLifecycleDialog(null)}
+                  disabled={activateAsStaff.isPending}
+                  className="px-4 py-2 text-xs font-semibold rounded-xl hover:bg-gray-100 transition-colors"
+                  style={{ color: "var(--admin-text)" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => activateAsStaff.mutate()}
+                  disabled={activateAsStaff.isPending}
+                  className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition-all hover:opacity-90 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
+                  style={{ background: "#854d0e", color: "#fff" }}
+                >
+                  {activateAsStaff.isPending ? (
+                    <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Activating…</>
+                  ) : (
+                    "Confirm Activation"
+                  )}
+                </button>
+              </div>
+            </DialogBackdrop>
+          )}
 
           {/* ── Actions ── */}
           <div

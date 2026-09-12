@@ -43,8 +43,8 @@ function Navbar() {
           <Image
             src="/Likemind.png"
             alt="LikeMinds Cooperative Logo"
-            width={70}
-            height={70}
+            width={50}
+            height={50}
             className="object-contain transition-transform duration-300 group-hover:scale-105"
             style={{ width: "auto", height: "auto" }}
           />
@@ -74,7 +74,7 @@ function Navbar() {
         <div className="hidden md:flex items-center gap-3">
           <ThemeToggle variant="ghost" className="text-white/70" />
           <Link
-            href="/dashboard"
+            href="/signin"
             className="px-4 py-2 text-sm font-medium text-white/80 border border-white/20 rounded-full hover:border-white/40 hover:text-white transition-all duration-200"
           >
             Sign In
