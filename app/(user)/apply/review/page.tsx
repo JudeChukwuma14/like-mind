@@ -144,7 +144,7 @@ export default function ReviewPage() {
         </div>
       </div>
 
-      <div className="mt-20 pt-6 border-t border-gray-200 border-dashed flex items-center justify-between">
+      <div className="mt-8 pt-6 border-t border-gray-200 border-dashed flex md:flex-row flex-col justify-between items-center gap-4">
         <Link
           href="/apply/referee"
           className="inline-flex items-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-[#171717] px-6 py-3 rounded-full font-medium transition-colors"

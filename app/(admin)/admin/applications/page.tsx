@@ -129,7 +129,7 @@ export default function ApplicationsPage() {
                   <p className="text-sm font-medium text-gray-700 mb-2">Pledge / month</p>
                   <div className="flex gap-2">
                     <button className="px-4 py-1.5 bg-gray-50 border border-gray-200 text-gray-700 text-sm font-medium rounded-full hover:bg-gray-100">Any</button>
-                    <button className="px-4 py-1.5 bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-full shadow-sm">≥ ₦20k</button>
+                    <button className="px-4 py-1.5 bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-full shadow-sm">≥ $20k</button>
                   </div>
                 </div>
               </div>

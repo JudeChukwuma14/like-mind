@@ -117,7 +117,7 @@ export default function SetupWelcomePage() {
                   required
                   value={data.firstName}
                   onChange={(e) => setData({ firstName: e.target.value })}
-                  placeholder="Ada"
+                  placeholder="Jane"
                   className="w-full px-4 py-3 rounded-xl border border-[#ddd6c8] bg-white text-[#171717] text-sm outline-none focus:border-[#f5c518] focus:ring-2 focus:ring-[#f5c518]/30 transition-all placeholder:text-[#c8bfa8]"
                 />
               </div>
@@ -130,7 +130,7 @@ export default function SetupWelcomePage() {
                   required
                   value={data.lastName}
                   onChange={(e) => setData({ lastName: e.target.value })}
-                  placeholder="Okafor"
+                  placeholder="Smith"
                   className="w-full px-4 py-3 rounded-xl border border-[#ddd6c8] bg-white text-[#171717] text-sm outline-none focus:border-[#f5c518] focus:ring-2 focus:ring-[#f5c518]/30 transition-all placeholder:text-[#c8bfa8]"
                 />
               </div>

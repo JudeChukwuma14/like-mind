@@ -97,13 +97,13 @@ export default function ReportsPage() {
           <p className="text-[10px] font-bold tracking-widest text-gray-400 uppercase mb-1">
             INFLOW
           </p>
-          <p className="text-xl font-bold text-gray-900">₦4.12M</p>
+          <p className="text-xl font-bold text-gray-900">$4.12M</p>
         </div>
         <div>
           <p className="text-[10px] font-bold tracking-widest text-gray-400 uppercase mb-1">
             OUTFLOW
           </p>
-          <p className="text-xl font-bold text-gray-900">₦2.84M</p>
+          <p className="text-xl font-bold text-gray-900">$2.84M</p>
         </div>
       </div>
 

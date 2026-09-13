@@ -47,9 +47,9 @@ export default function ConfirmationPage() {
 
         <div className="mt-2 max-w-3xl">
           <h1 className="text-6xl md:text-7xl font-bold tracking-tight text-[#171717] mb-4">
-            You're in line.
+            Application Submitted.
           </h1>
-          <p className="text-xl text-gray-600 mb-12">Decision within 5 business days. Track status anytime.</p>
+          <p className="text-xl text-gray-600 mb-12">Decision will be communicated within 5 business days. Track status anytime.</p>
 
           <div className="flex flex-col sm:flex-row gap-4 mb-10">
             <div className="flex-1 bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">

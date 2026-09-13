@@ -67,7 +67,7 @@ export default function CashWalletPage() {
     queryFn: () => getMyDrafts(),
   });
 
-  const balance = savings?.balance ?? 0;
+  const balance = savings?.balance?.balance ?? 0;
   
   // Basic stats from drafts (using safe case-insensitive matching)
   const isStatus = (d: any, statuses: string[]) => {
@@ -227,7 +227,7 @@ export default function CashWalletPage() {
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
                 Monthly
               </p>
-              <p className="font-bold text-[#111]">₦ 25,000</p>
+              <p className="font-bold text-[#111]">$ 25,000</p>
             </div>
             <div>
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
@@ -302,16 +302,17 @@ export default function CashWalletPage() {
 
           {!loadingDrafts && filteredDrafts.map((draft, idx) => {
             // Safe parsing of type
-            const typeStr = (draft as any).type ?? draft.contributionType ?? "Unknown type";
+            const typeStr = draft.type ?? "Unknown type";
             // Safe parsing of reference
-            const refStr = draft.referenceNumber || "No reference";
+            const refStr = draft.interacReferenceNumber || "No reference";
             
             // Format dates
             let dateTitle = "Unknown date";
             let dateSub = "";
-            if (draft.createdAt) {
+            const dateString = draft.submittedAt || draft.paymentDate;
+            if (dateString) {
               try {
-                const d = new Date(draft.createdAt);
+                const d = new Date(dateString);
                 if (!isNaN(d.getTime())) {
                   dateTitle = d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
                   const dayStr = d.toLocaleDateString("en-US", { day: "2-digit", month: "short" });
@@ -343,7 +344,7 @@ export default function CashWalletPage() {
                 </div>
                 
                 <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-4 md:mt-0 mt-2 md:pl-0 pl-16">
-                  <p className="font-bold text-[#111]">{fmt(draft.amount)}</p>
+                  <p className="font-bold text-[#111]">{fmt(draft.amountPaid)}</p>
                   <p className="text-xs text-gray-400 font-mono">#{refStr}</p>
                 </div>
 

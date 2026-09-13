@@ -37,13 +37,18 @@ export type SavingsTransaction = {
 };
 
 export type SavingsAccount = {
-  id: string | null;
-  userId: string | null;
-  /** Confirmed/credited savings balance — this is what the member can withdraw */
-  balance: number | null;
-  /** ISO date string */
-  lastUpdatedAt: string | null;
-  transactions: SavingsTransaction[] | null;
+  balance: {
+    userId: string | null;
+    balance: number | null;
+    currency: string | null;
+  } | null;
+  transactions: {
+    items: SavingsTransaction[] | null;
+    pageNumber: number;
+    pageSize: number;
+    totalCount: number;
+    totalPages: number;
+  } | null;
 };
 
 export type GetMySavingsParams = {

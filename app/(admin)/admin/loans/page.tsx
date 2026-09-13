@@ -14,23 +14,23 @@ export default function LoansPage() {
 
   // Mock data
   const mockApplications = [
-    { id: 1, name: "Folake Adeleke", type: "School fees · 12 months", amount: "₦180,000", badge: "TIER 2", badgeColor: "text-amber-700 bg-amber-100", selected: true },
-    { id: 2, name: "Emeka Obi", type: "Business inventory · 8 months", amount: "₦320,000", badge: "TIER 1", badgeColor: "text-amber-700 bg-amber-100", selected: false },
-    { id: 3, name: "Ngozi Adesanya", type: "Personal · 6 months", amount: "₦75,000", badge: "INSUFFICIENT", badgeColor: "text-black/50 bg-black/5", selected: false },
+    { id: 1, name: "Folake Adeleke", type: "School fees · 12 months", amount: "$180,000", badge: "TIER 2", badgeColor: "text-amber-700 bg-amber-100", selected: true },
+    { id: 2, name: "Emeka Obi", type: "Business inventory · 8 months", amount: "$320,000", badge: "TIER 1", badgeColor: "text-amber-700 bg-amber-100", selected: false },
+    { id: 3, name: "Ngozi Adesanya", type: "Personal · 6 months", amount: "$75,000", badge: "INSUFFICIENT", badgeColor: "text-black/50 bg-black/5", selected: false },
   ];
 
   const mockOffers = [
-    { id: 1, name: "School fees", desc: "Short-term loan timed to school fee season. Auto-deducted from contributions.", rate: "3.5%", term: "12 mo", cap: "₦200k", guarantor: "50%", outstanding: "₦1.4M OUTSTANDING" },
-    { id: 2, name: "Business inventory", desc: "Bridges working capital for vendors and small business owners.", rate: "5%", term: "8 mo", cap: "₦500k", guarantor: "60%", outstanding: "₦2.1M OUTSTANDING" },
-    { id: 3, name: "Personal", desc: "Everyday cash relief for established members.", rate: "4%", term: "6 mo", cap: "₦100k", guarantor: "50%", outstanding: "₦820K OUTSTANDING" },
-    { id: 4, name: "Emergency", desc: "Same-day disbursement for medical or family emergencies.", rate: "2.5%", term: "3 mo", cap: "₦75k", guarantor: "0%", outstanding: "WINTER FREEZE" },
+    { id: 1, name: "School fees", desc: "Short-term loan timed to school fee season. Auto-deducted from contributions.", rate: "3.5%", term: "12 mo", cap: "$200k", guarantor: "50%", outstanding: "$1.4M OUTSTANDING" },
+    { id: 2, name: "Business inventory", desc: "Bridges working capital for vendors and small business owners.", rate: "5%", term: "8 mo", cap: "$500k", guarantor: "60%", outstanding: "$2.1M OUTSTANDING" },
+    { id: 3, name: "Personal", desc: "Everyday cash relief for established members.", rate: "4%", term: "6 mo", cap: "$100k", guarantor: "50%", outstanding: "$820K OUTSTANDING" },
+    { id: 4, name: "Emergency", desc: "Same-day disbursement for medical or family emergencies.", rate: "2.5%", term: "3 mo", cap: "$75k", guarantor: "0%", outstanding: "WINTER FREEZE" },
   ];
 
   const mockCosigns = [
-    { id: 1, init: "FA", name: "Folake Adeleke", desc: "School fees · 12 months", amount: "₦180,000", sigs: 1, totalSigs: 3, status: "AWAITING YOU", statusColor: "bg-amber-100 text-amber-700", action: "Cosign" },
-    { id: 2, init: "EO", name: "Emeka Obi", desc: "Business inventory · 8 months", amount: "₦320,000", sigs: 0, totalSigs: 3, status: "AWAITING YOU", statusColor: "bg-amber-100 text-amber-700", action: "Cosign" },
-    { id: 3, init: "NA", name: "Ngozi Adesanya", desc: "Personal · 6 months", amount: "₦75,000", sigs: 2, totalSigs: 3, status: "YOU SIGNED", statusColor: "bg-green-100 text-green-700", action: "Waiting" },
-    { id: 4, init: "CO", name: "Chinedu Okeke", desc: "Home repair · 18 months", amount: "₦240,000", sigs: 2, totalSigs: 3, status: "YOU SIGNED", statusColor: "bg-green-100 text-green-700", action: "Waiting" },
+    { id: 1, init: "FA", name: "Folake Adeleke", desc: "School fees · 12 months", amount: "$180,000", sigs: 1, totalSigs: 3, status: "AWAITING YOU", statusColor: "bg-amber-100 text-amber-700", action: "Cosign" },
+    { id: 2, init: "EO", name: "Emeka Obi", desc: "Business inventory · 8 months", amount: "$320,000", sigs: 0, totalSigs: 3, status: "AWAITING YOU", statusColor: "bg-amber-100 text-amber-700", action: "Cosign" },
+    { id: 3, init: "NA", name: "Ngozi Adesanya", desc: "Personal · 6 months", amount: "$75,000", sigs: 2, totalSigs: 3, status: "YOU SIGNED", statusColor: "bg-green-100 text-green-700", action: "Waiting" },
+    { id: 4, init: "CO", name: "Chinedu Okeke", desc: "Home repair · 18 months", amount: "$240,000", sigs: 2, totalSigs: 3, status: "YOU SIGNED", statusColor: "bg-green-100 text-green-700", action: "Waiting" },
   ];
 
   return (
@@ -166,11 +166,11 @@ export default function LoansPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 mb-12 py-8 border-b border-black/5">
           <div>
             <div className="text-[10px] font-semibold tracking-widest text-black/40 uppercase mb-2">OUTSTANDING</div>
-            <div className="text-3xl md:text-[40px] font-semibold tracking-tight">₦3.62M</div>
+            <div className="text-3xl md:text-[40px] font-semibold tracking-tight">$3.62M</div>
           </div>
           <div>
             <div className="text-[10px] font-semibold tracking-widest text-black/40 uppercase mb-2">AVAILABLE CAPITAL</div>
-            <div className="text-3xl md:text-[40px] font-semibold tracking-tight">₦8.78M</div>
+            <div className="text-3xl md:text-[40px] font-semibold tracking-tight">$8.78M</div>
           </div>
         </div>
       )}
@@ -243,15 +243,15 @@ export default function LoansPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
                 <div className="bg-[#FAF9F5] border border-black/5 rounded-2xl p-6 text-center">
                   <div className="text-[10px] font-semibold tracking-widest text-black/40 uppercase mb-2">REQUESTED</div>
-                  <div className="text-2xl font-semibold">₦180,000</div>
+                  <div className="text-2xl font-semibold">$180,000</div>
                 </div>
                 <div className="bg-[#FAF9F5] border border-black/5 rounded-2xl p-6 text-center">
                   <div className="text-[10px] font-semibold tracking-widest text-black/40 uppercase mb-2">MONTHLY</div>
-                  <div className="text-2xl font-semibold">₦16,500</div>
+                  <div className="text-2xl font-semibold">$16,500</div>
                 </div>
                 <div className="bg-[#FAF9F5] border border-black/5 rounded-2xl p-6 text-center">
                   <div className="text-[10px] font-semibold tracking-widest text-black/40 uppercase mb-2">TOTAL PAYBACK</div>
-                  <div className="text-2xl font-semibold">₦198,000</div>
+                  <div className="text-2xl font-semibold">$198,000</div>
                 </div>
               </div>
 
@@ -281,7 +281,7 @@ export default function LoansPage() {
                 <div className="flex justify-between items-center text-[15px]">
                   <div className="flex items-center gap-3">
                     <Info className="w-5 h-5 text-black/40" strokeWidth={2} />
-                    <span className="font-medium text-black/60">Existing repayment <span className="font-normal">- ₦8,200/mo on prior loan</span></span>
+                    <span className="font-medium text-black/60">Existing repayment <span className="font-normal">- $8,200/mo on prior loan</span></span>
                   </div>
                   <span className="text-[10px] font-semibold tracking-widest text-black/40 uppercase">NOTE</span>
                 </div>
@@ -471,7 +471,7 @@ export default function LoansPage() {
                     SCHOOL FEES OFFER · TIER 2
                   </div>
                   <div className="text-[40px] font-semibold tracking-tight">
-                    ₦180,000
+                    $180,000
                   </div>
                 </div>
                 <div className="px-3 py-1.5 rounded-full bg-[#E8D94B] text-black text-[10px] font-bold tracking-widest uppercase mt-6">
@@ -480,7 +480,7 @@ export default function LoansPage() {
               </div>
               
               <div className="text-[15px] text-black/60 mb-10">
-                Folake Adeleke · 12 months · ₦16,500/mo
+                Folake Adeleke · 12 months · $16,500/mo
               </div>
 
               {/* Admin signatures */}
@@ -555,13 +555,13 @@ export default function LoansPage() {
                   
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
-                      <span className="text-[15px] text-black/60">Required hold (50% of ₦180,000)</span>
-                      <span className="font-semibold">₦90,000</span>
+                      <span className="text-[15px] text-black/60">Required hold (50% of $180,000)</span>
+                      <span className="font-semibold">$90,000</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-[15px] text-black/60">Available balance</span>
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold">₦1,210,800</span>
+                        <span className="font-semibold">$1,210,800</span>
                         <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#E8D94B]/30 text-black">13.5× MIN</span>
                       </div>
                     </div>

@@ -12,10 +12,6 @@ import { FadeUp, motion } from "@/app/components/Motion";
 import { CURRENCIES, TIMEZONES } from "../setupConstants";
 import { adminApiFetch, getApiErrorMessage, type ApiEnvelope } from "@/app/lib/api-client";
 
-// ⚠️ UNVERIFIED: no documented response schema for UploadLogo. Guessing it
-// returns { assetId, fileName } — matching exactly what CompleteSetup's
-// profile.brand.logo expects — following this app's envelope convention.
-// Confirm against a real response and adjust if the field names differ.
 type UploadLogoResponse = ApiEnvelope<{
   assetId: string;
   fileName: string;
@@ -99,7 +95,7 @@ export default function CooperativeProfilePage() {
           <div className="flex-1 min-w-0 bg-white rounded-2xl border border-[#e0d9cc] p-5 sm:p-6 space-y-5">
             {/* Cooperative name */}
             <div>
-              <label className="block text-xs font-semibold text-[#d97706] mb-1.5">
+              <label className="block text-xs font-semibold text-[#a09880] mb-1.5">
                 Cooperative name
               </label>
               <input
@@ -115,7 +111,7 @@ export default function CooperativeProfilePage() {
             {/* Reg number + Founded */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-[#d97706] mb-1.5">
+                <label className="block text-xs font-semibold text-[#a09880] mb-1.5">
                   Reg. number
                 </label>
                 <input
@@ -144,7 +140,7 @@ export default function CooperativeProfilePage() {
 
             {/* Headquarters address */}
             <div>
-              <label className="block text-xs font-semibold text-[#d97706] mb-1.5">
+              <label className="block text-xs font-semibold text-[#a09880]  mb-1.5">
                 Headquarters address
               </label>
               <textarea
@@ -152,7 +148,7 @@ export default function CooperativeProfilePage() {
                 required
                 value={data.headquartersAddress}
                 onChange={(e) => setData({ headquartersAddress: e.target.value })}
-                placeholder={"14B Awolowo Road, Ikoyi, Lagos\nNigeria"}
+                placeholder={"123 Maple Street, Toronto, Canada"}
                 className="w-full px-4 py-3 rounded-xl border border-[#ddd6c8] bg-white text-[#171717] text-sm outline-none focus:border-[#f5c518] focus:ring-2 focus:ring-[#f5c518]/30 transition-all resize-none"
               />
             </div>

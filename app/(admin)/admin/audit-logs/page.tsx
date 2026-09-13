@@ -4,7 +4,7 @@ const logs = [
   {
     time: "09:42 WAT",
     badge: { text: "PAYMENT CONFIRMED", type: "warning" },
-    description: "Adaeze Okonkwo - ₦50,000 to personal savings - TX-4471",
+    description: "Adaeze Okonkwo - $50,000 to personal savings - TX-4471",
     actor: "Mary Olufor - admin",
   },
   {
@@ -16,7 +16,7 @@ const logs = [
   {
     time: "08:52 WAT",
     badge: { text: "LOAN APPROVED", type: "neutral" },
-    description: "Folake Adeleke - ₦180,000 - 12 months",
+    description: "Folake Adeleke - $180,000 - 12 months",
     actor: "Chidi Eze - loan officer",
   },
   {

@@ -28,7 +28,6 @@ export default function BasicInformationPage() {
   const genders = [
     { label: "Female", value: "Female" },
     { label: "Male", value: "male" },
-    { label: "Non-binary", value: "Non-binary" },
     { label: "Prefer not to say", value: "Prefer not to say" },
   ];
 
@@ -44,7 +43,7 @@ export default function BasicInformationPage() {
           <p className="text-lg text-gray-600 mb-10">Legal identity for KYC.</p>
 
           <div className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
                 <div className="relative">
@@ -83,7 +82,7 @@ export default function BasicInformationPage() {
                   value={data.middleName}
                   onChange={(e) => setData({ middleName: e.target.value })}
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white"
-                  placeholder="Adesina"
+                  placeholder="Smith"
                 />
               </div>
               <div>
@@ -99,7 +98,7 @@ export default function BasicInformationPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-1 gap-8">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Gender</label>
                 <div className="flex flex-wrap gap-2">
@@ -156,7 +155,7 @@ export default function BasicInformationPage() {
                   value={data.provinceOfResidence}
                   onChange={(e) => setData({ provinceOfResidence: e.target.value })}
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white"
-                  placeholder="e.g. Ontario, Lagos, California"
+                  placeholder="e.g. Ontario, British Columbia, Alberta"
                 />
               </div>
             </div>

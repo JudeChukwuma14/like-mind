@@ -106,7 +106,7 @@ function Navbar() {
       {/* Mobile menu */}
       <div
         className={`md:hidden overflow-hidden transition-all duration-300 ${
-          menuOpen ? "max-h-[440px] opacity-100" : "max-h-0 opacity-0"
+          menuOpen ? "max-h-110 opacity-100" : "max-h-0 opacity-0"
         }`}
       >
         <div className="border-t border-white/10 px-6 py-4 flex flex-col gap-1 bg-[#0a0a0a]">
@@ -129,14 +129,14 @@ function Navbar() {
           })}
           <div className="pt-3 border-t border-white/10 mt-2 flex flex-col gap-2">
             <Link
-              href="/dashboard"
+              href="/signin"
               onClick={() => setMenuOpen(false)}
               className="py-2.5 px-3 rounded-xl text-sm font-medium text-white/70 hover:text-white hover:bg-white/8 transition-all"
             >
               Sign In
             </Link>
             <Link
-              href="/dashboard"
+              href="/apply"
               onClick={() => setMenuOpen(false)}
               className="py-3 px-3 rounded-full text-sm font-semibold text-[#0a0a0a] bg-[#facc15] text-center hover:bg-[#fde68a] transition-colors"
             >
@@ -203,8 +203,8 @@ function Footer() {
               </p>
               <nav className="flex flex-col gap-3">
                 {[
-                  { href: "/dashboard", label: "Sign In" },
-                  { href: "/dashboard", label: "Become a Member" },
+                  { href: "/signin", label: "Sign In" },
+                  { href: "/apply", label: "Become a Member" },
                   { href: "/apply", label: "Apply Now" },
                 ].map((l) => (
                   <Link

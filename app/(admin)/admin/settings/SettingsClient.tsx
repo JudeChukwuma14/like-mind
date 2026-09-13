@@ -175,8 +175,8 @@ function WithdrawalApprovalTiersCard() {
             className="hidden sm:grid grid-cols-[1fr_1fr_auto_auto] gap-3 text-[10px] font-bold tracking-widest uppercase px-1"
             style={{ color: "var(--admin-muted)" }}
           >
-            <span>Min Amount (₦)</span>
-            <span>Max Amount (₦, blank = unlimited)</span>
+            <span>Min Amount ($)</span>
+            <span>Max Amount ($, blank = unlimited)</span>
             <span>Approvals</span>
             <span />
           </div>
@@ -188,7 +188,7 @@ function WithdrawalApprovalTiersCard() {
               style={{ background: "var(--admin-bg)", border: "1px solid var(--admin-border)" }}
             >
               <div className="flex flex-col gap-1">
-                <span className="sm:hidden text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--admin-muted)" }}>Min Amount (₦)</span>
+                <span className="sm:hidden text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--admin-muted)" }}>Min Amount ($)</span>
                 <input
                   id={`tier-min-${idx}`}
                   type="number"
@@ -204,7 +204,7 @@ function WithdrawalApprovalTiersCard() {
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <span className="sm:hidden text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--admin-muted)" }}>Max Amount (₦)</span>
+                <span className="sm:hidden text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--admin-muted)" }}>Max Amount ($)</span>
                 <input
                   id={`tier-max-${idx}`}
                   type="number"

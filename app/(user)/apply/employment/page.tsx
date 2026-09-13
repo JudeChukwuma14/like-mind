@@ -39,7 +39,7 @@ export default function EmploymentPage() {
           <div className="space-y-8">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">I am</label>
-              <div className="flex flex-wrap gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 {statusOptions.map((status) => {
                   const isActive = data.employmentStatus === status;
                   return (
@@ -147,7 +147,7 @@ export default function EmploymentPage() {
         </div>
       </div>
 
-      <div className="mt-20 pt-6 border-t border-gray-200 border-dashed flex items-center justify-between">
+      <div className="mt-8 pt-6 border-t border-gray-200 border-dashed flex md:flex-row flex-col justify-between items-center gap-4">
         <Link
           href="/apply/contact-information"
           className="inline-flex items-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-[#171717] px-6 py-3 rounded-full font-medium transition-colors"

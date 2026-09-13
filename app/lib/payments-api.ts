@@ -29,17 +29,20 @@ export type PaymentStatus =
 /** A payment draft as returned by GET /api/Savings/GetMyDrafts */
 export type PaymentDraft = {
   id: string;
-  amount: number | null;
-  contributionType: string | null;
-  referenceNumber: string | null;
-  status: PaymentStatus | null;
-  /** ISO date string */
-  createdAt: string | null;
-  /** ISO date string */
-  updatedAt: string | null;
-  /** URL or path to proof of payment if uploaded */
-  proofUrl: string | null;
+  type: string | null;
+  contributionMonth: string | null;
+  amountPaid: number | null;
+  currency: string | null;
+  paymentDate: string | null;
+  method: string | null;
+  interacReferenceNumber: string | null;
+  interacReferenceEmail: string | null;
   note: string | null;
+  proofFileName: string | null;
+  status: PaymentStatus | null;
+  submittedAt: string | null;
+  commitmentFeeTotalPaid: number | null;
+  commitmentFeeRemaining: number | null;
 };
 
 /** A pending payment submission as returned by GET /api/Payments/PendingConfirmation */

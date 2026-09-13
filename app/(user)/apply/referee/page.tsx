@@ -71,7 +71,7 @@ export default function RefereePage() {
                   value={data.refereeFullName}
                   onChange={(e) => setData({ refereeFullName: e.target.value })}
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white"
-                  placeholder="Folake Adeyemi"
+                  placeholder="Jane Smith"
                 />
               </div>
               <div>
@@ -97,7 +97,7 @@ export default function RefereePage() {
                     value={data.refereeEmail}
                     onChange={(e) => setData({ refereeEmail: e.target.value })}
                     className="w-full pl-12 pr-32 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white"
-                    placeholder="folake@likeminds.coop"
+                    placeholder="jane@likeminds.coop"
                   />
                   {data.refereeEmail.includes("@likeminds.coop") && (
                     <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-2 py-1 bg-green-50 rounded-md">

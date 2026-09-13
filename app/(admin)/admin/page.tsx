@@ -9,8 +9,8 @@ export const metadata: Metadata = {
 const stats = [
   { label: "PENDING REVIEW", value: "31" },
   { label: "ACTIVE MEMBERS", value: "178" },
-  { label: "CONTRIBUTIONS - APRIL", value: "₦4.12M" },
-  { label: "LOAN EXPOSURE", value: "₦3.62M" },
+  { label: "CONTRIBUTIONS - APRIL", value: "$4.12M" },
+  { label: "LOAN EXPOSURE", value: "$3.62M" },
 ];
 
 const workloadTasks = [
@@ -150,7 +150,7 @@ export default function AdminOverviewPage() {
             >
               CASH FLOW · LAST 6 CYCLES
             </p>
-            <h2 className="text-2xl font-bold" style={{ color: "var(--admin-text)" }}>₦1.28M</h2>
+            <h2 className="text-2xl font-bold" style={{ color: "var(--admin-text)" }}>$1.28M</h2>
           </div>
 
           <div className="flex items-center gap-4 text-xs font-medium" style={{ color: "var(--admin-muted)" }}>

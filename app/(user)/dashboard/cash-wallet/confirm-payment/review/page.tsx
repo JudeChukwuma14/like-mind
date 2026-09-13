@@ -62,8 +62,8 @@ export default function ReviewPaymentPage() {
   }
 
   // Handle potentially mismatched type/contributionType fields gracefully
-  const typeStr = draft.type ?? draft.contributionType ?? "Unknown type";
-  const refStr = draft.referenceNumber || "No reference";
+  const typeStr = draft.type ?? "Unknown type";
+  const refStr = draft.interacReferenceNumber || "No reference";
 
   return (
     <div className="space-y-8 pb-12">
@@ -112,7 +112,7 @@ export default function ReviewPaymentPage() {
             </div>
             <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-white">
               <span className="text-sm text-gray-500">Amount paid</span>
-              <span className="text-lg font-bold text-[#111]">{fmt(draft.amount)}</span>
+              <span className="text-lg font-bold text-[#111]">{fmt(draft.amountPaid)}</span>
             </div>
             <div className="flex items-center justify-between p-4 border-b border-gray-100">
               <span className="text-sm text-gray-500">Interac/Bank reference</span>
@@ -122,13 +122,13 @@ export default function ReviewPaymentPage() {
                <span className="text-sm text-gray-500">Note</span>
                <span className="text-sm font-medium text-[#111] truncate max-w-[200px]">{draft.note || "None"}</span>
             </div>
-            {draft.proofUrl && (
+            {draft.proofFileName && (
               <div className="flex items-center justify-between p-4">
                 <span className="text-sm text-gray-500">Proof</span>
-                <a href={draft.proofUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm font-medium text-amber-600 hover:underline">
+                <span className="flex items-center gap-1.5 text-sm font-medium text-[#111]">
                   <FileText size={16} />
-                  View uploaded proof
-                </a>
+                  {draft.proofFileName}
+                </span>
               </div>
             )}
           </div>

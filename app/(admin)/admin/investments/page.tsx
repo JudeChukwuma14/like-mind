@@ -18,7 +18,7 @@ export default function InvestmentsPage() {
       name: "Treasury bills · Q2", 
       desc: "FGN 91-day · UBA broker",
       lockIn: "91 days", 
-      capital: "₦5.2M", 
+      capital: "$5.2M", 
       investors: 42, 
       yield: "11.8%", 
       status: "OPEN", 
@@ -29,7 +29,7 @@ export default function InvestmentsPage() {
       name: "Lekki land syndicate", 
       desc: "Co-op pool · 24-month lock",
       lockIn: "24 mo", 
-      capital: "₦4.6M", 
+      capital: "$4.6M", 
       investors: 28, 
       yield: "~14%", 
       status: "FUNDING", 
@@ -40,7 +40,7 @@ export default function InvestmentsPage() {
       name: "Stanbic money market", 
       desc: "Open-ended · daily liquid",
       lockIn: "No lock", 
-      capital: "₦1.8M", 
+      capital: "$1.8M", 
       investors: 36, 
       yield: "9.2%", 
       status: "OPEN", 
@@ -51,7 +51,7 @@ export default function InvestmentsPage() {
       name: "Lagos State bond series", 
       desc: "Sovereign · 5-year · semi-annual",
       lockIn: "5 yrs", 
-      capital: "₦820K", 
+      capital: "$820K", 
       investors: 9, 
       yield: "13.4%", 
       status: "CLOSED", 
@@ -147,7 +147,7 @@ export default function InvestmentsPage() {
                       </label>
                       <input 
                         type="text" 
-                        defaultValue="₦5,000,000" 
+                        defaultValue="$5,000,000" 
                         className="w-full bg-white rounded-xl p-4 border border-black/5 font-medium text-[15px] outline-none"
                       />
                     </div>
@@ -157,7 +157,7 @@ export default function InvestmentsPage() {
                       </label>
                       <input 
                         type="text" 
-                        defaultValue="₦25,000" 
+                        defaultValue="$25,000" 
                         className="w-full bg-white rounded-xl p-4 border border-black/5 font-medium text-[15px] outline-none"
                       />
                     </div>
@@ -255,7 +255,7 @@ export default function InvestmentsPage() {
                   <div className="space-y-4">
                     <div className="flex justify-between items-center border-b border-white/10 pb-3">
                       <span className="text-[13px] text-white/60">Capital raised</span>
-                      <span className="font-medium text-[15px]">₦5.20M</span>
+                      <span className="font-medium text-[15px]">$5.20M</span>
                     </div>
                     <div className="flex justify-between items-center border-b border-white/10 pb-3">
                       <span className="text-[13px] text-white/60">Investors</span>
@@ -381,7 +381,7 @@ export default function InvestmentsPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8 mb-12 py-8 border-b border-t border-black/5">
           <div>
             <div className="text-[10px] font-semibold tracking-widest text-black/40 uppercase mb-2">CAPITAL UNDER MGMT</div>
-            <div className="text-3xl md:text-[40px] font-semibold tracking-tight">₦12.4M</div>
+            <div className="text-3xl md:text-[40px] font-semibold tracking-tight">$12.4M</div>
           </div>
           <div>
             <div className="text-[10px] font-semibold tracking-widest text-black/40 uppercase mb-2">YTD RETURN</div>

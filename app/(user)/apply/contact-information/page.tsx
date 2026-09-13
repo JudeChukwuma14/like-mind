@@ -70,7 +70,10 @@ export default function ContactInformationPage() {
           <p className="text-lg text-gray-600 mb-10">Where we send statements & notices.</p>
 
           <div className="space-y-6">
-            <div>
+         
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Home address</label>
               <div className="relative">
                 <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -84,8 +87,6 @@ export default function ContactInformationPage() {
                 />
               </div>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
                 <CountrySelect
@@ -216,7 +217,7 @@ export default function ContactInformationPage() {
         </div>
       </div>
 
-      <div className="mt-20 pt-6 border-t border-gray-200 border-dashed flex items-center justify-between">
+      <div className="mt-8 pt-6 border-t border-gray-200 border-dashed flex md:flex-row flex-col justify-between items-center gap-4">
         <Link
           href="/apply/basic-information"
           className="inline-flex items-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-[#171717] px-6 py-3 rounded-full font-medium transition-colors"

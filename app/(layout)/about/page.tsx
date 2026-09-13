@@ -48,7 +48,7 @@ const governanceBlocks = [
 
 const leadership = [
   {
-    name: "Folake Adeyemi",
+    name: "Jane Smith",
     role: "Chair · 2024 — 2027",
     description:
       "Former CIBC compliance officer. Co-founder. Re-elected unanimously in the 2024 General Assembly.",
@@ -107,7 +107,7 @@ export default function AboutPage() {
           <FadeIn>
             <p className="text-lg md:text-xl leading-relaxed max-w-4xl" style={{ color: "var(--mkt-text)" }}>
               LikeMinds Cooperative was founded in Toronto, 2014 by twelve members
-              of the Nigerian-Canadian diaspora — engineers, nurses, teachers, small
+              of the Canadan-Canadian diaspora — engineers, nurses, teachers, small
               business owners — who pooled their first $50,000 to buy a duplex
               together. By 2017, we had 200 members and a federally registered
               cooperative charter. By 2026, we manage $84M of pooled capital across

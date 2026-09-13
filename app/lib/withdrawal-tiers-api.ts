@@ -23,10 +23,10 @@ import { adminApiFetch, type ApiEnvelope } from "@/app/lib/api-client";
  *
  * Example:
  *   minAmount: 0, maxAmount: 100000, requiredApprovals: 1
- *   → Requests up to ₦100,000 require 1 approval.
+ *   → Requests up to $100,000 require 1 approval.
  *
  *   minAmount: 100001, maxAmount: 500000, requiredApprovals: 2
- *   → Requests ₦100,001 – ₦500,000 require 2 approvals.
+ *   → Requests $100,001 – $500,000 require 2 approvals.
  */
 export type ApprovalTier = {
   /** Inclusive lower bound of the amount range */

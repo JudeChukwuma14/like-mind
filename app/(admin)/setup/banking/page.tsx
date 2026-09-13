@@ -168,7 +168,7 @@ export default function BankingPage() {
                   type="text"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  placeholder="e.g. Reserve · Stanbic"
+                  placeholder="e.g. Reserve"
                   className="w-full px-4 py-3 rounded-xl border border-[#ddd6c8] bg-[#faf9f6] text-[#171717] text-sm outline-none focus:border-[#f5c518] focus:ring-2 focus:ring-[#f5c518]/30 transition-all"
                 />
               </div>
@@ -220,7 +220,7 @@ export default function BankingPage() {
               </button>
               <p className="text-xs text-[#a09880]">
                 We send a{" "}
-                <span className="font-semibold text-[#171717]">₦1</span>{" "}
+                <span className="font-semibold text-[#171717]">$1</span>{" "}
                 verification micro-transfer to{" "}
                 <span className="text-[#3b82f6]">confirm</span> the address
                 before it can receive payouts.

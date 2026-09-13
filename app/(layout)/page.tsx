@@ -272,7 +272,7 @@ export default function HomePage() {
           <FadeUp delay={0.15} className="md:w-2/3">
             <p className="text-lg leading-relaxed" style={{ color: "var(--mkt-muted)" }}>
               LikeMinds Cooperative was founded in Toronto, 2014 by twelve
-              members of the Nigerian-Canadian diaspora — engineers, nurses,
+              members of the Canadan-Canadian diaspora — engineers, nurses,
               teachers, small business owners — who pooled their first $50,000
               to buy a duplex together. By 2017, we had 200 members and a
               federally registered cooperative charter. By 2026, we manage{" "}

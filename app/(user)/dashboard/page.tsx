@@ -109,7 +109,7 @@ export default function DashboardOverviewPage() {
             </div>
             <span className="text-sm" style={{ color: "var(--dash-muted)" }}>Savings balance</span>
           </div>
-          <p className="text-3xl font-bold tracking-tight mb-4">₦ 985,000</p>
+          <p className="text-3xl font-bold tracking-tight mb-4">$ 985,000</p>
           <div className="flex items-center gap-1.5 text-xs text-green-600 font-medium">
             <TrendingUp className="w-3.5 h-3.5" />
             <span>+ $ 200 this month</span>
@@ -135,7 +135,7 @@ export default function DashboardOverviewPage() {
             <span className="w-full max-w-10 h-1 bg-amber-100 rounded-full overflow-hidden block">
               <span className="bg-amber-400 w-[60%] h-full block" />
             </span>
-            ₦ 1,200,000 / ₦ 2,000,000 monthly cap
+            $ 1,200,000 / $ 2,000,000 monthly cap
           </div>
         </div>
 
@@ -203,35 +203,35 @@ export default function DashboardOverviewPage() {
                 title: "April savings contribution",
                 ref: "REF #SAV-2684-118 · 14 Apr",
                 badge: { label: "Pending review", bg: "bg-amber-50", text: "text-amber-600", border: "border-amber-100/50", dot: "bg-amber-500" },
-                amount: "+ ₦ 25,000",
+                amount: "+ $ 25,000",
               },
               {
                 month: "MAR",
                 title: "March savings contribution",
                 ref: "REF #SAV-2683-104 · 12 Mar",
                 badge: { label: "Confirmed", bg: "bg-green-50", text: "text-green-600", border: "border-green-100/50", dot: "bg-green-500" },
-                amount: "+ ₦ 25,000",
+                amount: "+ $ 25,000",
               },
               {
                 month: "APR",
                 title: "April investment contribution",
                 ref: "REF #INV-2684-027 · 11 Apr",
                 badge: { label: "Confirmed", bg: "bg-green-50", text: "text-green-600", border: "border-green-100/50", dot: "bg-green-500" },
-                amount: "+ ₦ 1,200,000",
+                amount: "+ $ 1,200,000",
               },
               {
                 month: "MAR",
                 title: "March investment contribution",
                 ref: "REF #INV-2683-019 · 10 Mar",
                 badge: { label: "Confirmed", bg: "bg-green-50", text: "text-green-600", border: "border-green-100/50", dot: "bg-green-500" },
-                amount: "+ ₦ 1,000,000",
+                amount: "+ $ 1,000,000",
               },
               {
                 month: "FEB",
                 title: "February savings contribution",
                 ref: "REF #SAV-2682-091 · 09 Feb",
                 badge: { label: "Confirmed", bg: "bg-green-50", text: "text-green-600", border: "border-green-100/50", dot: "bg-green-500" },
-                amount: "+ ₦ 25,000",
+                amount: "+ $ 25,000",
               },
             ].map((item, i) => (
               <div key={i} className="flex items-center gap-4">

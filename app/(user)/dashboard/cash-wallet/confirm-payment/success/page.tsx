@@ -27,7 +27,7 @@ export default function SuccessPaymentPage() {
           </h1>
 
           <p className="text-gray-500 mb-8 max-w-md mx-auto">
-            Your April payment of <strong className="text-[#111]">₦ 25,000</strong> is with admin. 
+            Your April payment of <strong className="text-[#111]">$ 25,000</strong> is with admin. 
             Confirmation usually arrives within 1-2 working days.
           </p>
 
@@ -36,7 +36,7 @@ export default function SuccessPaymentPage() {
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
                 Amount
               </p>
-              <p className="font-bold text-[#111]">₦ 25,000</p>
+              <p className="font-bold text-[#111]">$ 25,000</p>
             </div>
             {/* Divider (desktop) */}
             <div className="hidden sm:block w-[1px] h-8 bg-gray-200"></div>

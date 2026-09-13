@@ -92,7 +92,7 @@ export default function WithdrawalsPage() {
       }),
   });
 
-  const balance = savings?.balance ?? 0;
+  const balance = savings?.balance?.balance ?? 0;
   const history = historyData?.items ?? [];
   
   const parsedAmount = parseFloat(amountStr.replace(/,/g, ""));
@@ -154,7 +154,7 @@ export default function WithdrawalsPage() {
               <label className="block text-xs font-semibold text-[#111] mb-2">Withdrawal amount</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <span className="text-xl font-bold text-[#111]">₦</span>
+                  <span className="text-xl font-bold text-[#111]">$</span>
                 </div>
                 <input
                   type="number"
