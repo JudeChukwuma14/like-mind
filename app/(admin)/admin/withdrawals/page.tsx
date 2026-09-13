@@ -341,7 +341,7 @@ export default function WithdrawalsPage() {
                       </div>
                       <div className="col-span-2 text-[15px] font-semibold">{fmt(w.amount)}</div>
                       <div className="col-span-2 text-[14px] text-black/70 capitalize">
-                        {w.category ?? "Withdrawal"}
+                        {w.type ?? "Withdrawal"}
                       </div>
                       <div className="col-span-2 text-[13px] text-black/50">{fmtDate(w.createdAt)}</div>
                       <div className="col-span-2 flex items-center justify-end gap-3 pr-2">
@@ -397,7 +397,7 @@ export default function WithdrawalsPage() {
                     {selectedRequest.memberName ?? selectedRequest.memberId}
                   </div>
                   <div className="text-sm text-black/50">
-                    {selectedRequest.category ?? "Withdrawal"}
+                    {selectedRequest.type ?? "Withdrawal"}
                   </div>
                 </div>
               </div>

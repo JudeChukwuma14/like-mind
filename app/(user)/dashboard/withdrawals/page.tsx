@@ -289,7 +289,7 @@ export default function WithdrawalsPage() {
                   <ArrowUp className="w-5 h-5" />
                 </div>
                 <div className="min-w-0 pt-0.5">
-                  <p className="text-sm font-semibold text-[#111] truncate capitalize">{req.category ?? "Withdrawal"}</p>
+                  <p className="text-sm font-semibold text-[#111] truncate capitalize">{req.type ?? "Withdrawal"}</p>
                   <p className="text-[11px] text-gray-400 mt-1 uppercase tracking-wider truncate">
                     {req.reason ?? "No reason provided"}
                   </p>

@@ -174,6 +174,16 @@ export default function RoleDetailPage() {
   const isEditing = false;
   const displayedCodes = serverGrantedCodes;
 
+  // Stubs for unimplemented edit state to satisfy TypeScript
+  const clearAll = (perms: Permission[]) => {};
+  const selectAll = (perms: Permission[]) => {};
+  const togglePermission = (code: string) => {};
+  const cancelEdit = () => {};
+  const added = 0;
+  const removed = 0;
+  const isSaving = false;
+  const savePermissions = { mutate: () => {} };
+
   // ── Search state ─────────────────────────────────────────────────────────────
 
   const [showOnlyGranted, setShowOnlyGranted] = useState(false);

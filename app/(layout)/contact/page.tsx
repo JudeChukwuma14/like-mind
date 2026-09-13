@@ -12,14 +12,7 @@ import {
 } from "@/app/lib/contact-api";
 import { getApiErrorMessage } from "@/app/lib/api-client";
 
-// Note: metadata export only works in Server Components.
-// Since we need interactivity, move metadata to a parent server component or
-// keep it here knowing Next.js will warn — the page still functions correctly.
-// To silence the warning, this can be placed in a separate layout.
-export const metadata: Metadata = {
-  title: "Contact",
-  description: "Get in touch with LikeMinds Cooperative.",
-};
+
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
