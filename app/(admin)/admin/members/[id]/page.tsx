@@ -7,8 +7,6 @@ import toast from "react-hot-toast";
 import {
   ArrowLeft,
   Check,
-  ChevronDown,
-  ChevronUp,
   Clock,
   KeyRound,
   Loader2,
@@ -26,6 +24,7 @@ import {
   X,
   CheckCircle2,
   XCircle,
+  UserRoundCog,
 } from "lucide-react";
 import { adminApiFetch, getApiErrorMessage } from "@/app/lib/api-client";
 import {
@@ -2256,6 +2255,7 @@ export default function MemberDetailPage() {
     isLoading,
     isError,
     error,
+    refetch,
   } = useQuery({
     queryKey: ["admin-user", id],
     queryFn: async () => {
@@ -2290,6 +2290,7 @@ export default function MemberDetailPage() {
   const [showDeactivateForm, setShowDeactivateForm] = useState(false);
   const [lifecycleDialog, setLifecycleDialog] =
     useState<LifecycleDialogState>(null);
+  const [section, setSection] = useState<"overview" | "profile" | "access">("overview");
 
   const verify = useMutation({
     mutationFn: () =>
@@ -2438,7 +2439,7 @@ export default function MemberDetailPage() {
       .join("") || "?";
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 pb-12">
+    <div className="mx-auto max-w-6xl space-y-6 pb-12">
       {/* Back */}
       <button
         type="button"
@@ -2452,21 +2453,17 @@ export default function MemberDetailPage() {
 
       {/* Loading / Error */}
       {isLoading && (
-        <div
-          className="p-10 text-center text-sm"
-          style={{ color: "var(--admin-muted)" }}
-        >
-          Loading member…
+        <div role="status" className="card-admin flex items-center justify-center gap-3 rounded-3xl p-12 text-sm admin-text-muted">
+          <Loader2 className="h-5 w-5 animate-spin" /> Loading member…
         </div>
       )}
       {isError && (
-        <div
-          className="p-10 text-center text-sm"
-          style={{ color: "var(--admin-accent)" }}
-        >
-          {getApiErrorMessage(error)}
+        <div role="alert" className="rounded-3xl border border-red-200 bg-red-50 p-8 text-center text-sm text-red-700">
+          <p>{getApiErrorMessage(error)}</p>
+          <button type="button" onClick={() => refetch()} className="mt-3 font-semibold underline">Try again</button>
         </div>
       )}
+      {!isLoading && !isError && !member && <div className="card-admin rounded-3xl p-10 text-center"><h1 className="text-lg font-semibold">Member not found</h1><p className="mt-2 text-sm admin-text-muted">This account may be unavailable or the backend returned an empty record.</p></div>}
 
       {member && (
         <>
@@ -2598,6 +2595,24 @@ export default function MemberDetailPage() {
               </div>
             </div>
           </div>
+
+          <nav aria-label="Member sections" className="card-admin flex flex-wrap gap-2 rounded-2xl p-2">
+            {([
+              { id: "overview", label: "Overview & actions", icon: ShieldCheck },
+              { id: "profile", label: "Profile & records", icon: User },
+              { id: "access", label: "Access & permissions", icon: UserRoundCog },
+            ] as const).map(({ id: tab, label, icon: Icon }) => (
+              <button
+                key={tab}
+                type="button"
+                aria-pressed={section === tab}
+                onClick={() => setSection(tab)}
+                className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors ${section === tab ? "bg-[#171717] text-white" : "admin-text-muted hover:bg-black/5"}`}
+              >
+                <Icon className="h-4 w-4" /> {label}
+              </button>
+            ))}
+          </nav>
 
           {/* ── Lifecycle dialogs (activation / deactivation checker actions) ── */}
           {lifecycleDialog?.kind === "approve-activate" && (
@@ -2809,19 +2824,17 @@ export default function MemberDetailPage() {
           )}
 
           {/* ── Actions ── */}
-          <div
-            className="rounded-2xl border p-5 space-y-3"
+          {section === "overview" && <div
+            className="max-w-3xl rounded-2xl border p-5 space-y-3"
             style={{
               background: "var(--admin-surface)",
               borderColor: "var(--admin-border)",
             }}
           >
-            <p
-              className="text-[10px] font-bold tracking-widest uppercase"
-              style={{ color: "var(--admin-muted)" }}
-            >
-              Actions
-            </p>
+            <div className="mb-2">
+              <h2 className="text-lg font-semibold">Account lifecycle</h2>
+              <p className="mt-1 text-xs admin-text-muted">Verify identity, activate the account, or manage staff access. Each step shows its current state.</p>
+            </div>
 
             {/* Step 1 — Verify */}
             <div
@@ -3254,10 +3267,11 @@ export default function MemberDetailPage() {
                 )}
               </div>
             )}
-          </div>
+          </div>}
 
           {/* ── Detail sections ── */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {section === "profile" && <div><h2 className="text-lg font-semibold">Member record</h2><p className="mt-1 text-xs admin-text-muted">Personal, contact, employment, and KYC information returned by the backend.</p></div>}
+          {section === "profile" && <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {/* Basic Info */}
             {member.basicInfo && (
               <Card>
@@ -3451,10 +3465,10 @@ export default function MemberDetailPage() {
                 />
               </Card>
             )}
-          </div>
+          </div>}
 
           {/* ── Devices ── */}
-          {member.deviceInfos.length > 0 && (
+          {section === "profile" && member.deviceInfos.length > 0 && (
             <Card>
               <SectionHeading
                 icon={Monitor}
@@ -3512,10 +3526,10 @@ export default function MemberDetailPage() {
           )}
 
           {/* ── Access & Permissions ── */}
-          <AccessAndPermissionsSection
+          {section === "access" && <AccessAndPermissionsSection
             userId={member.id ?? id}
             userName={name}
-          />
+          />}
 
           {/* Member ID footer */}
           {member.id && (

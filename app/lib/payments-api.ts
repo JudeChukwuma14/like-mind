@@ -6,15 +6,14 @@
  * Payment lifecycle:
  *   DRAFT → SUBMITTED/PENDING_CONFIRMATION → CONFIRMED | REJECTED
  *
- * Member calls go through `apiFetch` (member JWT).
- * Admin confirmation calls go through `adminApiFetch` (admin JWT).
+ * Member calls use the member JWT on the cooperative API host.
+ * Admin calls use the admin JWT on that host.
  *
  * Endpoint base:
- *   Member: NEXT_PUBLIC_API_BASE_URL
- *   Admin:  NEXT_PUBLIC_ADMIN_API_BASE_URL
+ *   NEXT_PUBLIC_ADMIN_API_BASE_URL
  */
 
-import { apiFetch, adminApiFetch, type ApiEnvelope } from "@/app/lib/api-client";
+import { adminApiClient, adminApiFetch, ensureApiSuccess, memberProfileApiClient, memberProfileApiFetch, type ApiEnvelope } from "@/app/lib/api-client";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -48,19 +47,20 @@ export type PaymentDraft = {
 /** A pending payment submission as returned by GET /api/Payments/PendingConfirmation */
 export type PendingPayment = {
   id: string;
-  memberId: string | null;
-  memberName: string | null;
-  memberEmail: string | null;
-  amount: number | null;
-  contributionType: string | null;
-  referenceNumber: string | null;
-  status: PaymentStatus | null;
-  /** ISO date string */
-  submittedAt: string | null;
-  /** ISO date string */
-  createdAt: string | null;
-  proofUrl: string | null;
+  type: string | null;
+  contributionMonth: string | null;
+  amountPaid: number | null;
+  currency: string | null;
+  paymentDate: string | null;
+  method: string | null;
+  interacReferenceNumber: string | null;
   note: string | null;
+  proofFileName: string | null;
+  status: PaymentStatus | null;
+  submittedAt: string | null;
+  payerName: string | null;
+  payerEmail: string | null;
+  assignedToName: string | null;
 };
 
 export type PendingPaymentPage = {
@@ -105,6 +105,17 @@ export type GetPendingPaymentsParams = {
   onlyAssignedToMe?: boolean;
 };
 
+export type GetAllPaymentStatusParams = {
+  page?: number;
+  pageSize?: number;
+  status?: "Draft" | "PendingConfirmation" | "Confirmed" | "Rejected";
+  type?: string;
+  fromDate?: string;
+  toDate?: string;
+  reference?: string;
+  submittedByUserId?: string;
+};
+
 // ─── Member endpoints ─────────────────────────────────────────────────────────
 
 /**
@@ -128,11 +139,11 @@ export async function createPaymentDraft(
   if (payload.Note) formData.append("Note", payload.Note);
   if (payload.ProofOfPayment) formData.append("ProofOfPayment", payload.ProofOfPayment);
 
-  return apiFetch<unknown>("/api/Payments/Draft", {
+  const response = await memberProfileApiFetch<ApiEnvelope<unknown>>("/api/Payments/Draft", {
     method: "POST",
     body: formData,
-    // apiFetch automatically handles omitting Content-Type for FormData
   });
+  return ensureApiSuccess(response);
 }
 
 /**
@@ -144,10 +155,46 @@ export async function createPaymentDraft(
  * button is for UX only.
  */
 export async function submitPayment(paymentId: string): Promise<unknown> {
-  return apiFetch<unknown>(
+  const response = await memberProfileApiFetch<ApiEnvelope<unknown>>(
     `/api/Payments/${encodeURIComponent(paymentId)}/Submit`,
     { method: "POST" },
   );
+  return ensureApiSuccess(response);
+}
+
+function paymentStatusPath(params: GetAllPaymentStatusParams): string {
+  const q = new URLSearchParams();
+  if (params.page) q.set("page", String(params.page));
+  if (params.pageSize) q.set("pageSize", String(params.pageSize));
+  if (params.status) q.set("status", params.status);
+  if (params.type) q.set("type", params.type);
+  if (params.fromDate) q.set("fromDate", params.fromDate);
+  if (params.toDate) q.set("toDate", params.toDate);
+  if (params.reference) q.set("reference", params.reference);
+  if (params.submittedByUserId) q.set("submittedByUserId", params.submittedByUserId);
+  return `/api/Payments/GetAllPaymentStatus${q.size ? `?${q}` : ""}`;
+}
+
+function paymentPage(response: ApiEnvelope<PendingPaymentPage | PendingPayment[]> | PendingPaymentPage | PendingPayment[]): PendingPaymentPage {
+  const data = Array.isArray(response) ? response : "success" in response ? ensureApiSuccess(response).data : response;
+  if (data == null) return { items: [], pageNumber: 1, pageSize: 20, totalCount: 0, totalPages: 1 };
+  if (Array.isArray(data)) return { items: data, pageNumber: 1, pageSize: data.length, totalCount: data.length, totalPages: 1 };
+  if (data && Array.isArray(data.items)) return data;
+  throw new Error("The payment history response had an unexpected format.");
+}
+
+/**
+ * GET /api/Payments/GetAllPaymentStatus
+ *
+ * Member version of GetAllPaymentStatus.
+ * The member MUST pass their own user ID via `submittedByUserId`.
+ */
+export async function getMemberAllPaymentStatus(
+  params: GetAllPaymentStatusParams = {},
+): Promise<PendingPaymentPage> {
+  if (!params.submittedByUserId) throw new Error("The signed-in user ID is required to load personal payment history.");
+  const res = await memberProfileApiFetch<ApiEnvelope<PendingPaymentPage | PendingPayment[]> | PendingPaymentPage | PendingPayment[]>(paymentStatusPath(params));
+  return paymentPage(res);
 }
 
 // ─── Admin endpoints (require confirmmemberpayment permission) ─────────────────
@@ -174,13 +221,20 @@ export async function getPendingPayments(
   const url = `/api/Payments/PendingConfirmation${q.toString() ? `?${q.toString()}` : ""}`;
   const res = await adminApiFetch<ApiEnvelope<PendingPaymentPage>>(url);
 
-  const data = res.data;
-  if (!data) return { items: [], pageNumber: 1, pageSize: 20, totalCount: 0, totalPages: 1 };
-  if (Array.isArray(data)) {
-    const arr = data as PendingPayment[];
-    return { items: arr, pageNumber: 1, pageSize: arr.length, totalCount: arr.length, totalPages: 1 };
-  }
-  return data as PendingPaymentPage;
+  return paymentPage(res);
+}
+
+/**
+ * GET /api/Payments/GetAllPaymentStatus
+ *
+ * Admin version of GetAllPaymentStatus.
+ * Can pass `submittedByUserId` to filter by a specific member, or leave blank to see all.
+ */
+export async function getAdminAllPaymentStatus(
+  params: GetAllPaymentStatusParams = {},
+): Promise<PendingPaymentPage> {
+  const res = await adminApiFetch<ApiEnvelope<PendingPaymentPage | PendingPayment[]> | PendingPaymentPage | PendingPayment[]>(paymentStatusPath(params));
+  return paymentPage(res);
 }
 
 /**
@@ -194,10 +248,11 @@ export async function getPendingPayments(
  * Requires: confirmmemberpayment permission.
  */
 export async function confirmPayment(paymentId: string): Promise<unknown> {
-  return adminApiFetch<unknown>(
+  const response = await adminApiFetch<ApiEnvelope<unknown>>(
     `/api/Savings/${encodeURIComponent(paymentId)}/Confirm`,
     { method: "POST" },
   );
+  return ensureApiSuccess(response);
 }
 
 /**
@@ -212,8 +267,21 @@ export async function rejectPayment(
   paymentId: string,
   payload: RejectPaymentPayload,
 ): Promise<unknown> {
-  return adminApiFetch<unknown>(
+  const response = await adminApiFetch<ApiEnvelope<unknown>>(
     `/api/Savings/${encodeURIComponent(paymentId)}/Reject`,
     { method: "POST", body: payload },
   );
+  return ensureApiSuccess(response);
+}
+
+/**
+ * Fetch payment proof with the appropriate bearer token and return a local blob URL.
+ * The caller must revoke the URL when the preview closes.
+ */
+export async function getPaymentProofBlobUrl(fileName: string, audience: "member" | "admin"): Promise<string> {
+  if (!fileName) throw new Error("No payment proof was attached.");
+  const client = audience === "admin" ? adminApiClient : memberProfileApiClient;
+  const response = await client.get<Blob>(`/api/Payments/Proof/${encodeURIComponent(fileName)}`, { responseType: "blob" });
+  if (response.data.type.includes("json")) throw new Error("The payment proof could not be opened.");
+  return URL.createObjectURL(response.data);
 }

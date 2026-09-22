@@ -34,6 +34,7 @@ const CLAIM_ROLE = "http://schemas.microsoft.com/ws/2008/06/identity/claims/role
 
 export type JwtUser = {
   id?: string;
+  cooperativeId?: string;
   email?: string;
   name?: string;
   role?: string;
@@ -46,10 +47,25 @@ function claimString(claims: Record<string, unknown>, key: string): string | und
   return typeof value === "string" ? value : undefined;
 }
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Read the cooperative ID, not `sub` (user ID) or cooperativeAccountId (setup account ID). */
+export function cooperativeIdFromJwtClaims(claims: Record<string, unknown>): string | undefined {
+  for (const [key, rawValue] of Object.entries(claims)) {
+    const claimName = (key.split(/[/:]/).pop() ?? key).replace(/[^a-z0-9]/gi, "").toLowerCase();
+    if (claimName !== "cooperativeid") continue;
+    if (typeof rawValue !== "string") continue;
+    const value = rawValue.trim();
+    if (UUID_PATTERN.test(value)) return value;
+  }
+  return undefined;
+}
+
 /** Maps a decoded JWT's claims into the handful of fields the UI actually displays. */
 export function mapJwtUser(claims: Record<string, unknown>): JwtUser {
   return {
     id: claimString(claims, "sub"),
+    cooperativeId: cooperativeIdFromJwtClaims(claims),
     email: claimString(claims, "email"),
     name: claimString(claims, CLAIM_NAME),
     role: claimString(claims, CLAIM_ROLE),

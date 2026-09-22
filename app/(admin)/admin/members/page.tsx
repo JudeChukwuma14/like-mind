@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import { ChevronLeft, ChevronRight, Search, X, Upload, Loader2, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, X, Upload, Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
 import { adminApiFetch, getApiErrorMessage, type ApiEnvelope } from "@/app/lib/api-client";
 import { bulkImportUsers, type BulkImportResult } from "@/app/lib/user-admin-api";
 
@@ -139,7 +139,8 @@ export default function MembersPage() {
       setShowImportResult(true);
       // Refresh member list
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-      toast.success("Bulk import completed.");
+      if ((result.failed ?? 0) > 0) toast("Import processed. Review the failed rows in the summary.");
+      else toast.success("Bulk import completed.");
     },
     onError: (err) => toast.error(getApiErrorMessage(err)),
   });
@@ -179,12 +180,14 @@ export default function MembersPage() {
   const handleSearchInputChange = (value: string) => {
     setSearchInput(value);
     if (roleId) setRoleId(""); // typing a search overrides an active role filter
+    if (classify(value) === "id" || classify(value) === "email") setStatus("all");
   };
 
   const handleRoleChange = (nextRoleId: string) => {
     setRoleId(nextRoleId);
     setSearchInput("");
     setSearch("");
+    setStatus("all");
     setPage(1);
   };
 
@@ -235,11 +238,24 @@ export default function MembersPage() {
     setPage(1);
   };
 
+  const hasFilters = Boolean(searchInput || roleId || status !== "all");
+
+  const clearFilters = () => {
+    setSearchInput("");
+    setSearch("");
+    setRoleId("");
+    setStatus("all");
+    setPage(1);
+  };
+
   return (
-    <div className="max-w-6xl mx-auto space-y-8 pb-10">
+    <div className="mx-auto max-w-6xl space-y-6 pb-10">
       {/* ── Bulk Import Result Modal ── */}
       {showImportResult && importResult && (
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="import-result-title"
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
         >
@@ -250,13 +266,13 @@ export default function MembersPage() {
             <div className="flex items-start gap-3">
               <div
                 className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
-                style={{ background: "#dcfce7" }}
+                style={{ background: (importResult.failed ?? 0) > 0 ? "#fef3c7" : "#dcfce7" }}
               >
-                <CheckCircle2 className="w-5 h-5" style={{ color: "#16a34a" }} />
+                {(importResult.failed ?? 0) > 0 ? <AlertTriangle className="w-5 h-5 text-amber-700" /> : <CheckCircle2 className="w-5 h-5 text-green-700" />}
               </div>
               <div>
-                <h2 className="text-base font-bold" style={{ color: "var(--admin-text)" }}>Import Complete</h2>
-                <p className="text-xs mt-0.5" style={{ color: "var(--admin-muted)" }}>Bulk user import finished.</p>
+                <h2 id="import-result-title" className="text-base font-bold" style={{ color: "var(--admin-text)" }}>Import processed</h2>
+                <p className="text-xs mt-0.5" style={{ color: "var(--admin-muted)" }}>Review which rows were created, skipped, or failed.</p>
               </div>
             </div>
 
@@ -333,106 +349,54 @@ export default function MembersPage() {
         onChange={handleFileSelect}
       />
 
-      {/* Header */}
-      <div>
-        <p
-          className="text-[10px] font-bold tracking-widest uppercase mb-1"
-          style={{ color: "var(--admin-muted)" }}
-        >
-          Directory
-        </p>
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <h1 className="text-4xl font-bold tracking-tight" style={{ color: "var(--admin-text)" }}>
-              Members
-            </h1>
-            {result && (
-              <p className="text-sm mt-1" style={{ color: "var(--admin-muted)" }}>
-                {result.totalCount} member{result.totalCount === 1 ? "" : "s"}
-              </p>
-            )}
-          </div>
+      <header className="card-admin flex flex-col gap-5 rounded-3xl p-6 md:flex-row md:items-center md:justify-between md:p-8">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-amber-600">People · Directory</p>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">Members</h1>
+          <p className="mt-2 max-w-xl text-sm leading-6 admin-text-muted">Find an account, review its details, and manage verification or access from one place.</p>
+        </div>
+        <div className="flex flex-col gap-2 md:items-end">
           <button
             id="members-bulk-import-btn"
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={bulkImport.isPending}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border transition-all hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
-            style={{
-              background: "var(--admin-surface)",
-              borderColor: "var(--admin-border)",
-              color: "var(--admin-text)",
-            }}
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-[#171717] px-5 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {bulkImport.isPending ? (
-              <><Loader2 className="w-4 h-4 animate-spin" /> Importing…</>
-            ) : (
-              <><Upload className="w-4 h-4" /> Bulk Import</>
-            )}
+            {bulkImport.isPending ? <><Loader2 className="h-4 w-4 animate-spin" /> Importing…</> : <><Upload className="h-4 w-4" /> Import members</>}
           </button>
+          <p className="text-xs admin-text-muted">Upload a CSV or XLSX file</p>
         </div>
-      </div>
+      </header>
 
-      {/* Search + status tabs */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-        <div
-          className="flex items-center gap-2 px-4 py-2 rounded-full border text-sm sm:w-80"
-          style={{ borderColor: "var(--admin-border)", background: "var(--admin-surface)", color: "var(--admin-muted)" }}
-        >
-          <Search className="w-3.5 h-3.5 shrink-0" />
-          <input
-            type="text"
-            value={searchInput}
-            onChange={(e) => handleSearchInputChange(e.target.value)}
-            placeholder="Search by name, email, or paste a member ID"
-            className="bg-transparent border-none outline-none w-full text-sm min-w-0"
-            style={{ color: "var(--admin-text)" }}
-          />
-          {searchInput && (
-            <button
-              type="button"
-              onClick={() => handleSearchInputChange("")}
-              aria-label="Clear search"
-              className="shrink-0 transition-colors hover:opacity-70"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
+      <section className="card-admin space-y-5 rounded-3xl p-5 md:p-6" aria-label="Find and filter members">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div><h2 className="text-lg font-semibold">Find members</h2><p className="mt-1 text-xs admin-text-muted">Search by name, email, or an exact member ID.</p></div>
+          {hasFilters && <button type="button" onClick={clearFilters} className="inline-flex items-center gap-1.5 text-xs font-semibold admin-text-muted hover:underline"><X className="h-3.5 w-3.5" /> Clear filters</button>}
         </div>
-
-        <select
-          value={roleId}
-          onChange={(e) => handleRoleChange(e.target.value)}
-          className="px-4 py-2 rounded-full text-sm font-medium border outline-none"
-          style={{ background: "var(--admin-surface)", color: "var(--admin-text)", borderColor: "var(--admin-border)" }}
-        >
-          <option value="">All roles</option>
-          {roles.map((r) => (
-            <option key={r.id} value={r.id}>
-              {r.name}
-            </option>
-          ))}
-        </select>
-
-        <div className="flex items-center gap-2">
+        <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(12rem,16rem)]">
+          <label className="grid gap-1.5 text-xs font-semibold admin-text-muted">
+            Search
+            <span className="input-admin flex items-center gap-2 rounded-xl px-3 py-2.5">
+              <Search className="h-4 w-4 shrink-0" />
+              <input type="search" value={searchInput} onChange={(e) => handleSearchInputChange(e.target.value)} placeholder="Name, email or member ID" className="w-full min-w-0 bg-transparent text-sm font-normal outline-none" style={{ color: "var(--admin-text)" }} />
+            </span>
+          </label>
+          <label className="grid gap-1.5 text-xs font-semibold admin-text-muted">
+            Role
+            <select value={roleId} onChange={(e) => handleRoleChange(e.target.value)} className="input-admin rounded-xl px-3 py-2.5 text-sm font-medium outline-none">
+              <option value="">All roles</option>
+              {roles.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+            </select>
+          </label>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 border-t pt-4" style={{ borderColor: "var(--admin-border)" }}>
+          <span className="mr-1 text-xs font-semibold admin-text-muted">Status</span>
           {(["all", "active", "inactive"] as StatusFilter[]).map((s) => (
-            <button
-              key={s}
-              type="button"
-              disabled={statusTabsDisabled}
-              onClick={() => handleTabChange(s)}
-              className="px-4 py-2 rounded-full text-sm font-medium capitalize transition-colors border disabled:opacity-40 disabled:cursor-not-allowed"
-              style={
-                status === s
-                  ? { background: "var(--admin-text)", color: "var(--admin-bg)", borderColor: "var(--admin-text)" }
-                  : { background: "var(--admin-surface)", color: "var(--admin-muted)", borderColor: "var(--admin-border)" }
-              }
-            >
-              {s}
-            </button>
+            <button key={s} type="button" disabled={statusTabsDisabled} onClick={() => handleTabChange(s)} aria-pressed={status === s} className="rounded-full border px-4 py-2 text-xs font-semibold capitalize transition-colors disabled:cursor-not-allowed disabled:opacity-40" style={status === s ? { background: "var(--admin-text)", color: "var(--admin-bg)", borderColor: "var(--admin-text)" } : { background: "var(--admin-surface)", color: "var(--admin-muted)", borderColor: "var(--admin-border)" }}>{s}</button>
           ))}
         </div>
-      </div>
+      </section>
 
       {exactLookup && (
         <p className="text-xs" style={{ color: "var(--admin-muted)" }}>
@@ -450,6 +414,13 @@ export default function MembersPage() {
         className="rounded-3xl border overflow-hidden"
         style={{ background: "var(--admin-surface)", borderColor: "var(--admin-border)" }}
       >
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b px-6 py-5" style={{ borderColor: "var(--admin-border)" }}>
+          <div>
+            <h2 className="text-lg font-semibold">Directory results</h2>
+            <p className="mt-1 text-xs admin-text-muted">{result ? `${result.totalCount} matching account${result.totalCount === 1 ? "" : "s"}` : "Accounts returned by the directory"}</p>
+          </div>
+          {result && !exactLookup && result.totalCount > 0 && <span className="rounded-full border px-3 py-1.5 text-xs font-medium admin-text-muted" style={{ borderColor: "var(--admin-border)" }}>Page {result.pageNumber} of {result.totalPages}</span>}
+        </div>
         <div
           className="grid grid-cols-12 gap-4 px-6 py-4 border-b text-[10px] font-bold tracking-widest uppercase"
           style={{ borderColor: "var(--admin-border)", color: "var(--admin-muted)" }}
@@ -467,14 +438,18 @@ export default function MembersPage() {
         )}
 
         {isError && (
-          <div className="p-10 text-center text-sm" style={{ color: "var(--admin-accent)" }}>
-            {getApiErrorMessage(error)}
+          <div className="p-10 text-center text-sm" role="alert" style={{ color: "var(--admin-accent)" }}>
+            <p>{getApiErrorMessage(error)}</p>
+            <button type="button" onClick={() => queryClient.invalidateQueries({ queryKey: ["admin-users"] })} className="mt-3 font-semibold underline">Try again</button>
           </div>
         )}
 
         {!isLoading && !isError && members.length === 0 && (
-          <div className="p-10 text-center text-sm" style={{ color: "var(--admin-muted)" }}>
-            No members found.
+          <div className="px-6 py-14 text-center text-sm" style={{ color: "var(--admin-muted)" }}>
+            <Search className="mx-auto mb-3 h-6 w-6" />
+            <p className="font-semibold" style={{ color: "var(--admin-text)" }}>No accounts found</p>
+            <p className="mt-1">{hasFilters ? "Try a different search or clear the filters." : "Accounts will appear here when they are available."}</p>
+            {hasFilters && <button type="button" onClick={clearFilters} className="mt-3 font-semibold underline">Clear filters</button>}
           </div>
         )}
 

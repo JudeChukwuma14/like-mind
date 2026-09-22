@@ -1,375 +1,86 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { Download, Plus, Loader2 } from "lucide-react";
-import { getMySavings, getMyDrafts } from "@/app/lib/savings-api";
+import { ArrowDownLeft, ArrowUpRight, FileText, Loader2, Plus, RefreshCw, X } from "lucide-react";
+import { useUserAuth } from "@/app/providers/UserAuthProvider";
+import { getMySavings } from "@/app/lib/savings-api";
+import { getMemberAllPaymentStatus, getPaymentProofBlobUrl, type PendingPayment } from "@/app/lib/payments-api";
 import { getApiErrorMessage } from "@/app/lib/api-client";
-import { useState } from "react";
+import { paymentAmount, paymentDate, paymentTypeLabel, PaymentStatusBadge } from "@/app/components/payments/payment-display";
 
-function fmt(n: number | null | undefined): string {
-  if (n == null) return "—";
-  return new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(n);
-}
-
-function getStatusBadge(status: string | null | undefined) {
-  const s = status?.toLowerCase() || "unknown";
-  if (s === "confirmed") {
-    return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-medium border border-emerald-100">
-        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-        Confirmed
-      </span>
-    );
-  }
-  if (s === "submitted" || s === "pendingconfirmation" || s === "pending") {
-    return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-medium border border-amber-100">
-        <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-        Pending Admin
-      </span>
-    );
-  }
-  if (s === "draft") {
-    return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-100 text-gray-700 text-xs font-medium border border-gray-200">
-        <span className="w-1.5 h-1.5 rounded-full bg-gray-500"></span>
-        Draft
-      </span>
-    );
-  }
-  if (s === "rejected") {
-    return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-50 text-red-700 text-xs font-medium border border-red-100">
-        <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
-        Rejected
-      </span>
-    );
-  }
-  return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-100 text-gray-700 text-xs font-medium border border-gray-200">
-      <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
-      {status}
-    </span>
-  );
-}
+const PAGE_SIZE = 20;
+const statuses = [
+  { label: "All", value: "" },
+  { label: "Drafts", value: "Draft" },
+  { label: "Pending", value: "PendingConfirmation" },
+  { label: "Confirmed", value: "Confirmed" },
+  { label: "Rejected", value: "Rejected" },
+] as const;
 
 export default function CashWalletPage() {
-  const [activeTab, setActiveTab] = useState("All");
+  const { user } = useUserAuth();
+  const [savingsPage, setSavingsPage] = useState(1);
+  const [savingsDates, setSavingsDates] = useState({ fromDate: "", toDate: "", reference: "" });
+  const [paymentPage, setPaymentPage] = useState(1);
+  const [paymentStatus, setPaymentStatus] = useState<(typeof statuses)[number]["value"]>("");
+  const [paymentType, setPaymentType] = useState("");
+  const [paymentDates, setPaymentDates] = useState({ fromDate: "", toDate: "", reference: "" });
+  const [selected, setSelected] = useState<PendingPayment | null>(null);
+  const [proofUrl, setProofUrl] = useState<string | null>(null);
+  const [proofError, setProofError] = useState<string | null>(null);
+  const [proofLoading, setProofLoading] = useState(false);
 
-  const { data: savings, isLoading: loadingSavings, error: savingsError } = useQuery({
-    queryKey: ["my-savings"],
-    queryFn: () => getMySavings(),
+  useEffect(() => () => { if (proofUrl) URL.revokeObjectURL(proofUrl); }, [proofUrl]);
+
+  const savings = useQuery({
+    queryKey: ["my-savings", savingsPage, savingsDates],
+    queryFn: () => getMySavings({ page: savingsPage, pageSize: PAGE_SIZE, ...savingsDates }),
   });
-
-  const { data: drafts = [], isLoading: loadingDrafts, error: draftsError } = useQuery({
-    queryKey: ["my-drafts"],
-    queryFn: () => getMyDrafts(),
+  const history = useQuery({
+    queryKey: ["my-payments", user?.id, paymentPage, paymentStatus, paymentType, paymentDates],
+    queryFn: () => getMemberAllPaymentStatus({ page: paymentPage, pageSize: PAGE_SIZE, status: paymentStatus || undefined, type: paymentType || undefined, ...paymentDates, submittedByUserId: user!.id }),
+    enabled: Boolean(user?.id),
   });
+  const balance = savings.data?.balance;
+  const transactions = savings.data?.transactions;
 
-  const balance = savings?.balance?.balance ?? 0;
-  
-  // Basic stats from drafts (using safe case-insensitive matching)
-  const isStatus = (d: any, statuses: string[]) => {
-    const s = (d.status || "").toLowerCase();
-    return statuses.includes(s);
-  };
+  async function openProof(fileName: string) {
+    setProofLoading(true);
+    setProofError(null);
+    try { setProofUrl(await getPaymentProofBlobUrl(fileName, "member")); }
+    catch (error) { setProofError(getApiErrorMessage(error)); }
+    finally { setProofLoading(false); }
+  }
 
-  const confirmedCount = drafts.filter(d => isStatus(d, ["confirmed"])).length;
-  const pendingCount = drafts.filter(d => isStatus(d, ["submitted", "pendingconfirmation", "pending"])).length;
-  const draftCount = drafts.filter(d => isStatus(d, ["draft"])).length;
+  return <div className="mx-auto max-w-6xl space-y-6 pb-14 dash-text">
+    <header className="relative overflow-hidden rounded-3xl bg-[#181817] p-6 text-white md:p-8">
+      <div className="pointer-events-none absolute -right-16 -top-20 h-60 w-60 rounded-full bg-amber-400/15 blur-3xl" />
+      <div className="relative flex flex-wrap items-end justify-between gap-5"><div><p className="text-xs font-bold uppercase tracking-[0.18em] text-amber-300">Savings & payments</p><h1 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">Cash wallet</h1><p className="mt-3 max-w-xl text-sm leading-6 text-white/70">Track confirmed savings separately from payments still waiting for review.</p></div><Link href="/dashboard/cash-wallet/confirm-payment" className="inline-flex items-center gap-2 rounded-full bg-amber-400 px-5 py-3 text-sm font-semibold text-black hover:bg-amber-300"><Plus className="h-4 w-4" /> Record a payment</Link></div>
+    </header>
 
-  const filteredDrafts = drafts.filter(d => {
-    if (activeTab === "All") return true;
-    if (activeTab === "Confirmed") return isStatus(d, ["confirmed"]);
-    if (activeTab === "Pending") return isStatus(d, ["submitted", "pendingconfirmation", "pending"]);
-    if (activeTab === "Drafts") return isStatus(d, ["draft"]);
-    if (activeTab === "Rejected") return isStatus(d, ["rejected"]);
-    return true;
-  });
-
-  return (
-    <div className="max-w-5xl mx-auto space-y-10 pb-12">
-      
-      {/* ─── Header Section ─────────────────────────────── */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
-          <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-2">
-            Cash Wallet
-          </p>
-          <h1 className="text-3xl md:text-4xl font-bold text-[#111] mb-1">
-            Cash wallet
-          </h1>
-          <p className="text-sm text-gray-500">
-            Savings plans · 12 months · April 2025 – March 2026
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 bg-white rounded-full border border-gray-200 text-sm font-medium hover:bg-gray-50 transition-colors text-[#111]">
-            <Download size={16} />
-            Statement (PDF)
-          </button>
-          <Link
-            href="/dashboard/cash-wallet/confirm-payment"
-            className="flex items-center gap-2 px-4 py-2 bg-[#111] text-white rounded-full text-sm font-medium hover:bg-black transition-colors shadow-sm"
-          >
-            <Plus size={16} />
-            New payment
-          </Link>
-        </div>
-      </div>
-
-      {/* ─── Summary Cards ──────────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Total Savings Card */}
-        <div className="bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-gray-100 flex flex-col justify-center relative">
-          {loadingSavings && (
-            <div className="absolute top-4 right-4 text-gray-300 animate-spin">
-              <Loader2 size={20} />
-            </div>
-          )}
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">
-            Total Savings (Confirmed)
-          </p>
-          {savingsError ? (
-            <p className="text-red-500 text-sm">{getApiErrorMessage(savingsError)}</p>
-          ) : (
-            <>
-              <h2 className="text-4xl md:text-5xl font-bold text-[#111] mb-2 tracking-tight">
-                {fmt(balance)}
-              </h2>
-              <p className="text-xs text-gray-400 font-mono">
-                Available to withdraw
-              </p>
-            </>
-          )}
-        </div>
-
-        {/* Status Card */}
-        <div className="bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-gray-100 flex flex-col justify-center relative">
-          {loadingDrafts && (
-            <div className="absolute top-4 right-4 text-gray-300 animate-spin">
-              <Loader2 size={20} />
-            </div>
-          )}
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-6">
-            Payments Overview
-          </p>
-          {draftsError ? (
-             <p className="text-red-500 text-sm">{getApiErrorMessage(draftsError)}</p>
-          ) : (
-            <div className="flex items-start gap-8 md:gap-12">
-              <div>
-                <p className="text-3xl md:text-4xl font-bold text-emerald-500 mb-1">{confirmedCount}</p>
-                <p className="text-xs text-gray-500">Confirmed</p>
-              </div>
-              <div>
-                <p className="text-3xl md:text-4xl font-bold text-amber-500 mb-1">{pendingCount}</p>
-                <p className="text-xs text-gray-500">Pending Admin</p>
-              </div>
-              <div>
-                <p className="text-3xl md:text-4xl font-bold text-[#111] mb-1">{draftCount}</p>
-                <p className="text-xs text-gray-500">Drafts</p>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ─── Savings Plans ─────────────────────────────── */}
-      <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-          <div>
-            <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-1">
-              Savings Plans
-            </p>
-            <h3 className="text-xl font-bold text-[#111]">Monthly Savings</h3>
-            <p className="text-sm text-gray-500">
-              Everyone saves into the monthly plan. Join any other plan your admin opens.
-            </p>
-          </div>
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full border-2 border-gray-300"></span>
-            Set by Admin
-          </p>
-        </div>
-
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
-            <div>
-              <div className="flex items-center gap-3 mb-1">
-                <h4 className="text-lg font-bold text-[#111]">Monthly savings plan</h4>
-                <span className="bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                  Required
-                </span>
-              </div>
-              <p className="text-sm text-gray-500">
-                Standard contribution every member saves into - set by your admin.
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <button className="px-4 py-2 bg-white rounded-full border border-gray-200 text-sm font-medium hover:bg-gray-50 transition-colors text-[#111]">
-                View plan
-              </button>
-              <Link
-                href="/dashboard/cash-wallet/confirm-payment"
-                className="px-4 py-2 bg-[#111] text-white rounded-full text-sm font-medium hover:bg-black transition-colors"
-              >
-                Make payment
-              </Link>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-6 border-t border-gray-50">
-            <div>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
-                Monthly
-              </p>
-              <p className="font-bold text-[#111]">$ 25,000</p>
-            </div>
-            <div>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
-                Frequency
-              </p>
-              <p className="font-bold text-[#111]">Monthly</p>
-            </div>
-            <div>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
-                Your Status
-              </p>
-              <p className="font-bold text-emerald-600">Enrolled</p>
-            </div>
-            <div>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
-                Members
-              </p>
-              <p className="font-bold text-[#111]">128 members</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ─── Contributions / Drafts ─────────────────────────────── */}
-      <div className="space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-t-2xl border-b border-gray-50 shadow-sm">
-          <div>
-            <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-1">
-              Payments
-            </p>
-            <h3 className="text-xl font-bold text-[#111]">Payment history & drafts</h3>
-          </div>
-          
-          <div className="flex items-center gap-1 bg-gray-50/80 p-1 rounded-full border border-gray-100 overflow-x-auto custom-scrollbar max-w-full">
-            {['All', 'Confirmed', 'Pending', 'Drafts', 'Rejected'].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
-                  activeTab === tab
-                    ? 'bg-[#111] text-white shadow-sm'
-                    : 'text-gray-500 hover:text-[#111] hover:bg-gray-100'
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* List items container */}
-        <div className="bg-white rounded-b-2xl shadow-sm border border-gray-100 divide-y divide-gray-50 overflow-hidden">
-          {/* Header Row (Desktop only) */}
-          <div className="hidden md:grid grid-cols-[2fr_1.5fr_1.5fr_1fr] gap-4 px-6 py-4 bg-gray-50/50">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Date / Type</p>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Amount & Reference</p>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Status</p>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-right">Action</p>
-          </div>
-
-          {loadingDrafts && (
-            <div className="py-12 flex justify-center">
-              <Loader2 className="w-8 h-8 text-gray-300 animate-spin" />
-            </div>
-          )}
-
-          {!loadingDrafts && filteredDrafts.length === 0 && (
-            <div className="py-12 text-center text-sm text-gray-500">
-              No payments found matching this view.
-            </div>
-          )}
-
-          {!loadingDrafts && filteredDrafts.map((draft, idx) => {
-            // Safe parsing of type
-            const typeStr = draft.type ?? "Unknown type";
-            // Safe parsing of reference
-            const refStr = draft.interacReferenceNumber || "No reference";
-            
-            // Format dates
-            let dateTitle = "Unknown date";
-            let dateSub = "";
-            const dateString = draft.submittedAt || draft.paymentDate;
-            if (dateString) {
-              try {
-                const d = new Date(dateString);
-                if (!isNaN(d.getTime())) {
-                  dateTitle = d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
-                  const dayStr = d.toLocaleDateString("en-US", { day: "2-digit", month: "short" });
-                  dateSub = `Created ${dayStr}`;
-                }
-              } catch(e) {}
-            }
-
-            const isDraft = isStatus(draft, ["draft"]);
-            const isPending = isStatus(draft, ["submitted", "pendingconfirmation", "pending"]);
-
-            return (
-              <div key={draft.id || idx} className="flex flex-col md:grid md:grid-cols-[2fr_1.5fr_1.5fr_1fr] md:items-center gap-4 px-6 py-5 hover:bg-gray-50/50 transition-colors">
-                <div className="flex items-start gap-4">
-                  <div className={`w-12 h-12 rounded-xl flex flex-col items-center justify-center shrink-0 border ${
-                    isPending ? 'bg-amber-50 border-amber-100 text-amber-700' : 'bg-gray-50 border-gray-100 text-gray-700'
-                  }`}>
-                    <span className="text-[10px] font-bold uppercase">
-                      {dateTitle.split(' ')[0]}
-                    </span>
-                    <span className="text-sm font-bold">
-                      {dateTitle.split(' ')[1]}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="font-bold text-[#111]">{typeStr}</p>
-                    <p className="text-xs text-gray-500">{dateSub}</p>
-                  </div>
-                </div>
-                
-                <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-4 md:mt-0 mt-2 md:pl-0 pl-16">
-                  <p className="font-bold text-[#111]">{fmt(draft.amountPaid)}</p>
-                  <p className="text-xs text-gray-400 font-mono">#{refStr}</p>
-                </div>
-
-                <div className="md:mt-0 mt-2 md:pl-0 pl-16">
-                  {getStatusBadge(draft.status)}
-                </div>
-
-                <div className="md:mt-0 mt-3 md:pl-0 pl-16 md:text-right">
-                  {isDraft ? (
-                    <Link href={`/dashboard/cash-wallet/confirm-payment?draftId=${draft.id}`} className="text-xs font-bold text-amber-600 hover:text-amber-700 transition-colors">
-                      Edit Draft
-                    </Link>
-                  ) : (
-                    <Link href="#" className="text-xs font-bold text-gray-600 hover:text-gray-900 transition-colors">
-                      View
-                    </Link>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-          
-        </div>
-      </div>
-      
+    <div className="grid gap-4 md:grid-cols-2">
+      <section className="card-dash rounded-3xl p-6"><p className="text-xs font-bold uppercase tracking-widest text-amber-600">Confirmed savings balance</p>{savings.isLoading ? <p role="status" className="mt-5 flex items-center gap-2 text-sm dash-text-muted"><Loader2 className="h-4 w-4 animate-spin" /> Loading balance...</p> : savings.isError ? <div role="alert" className="mt-4 text-sm text-red-700"><p>{getApiErrorMessage(savings.error)}</p><button onClick={() => savings.refetch()} className="mt-2 font-semibold underline">Retry</button></div> : balance?.balance == null ? <p className="mt-4 text-sm dash-text-muted">Balance unavailable. Please refresh before relying on this figure.</p> : <p className="mt-3 text-4xl font-bold tracking-tight">{paymentAmount(balance.balance, balance.currency)}</p>}<p className="mt-4 text-xs leading-5 dash-text-muted">Pending and draft payments are not included in this balance.</p></section>
+      <section className="card-dash rounded-3xl p-6"><p className="text-xs font-bold uppercase tracking-widest text-amber-600">Payment records</p>{history.isLoading ? <p role="status" className="mt-5 flex items-center gap-2 text-sm dash-text-muted"><Loader2 className="h-4 w-4 animate-spin" /> Loading payments...</p> : history.isError ? <p role="alert" className="mt-5 text-sm text-red-700">{getApiErrorMessage(history.error)}</p> : <p className="mt-3 text-4xl font-bold tracking-tight">{history.data?.totalCount ?? "—"}</p>}<p className="mt-4 text-xs leading-5 dash-text-muted">Total matches for the payment filters below.</p></section>
     </div>
-  );
+
+    <section className="card-dash rounded-3xl p-5 md:p-7" aria-labelledby="transactions-title">
+      <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-widest text-amber-600">Ledger</p><h2 id="transactions-title" className="mt-1 text-xl font-bold">Savings transactions</h2><p className="mt-1 text-sm dash-text-muted">Only posted credits and debits affect your balance.</p></div><button type="button" onClick={() => savings.refetch()} disabled={savings.isFetching} className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold disabled:opacity-50" style={{ borderColor: "var(--dash-border)" }}><RefreshCw className={`h-4 w-4 ${savings.isFetching ? "animate-spin" : ""}`} /> Refresh</button></div>
+      <div className="mt-5 grid gap-3 sm:grid-cols-3"><label className="grid gap-1.5 text-xs font-semibold dash-text-muted">From date<input type="date" value={savingsDates.fromDate} onChange={(event) => { setSavingsDates((value) => ({ ...value, fromDate: event.target.value })); setSavingsPage(1); }} className="input-dash rounded-xl px-3 py-2.5 text-sm outline-none" /></label><label className="grid gap-1.5 text-xs font-semibold dash-text-muted">To date<input type="date" value={savingsDates.toDate} onChange={(event) => { setSavingsDates((value) => ({ ...value, toDate: event.target.value })); setSavingsPage(1); }} className="input-dash rounded-xl px-3 py-2.5 text-sm outline-none" /></label><label className="grid gap-1.5 text-xs font-semibold dash-text-muted">Reference<input value={savingsDates.reference} onChange={(event) => { setSavingsDates((value) => ({ ...value, reference: event.target.value })); setSavingsPage(1); }} placeholder="Search reference" className="input-dash rounded-xl px-3 py-2.5 text-sm outline-none" /></label></div>
+      <div className="mt-5 divide-y" style={{ borderColor: "var(--dash-border)" }}>{savings.isLoading ? <p role="status" className="py-10 text-center text-sm dash-text-muted">Loading transactions...</p> : savings.isError ? <p role="alert" className="py-8 text-center text-sm text-red-700">{getApiErrorMessage(savings.error)}</p> : !transactions?.items?.length ? <p className="py-10 text-center text-sm dash-text-muted">No savings transactions match these filters.</p> : transactions.items.map((item) => { const credit = item.transactionType === "Credit" || item.transactionType === "ContributionConfirmed"; return <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-4"><div className="flex items-center gap-3"><span className={`flex h-10 w-10 items-center justify-center rounded-xl ${credit ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}>{credit ? <ArrowDownLeft className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}</span><div><p className="text-sm font-semibold">{paymentTypeLabel(item.contributionType || item.category || item.transactionType)}</p><p className="mt-1 text-xs dash-text-muted">{paymentDate(item.transactionDate ?? item.createdAt)}{item.reference ? ` · ${item.reference}` : ""}</p></div></div><div className="text-right"><p className="text-sm font-bold">{credit ? "+" : "-"}{paymentAmount(item.amount, balance?.currency)}</p><p className="mt-1 text-xs dash-text-muted">Balance {paymentAmount(item.balanceAfter, balance?.currency)}</p></div></div>; })}</div>
+      {transactions && transactions.totalPages > 1 && <nav aria-label="Savings transaction pages" className="mt-5 flex items-center justify-between border-t pt-5 text-sm" style={{ borderColor: "var(--dash-border)" }}><button type="button" disabled={savingsPage <= 1 || savings.isFetching} onClick={() => setSavingsPage((page) => page - 1)} className="rounded-full border px-4 py-2 disabled:opacity-40" style={{ borderColor: "var(--dash-border)" }}>Previous</button><span className="text-xs dash-text-muted">Page {transactions.pageNumber} of {transactions.totalPages}</span><button type="button" disabled={savingsPage >= transactions.totalPages || savings.isFetching} onClick={() => setSavingsPage((page) => page + 1)} className="rounded-full border px-4 py-2 disabled:opacity-40" style={{ borderColor: "var(--dash-border)" }}>Next</button></nav>}
+    </section>
+
+    <section className="card-dash rounded-3xl p-5 md:p-7" aria-labelledby="payments-title">
+      <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-widest text-amber-600">Submissions</p><h2 id="payments-title" className="mt-1 text-xl font-bold">Payment history</h2><p className="mt-1 text-sm dash-text-muted">Drafts, pending submissions, confirmed payments and rejections.</p></div><button type="button" onClick={() => history.refetch()} disabled={history.isFetching} className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold disabled:opacity-50" style={{ borderColor: "var(--dash-border)" }}><RefreshCw className={`h-4 w-4 ${history.isFetching ? "animate-spin" : ""}`} /> Refresh</button></div>
+      <div className="mt-5 flex flex-wrap gap-2">{statuses.map((item) => <button key={item.label} type="button" aria-pressed={paymentStatus === item.value} onClick={() => { setPaymentStatus(item.value); setPaymentPage(1); }} className={`rounded-full px-4 py-2 text-xs font-semibold ${paymentStatus === item.value ? "bg-[#171717] text-white" : "border dash-text-muted"}`} style={paymentStatus ? undefined : { borderColor: "var(--dash-border)" }}>{item.label}</button>)}</div>
+      <div className="mt-5 grid gap-3 border-t pt-5 sm:grid-cols-2 lg:grid-cols-4" style={{ borderColor: "var(--dash-border)" }}><label className="grid gap-1.5 text-xs font-semibold dash-text-muted">Payment type<select value={paymentType} onChange={(event) => { setPaymentType(event.target.value); setPaymentPage(1); }} className="input-dash rounded-xl px-3 py-2.5 text-sm outline-none"><option value="">All types</option><option value="ShareCapital">Share capital</option><option value="SavingsContribution">Savings contribution</option><option value="CommitmentFee">Commitment fee</option></select></label><label className="grid gap-1.5 text-xs font-semibold dash-text-muted">From date<input type="date" value={paymentDates.fromDate} onChange={(event) => { setPaymentDates((value) => ({ ...value, fromDate: event.target.value })); setPaymentPage(1); }} className="input-dash rounded-xl px-3 py-2.5 text-sm outline-none" /></label><label className="grid gap-1.5 text-xs font-semibold dash-text-muted">To date<input type="date" value={paymentDates.toDate} onChange={(event) => { setPaymentDates((value) => ({ ...value, toDate: event.target.value })); setPaymentPage(1); }} className="input-dash rounded-xl px-3 py-2.5 text-sm outline-none" /></label><label className="grid gap-1.5 text-xs font-semibold dash-text-muted">Reference<input value={paymentDates.reference} onChange={(event) => { setPaymentDates((value) => ({ ...value, reference: event.target.value })); setPaymentPage(1); }} placeholder="Search reference" className="input-dash rounded-xl px-3 py-2.5 text-sm outline-none" /></label></div>
+      <div className="mt-6 divide-y" style={{ borderColor: "var(--dash-border)" }}>{history.isLoading ? <p role="status" className="py-10 text-center text-sm dash-text-muted">Loading payment history...</p> : history.isError ? <div role="alert" className="py-8 text-center text-sm text-red-700"><p>{getApiErrorMessage(history.error)}</p><button type="button" onClick={() => history.refetch()} className="mt-2 font-semibold underline">Retry</button></div> : !history.data?.items?.length ? <p className="py-10 text-center text-sm dash-text-muted">No payments match this view.</p> : history.data.items.map((item) => <button key={item.id} type="button" onClick={() => setSelected(item)} className="flex w-full flex-wrap items-center justify-between gap-3 py-4 text-left"><div><p className="text-sm font-semibold">{paymentTypeLabel(item.type)}</p><p className="mt-1 text-xs dash-text-muted">{paymentDate(item.submittedAt ?? item.paymentDate)}{item.interacReferenceNumber ? ` · ${item.interacReferenceNumber}` : ""}</p></div><div className="flex items-center gap-4"><strong className="text-sm">{paymentAmount(item.amountPaid, item.currency)}</strong><PaymentStatusBadge status={item.status} /></div></button>)}</div>
+      {history.data && history.data.totalPages > 1 && <nav aria-label="Payment history pages" className="mt-5 flex items-center justify-between border-t pt-5 text-sm" style={{ borderColor: "var(--dash-border)" }}><button type="button" disabled={paymentPage <= 1 || history.isFetching} onClick={() => setPaymentPage((page) => page - 1)} className="rounded-full border px-4 py-2 disabled:opacity-40" style={{ borderColor: "var(--dash-border)" }}>Previous</button><span className="text-xs dash-text-muted">Page {history.data.pageNumber} of {history.data.totalPages}</span><button type="button" disabled={paymentPage >= history.data.totalPages || history.isFetching} onClick={() => setPaymentPage((page) => page + 1)} className="rounded-full border px-4 py-2 disabled:opacity-40" style={{ borderColor: "var(--dash-border)" }}>Next</button></nav>}
+    </section>
+
+    {selected && <div role="dialog" aria-modal="true" aria-labelledby="payment-detail-title" className="fixed inset-0 z-[60] flex justify-end bg-black/50"><div className="h-full w-full max-w-lg overflow-y-auto bg-white p-6 shadow-2xl"><div className="flex items-start justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-widest text-amber-600">Payment record</p><h2 id="payment-detail-title" className="mt-2 text-2xl font-bold">{paymentAmount(selected.amountPaid, selected.currency)}</h2></div><button type="button" onClick={() => setSelected(null)} aria-label="Close details" className="rounded-full border p-2"><X className="h-4 w-4" /></button></div><div className="mt-5"><PaymentStatusBadge status={selected.status} /></div><dl className="mt-6 space-y-4 text-sm">{[["Type", paymentTypeLabel(selected.type)], ["Payment date", paymentDate(selected.paymentDate)], ["Submitted", paymentDate(selected.submittedAt)], ["Reference", selected.interacReferenceNumber || "—"], ["Method", selected.method || "—"], ["Note", selected.note || "—"]].map(([label, value]) => <div key={label} className="flex justify-between gap-4 border-b pb-3"><dt className="dash-text-muted">{label}</dt><dd className="max-w-[65%] text-right font-medium break-words">{value}</dd></div>)}</dl><div className="mt-7 flex flex-wrap gap-3">{selected.status?.toLowerCase() === "draft" && <Link href={`/dashboard/cash-wallet/confirm-payment?draftId=${selected.id}`} className="rounded-full bg-[#171717] px-5 py-2.5 text-sm font-semibold text-white">Edit draft</Link>}{selected.proofFileName && <button type="button" onClick={() => openProof(selected.proofFileName!)} disabled={proofLoading} className="inline-flex items-center gap-2 rounded-full border px-5 py-2.5 text-sm font-semibold disabled:opacity-50"><FileText className="h-4 w-4" /> {proofLoading ? "Opening..." : "View proof"}</button>}</div>{proofError && <p role="alert" className="mt-4 text-sm text-red-700">{proofError}</p>}</div></div>}
+    {proofUrl && <div role="dialog" aria-modal="true" aria-label="Payment proof" className="fixed inset-0 z-[70] grid place-items-center bg-black/75 p-4"><div className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white"><div className="flex items-center justify-between border-b p-4"><p className="font-semibold">Payment proof</p><button type="button" onClick={() => setProofUrl(null)} aria-label="Close proof"><X className="h-5 w-5" /></button></div><iframe src={proofUrl} title="Payment proof" className="h-[70vh] w-full" /></div></div>}
+  </div>;
 }

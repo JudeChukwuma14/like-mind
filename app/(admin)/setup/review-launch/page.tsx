@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useMutation } from "@tanstack/react-query";
@@ -23,7 +23,7 @@ import {
 import { useSetupStore } from "../useSetupStore";
 import { useRequireAccount } from "../useSetupGuard";
 import { buildCompleteSetupRequest } from "../complete-setup-mapper";
-import { adminApiFetch, getApiErrorMessage, type ApiEnvelope } from "@/app/lib/api-client";
+import { adminApiFetch, ensureApiSuccess, getApiErrorMessage, type ApiEnvelope } from "@/app/lib/api-client";
 import { FadeUp, StaggerChildren, StaggerItem, motion } from "@/app/components/Motion";
 import { SetupStepHeader } from "../SetupStepHeader";
 import { CURRENCIES, TIMEZONES } from "../setupConstants";
@@ -95,6 +95,7 @@ function SummarySection({ icon: Icon, title, lines, editHref, warning }: Summary
 }
 
 type CompleteSetupData = {
+  cooperativeId: string;
   provisioningStatus: string;
   rootAdminUserId: string | null;
 };
@@ -102,19 +103,17 @@ type CompleteSetupData = {
 function LaunchResultModal({
   result,
   message,
-  cooperativeId,
   onContinue,
 }: {
   result: CompleteSetupData;
   message: string;
-  cooperativeId: string;
   onContinue: () => void;
 }) {
   const [copied, setCopied] = useState(false);
   const needsAttention = !result.rootAdminUserId;
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(cooperativeId).then(() => {
+    navigator.clipboard.writeText(result.cooperativeId).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     });
@@ -146,7 +145,7 @@ function LaunchResultModal({
         </div>
 
         <h2 className="text-xl font-bold text-[#171717] mb-2">
-          {needsAttention ? "Cooperative created" : "Cooperative launched!"}
+          {needsAttention ? "Cooperative created" : "Setup completed"}
         </h2>
         <p className="text-sm text-[#6b7280] leading-relaxed mb-4">{message}</p>
 
@@ -155,7 +154,7 @@ function LaunchResultModal({
             Cooperative ID
           </p>
           <div className="flex items-center justify-between gap-2">
-            <p className="text-xs font-mono text-[#171717] truncate">{cooperativeId}</p>
+            <p className="text-xs font-mono text-[#171717] truncate">{result.cooperativeId}</p>
             <button
               type="button"
               onClick={handleCopy}
@@ -191,7 +190,6 @@ function LaunchResultModal({
 export default function ReviewLaunchPage() {
   const router = useRouter();
   const { data, clearData, isClient } = useSetupStore();
-  const [mounted, setMounted] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const [launchResult, setLaunchResult] = useState<{ data: CompleteSetupData; message: string } | null>(
     null,
@@ -200,10 +198,12 @@ export default function ReviewLaunchPage() {
   const completeSetup = useMutation({
     mutationFn: async () => {
       const body = buildCompleteSetupRequest(data);
-      return adminApiFetch<ApiEnvelope<CompleteSetupData>>(
+      const res = ensureApiSuccess(await adminApiFetch<ApiEnvelope<CompleteSetupData | null>>(
         `/api/CooperativeAccount/CompleteSetup/${data.cooperativeAccountId}`,
         { method: "POST", body },
-      );
+      ));
+      if (!res.data?.cooperativeId) throw new Error("The backend reported setup success without a cooperative ID. Verify the cooperative status before submitting again.");
+      return { data: res.data, message: res.message };
     },
     onSuccess: (res) => {
       setLaunchResult({ data: res.data, message: res.message });
@@ -218,9 +218,8 @@ export default function ReviewLaunchPage() {
     router.push("/login");
   };
 
-  useEffect(() => setMounted(true), []);
   useRequireAccount(isClient, data.cooperativeAccountId, Boolean(launchResult));
-  if (!isClient || !mounted || (!data.cooperativeAccountId && !launchResult)) return null;
+  if (!isClient || (!data.cooperativeAccountId && !launchResult)) return null;
 
   const handleFinalize = (e: React.FormEvent) => {
     e.preventDefault();
@@ -407,7 +406,6 @@ export default function ReviewLaunchPage() {
       <LaunchResultModal
         result={launchResult.data}
         message={launchResult.message}
-        cooperativeId={data.cooperativeAccountId}
         onContinue={handleGoHome}
       />
     )}

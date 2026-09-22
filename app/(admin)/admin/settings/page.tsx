@@ -3,7 +3,7 @@ import { SettingsClient } from "./SettingsClient";
 
 export const metadata: Metadata = {
   title: "System Settings | Admin",
-  description: "Configure global Kajola platform settings.",
+  description: "Review the admin account and configure live approval-tier rules.",
 };
 
 export default function AdminSettingsPage() {

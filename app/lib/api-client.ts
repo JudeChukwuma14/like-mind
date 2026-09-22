@@ -56,6 +56,14 @@ export class ApiError extends Error {
   }
 }
 
+/** Some endpoints return HTTP 200 with a failed application-level envelope. */
+export function ensureApiSuccess<T extends ApiEnvelope<unknown>>(response: T): T {
+  if (response.success === false) {
+    throw new ApiError(response.message || "The request was not accepted.", response.statusCode || 0, response);
+  }
+  return response;
+}
+
 /** "$.basicInfo.dateOfBirth" or "nextOfKinDto.SharePercentage" -> "Date of birth" */
 function humanizeFieldPath(path: string): string {
   const lastSegment = path.replace(/^\$\./, "").split(".").pop() ?? path;

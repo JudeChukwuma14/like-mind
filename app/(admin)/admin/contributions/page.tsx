@@ -1,319 +1,79 @@
 "use client";
 
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { 
-  Filter, Calendar, FileText, Check, X, Loader2, AlertCircle, ExternalLink 
-} from "lucide-react";
+import { useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Check, FileText, Loader2, RefreshCw, UploadCloud, X } from "lucide-react";
 import toast from "react-hot-toast";
-import {
-  getPendingPayments,
-  confirmPayment,
-  rejectPayment,
-  type PendingPayment,
-} from "@/app/lib/payments-api";
+import { BulkUploadDialog } from "@/app/components/bulk-upload/BulkUploadDialog";
+import { usePaymentPermissions } from "@/app/components/payments/usePaymentPermissions";
+import { PaymentStatusBadge, paymentAmount, paymentDate, paymentTypeLabel } from "@/app/components/payments/payment-display";
+import { confirmPayment, getAdminAllPaymentStatus, getPaymentProofBlobUrl, getPendingPayments, rejectPayment, type PendingPayment } from "@/app/lib/payments-api";
 import { getApiErrorMessage } from "@/app/lib/api-client";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+const PAGE_SIZE = 20;
+type View = "queue" | "history";
+type Decision = { payment: PendingPayment; kind: "confirm" | "reject" };
 
-function fmt(n: number | null | undefined): string {
-  if (n == null) return "—";
-  return new Intl.NumberFormat("en-NG", {
-    style: "currency",
-    currency: "NGN",
-    maximumFractionDigits: 0,
-  }).format(n);
-}
-
-function fmtDate(iso: string | null | undefined): string {
-  if (!iso) return "—";
-  try {
-    return new Date(iso).toLocaleString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch {
-    return iso;
-  }
-}
-
-// ─── Reject Modal ─────────────────────────────────────────────────────────────
-
-function RejectModal({
-  payment,
-  onClose,
-  onConfirm,
-  isPending,
-}: {
-  payment: PendingPayment;
-  onClose: () => void;
-  onConfirm: (reason: string) => void;
-  isPending: boolean;
-}) {
+function DecisionDialog({ decision, pending, onClose, onConfirm }: { decision: Decision; pending: boolean; onClose: () => void; onConfirm: (reason: string) => void }) {
   const [reason, setReason] = useState("");
-  return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 flex flex-col gap-5">
-        <div className="flex justify-between items-center">
-          <h2 className="text-xl font-semibold text-[#111]">Reject payment</h2>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-black/5 flex items-center justify-center hover:bg-black/10 transition">
-            <X className="w-4 h-4 text-black/60" />
-          </button>
-        </div>
-        <p className="text-sm text-black/60">
-          Rejecting <strong>{fmt(payment.amount)}</strong> from{" "}
-          <strong>{payment.memberName ?? payment.memberEmail ?? "Unknown"}</strong>.
-          The member will be notified.
-        </p>
-        <textarea
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-          placeholder="Reason for rejection (required)…"
-          rows={3}
-          className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm resize-none outline-none focus:border-gray-400 transition"
-        />
-        <div className="flex gap-3 justify-end">
-          <button onClick={onClose} disabled={isPending} className="px-5 py-2.5 rounded-full border border-gray-200 text-sm font-medium hover:bg-gray-50 transition disabled:opacity-50">
-            Cancel
-          </button>
-          <button
-            onClick={() => onConfirm(reason)}
-            disabled={isPending || !reason.trim()}
-            className="px-6 py-2.5 rounded-full bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition disabled:opacity-50 flex items-center gap-2"
-          >
-            {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-            Confirm rejection
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+  const confirming = decision.kind === "confirm";
+  return <div role="dialog" aria-modal="true" aria-labelledby="payment-decision-title" className="fixed inset-0 z-[70] grid place-items-center bg-black/60 p-4"><form onSubmit={(event) => { event.preventDefault(); onConfirm(reason.trim()); }} className="card-admin w-full max-w-md space-y-5 rounded-3xl p-6 shadow-2xl"><div className="flex items-start justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-widest text-amber-600">Payment decision</p><h2 id="payment-decision-title" className="mt-1 text-xl font-bold">{confirming ? "Confirm and credit savings?" : "Reject this payment?"}</h2></div><button type="button" onClick={onClose} disabled={pending} aria-label="Close" className="rounded-full border p-2"><X className="h-4 w-4" /></button></div><p className="text-sm admin-text-muted">{paymentAmount(decision.payment.amountPaid, decision.payment.currency)} from {decision.payment.payerName || decision.payment.payerEmail || "this member"}. {confirming ? "The backend will credit savings if the confirmation succeeds. Verify the proof and reference first." : "The payment will not be credited."}</p>{!confirming && <label className="grid gap-2 text-sm font-semibold">Reason for rejection<textarea required rows={3} value={reason} onChange={(event) => setReason(event.target.value)} className="input-admin rounded-xl p-3 text-sm outline-none" placeholder="Explain why this payment was rejected" /></label>}<div className="flex justify-end gap-2"><button type="button" onClick={onClose} disabled={pending} className="rounded-full border px-4 py-2.5 text-sm font-semibold">Cancel</button><button type="submit" disabled={pending || (!confirming && !reason)} className={`inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50 ${confirming ? "bg-[#171717]" : "bg-red-700"}`}>{pending && <Loader2 className="h-4 w-4 animate-spin" />}{confirming ? "Confirm payment" : "Reject payment"}</button></div></form></div>;
 }
-
-// ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function ContributionsPage() {
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState("needs-review");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [rejectTarget, setRejectTarget] = useState<PendingPayment | null>(null);
+  const permissions = usePaymentPermissions();
+  const [view, setView] = useState<View>("queue");
+  const [page, setPage] = useState(1);
+  const [type, setType] = useState("");
+  const [status, setStatus] = useState<"" | "Draft" | "PendingConfirmation" | "Confirmed" | "Rejected">("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [reference, setReference] = useState("");
+  const [onlyAssignedToMe, setOnlyAssignedToMe] = useState(false);
+  const [submittedByUserId, setSubmittedByUserId] = useState("");
+  const [selected, setSelected] = useState<PendingPayment | null>(null);
+  const [decision, setDecision] = useState<Decision | null>(null);
+  const [showBulkUpload, setShowBulkUpload] = useState(false);
+  const [proofUrl, setProofUrl] = useState<string | null>(null);
+  const [proofError, setProofError] = useState<string | null>(null);
+  const [proofLoading, setProofLoading] = useState(false);
 
-  // Fetch pending payments
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["pending-payments"],
-    queryFn: () => getPendingPayments({ pageSize: 100 }),
-  });
+  useEffect(() => () => { if (proofUrl) URL.revokeObjectURL(proofUrl); }, [proofUrl]);
 
-  const payments = data?.items ?? [];
-  const selectedPayment = payments.find((p) => p.id === selectedId) ?? null;
+  const queue = useQuery({ queryKey: ["pending-payments", page, type, fromDate, toDate, reference, onlyAssignedToMe], queryFn: () => getPendingPayments({ page, pageSize: PAGE_SIZE, type, fromDate, toDate, reference, onlyAssignedToMe }), enabled: view === "queue" && permissions.canConfirm });
+  const history = useQuery({ queryKey: ["all-payment-status", page, status, type, fromDate, toDate, reference, submittedByUserId], queryFn: () => getAdminAllPaymentStatus({ page, pageSize: PAGE_SIZE, status: status || undefined, type, fromDate, toDate, reference, submittedByUserId }), enabled: view === "history" });
+  const result = view === "queue" ? queue : history;
 
-  // Confirm Mutation
-  const confirmMutation = useMutation({
-    mutationFn: (id: string) => confirmPayment(id),
-    onSuccess: () => {
-      toast.success("Payment confirmed. Savings credited.");
-      queryClient.invalidateQueries({ queryKey: ["pending-payments"] });
-      setSelectedId(null);
-    },
-    onError: (err) => toast.error(getApiErrorMessage(err)),
-  });
+  const confirmation = useMutation({ mutationFn: (id: string) => confirmPayment(id), onSuccess: () => { toast.success("Payment confirmed; savings credited by the backend."); setDecision(null); setSelected(null); queryClient.invalidateQueries({ queryKey: ["pending-payments"] }); queryClient.invalidateQueries({ queryKey: ["all-payment-status"] }); }, onError: (error) => toast.error(getApiErrorMessage(error)) });
+  const rejection = useMutation({ mutationFn: ({ id, reason }: { id: string; reason: string }) => rejectPayment(id, { reason }), onSuccess: () => { toast.success("Payment rejected."); setDecision(null); setSelected(null); queryClient.invalidateQueries({ queryKey: ["pending-payments"] }); queryClient.invalidateQueries({ queryKey: ["all-payment-status"] }); }, onError: (error) => toast.error(getApiErrorMessage(error)) });
 
-  // Reject Mutation
-  const rejectMutation = useMutation({
-    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
-      rejectPayment(id, { reason }),
-    onSuccess: () => {
-      toast.success("Payment rejected.");
-      queryClient.invalidateQueries({ queryKey: ["pending-payments"] });
-      setRejectTarget(null);
-      setSelectedId(null);
-    },
-    onError: (err) => toast.error(getApiErrorMessage(err)),
-  });
+  function changeView(next: View) { setView(next); setPage(1); setSelected(null); }
+  function resetPage() { setPage(1); setSelected(null); }
+  async function openProof(fileName: string) {
+    setProofLoading(true); setProofError(null);
+    try { setProofUrl(await getPaymentProofBlobUrl(fileName, "admin")); }
+    catch (error) { setProofError(getApiErrorMessage(error)); }
+    finally { setProofLoading(false); }
+  }
 
-  return (
-    <div className="text-[#111110]">
-      {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-6">
-        <div>
-          <div className="text-xs font-semibold tracking-widest text-black/40 uppercase mb-2">
-            CONTRIBUTIONS
-          </div>
-          <h1 className="text-4xl font-medium tracking-tight">Confirm payments</h1>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <button className="px-4 py-2.5 rounded-full bg-white flex items-center gap-2 font-medium text-sm border border-black/5 hover:bg-black/5 transition shadow-sm">
-            <Calendar className="w-4 h-4" /> Filter
-          </button>
-        </div>
-      </div>
+  return <div className="mx-auto max-w-7xl space-y-6 pb-14 admin-text">
+    <BulkUploadDialog kind="Savings" open={showBulkUpload} onClose={() => setShowBulkUpload(false)} />
+    <header className="relative overflow-hidden rounded-3xl bg-[#181817] p-6 text-white md:p-8"><div className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-amber-400/15 blur-3xl" /><div className="relative flex flex-wrap items-end justify-between gap-5"><div><p className="text-xs font-bold uppercase tracking-[0.18em] text-amber-300">Savings administration</p><h1 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">Payments & contributions</h1><p className="mt-3 max-w-2xl text-sm leading-6 text-white/70">Review payment submissions before crediting savings and see the full payment history.</p></div><button type="button" onClick={() => setShowBulkUpload(true)} className="inline-flex items-center gap-2 rounded-full border border-white/25 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/10"><UploadCloud className="h-4 w-4" /> Bulk savings upload</button></div></header>
 
-      {/* Tabs */}
-      <div className="flex gap-8 border-b border-black/10 mb-8 overflow-x-auto hide-scrollbar">
-        {[
-          { id: 'needs-review', label: 'Needs review', count: payments.length },
-          { id: 'confirmed', label: 'Confirmed today', count: 0 },
-          { id: 'rejected', label: 'Rejected', count: 0 }
-        ].map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => { setActiveTab(tab.id); setSelectedId(null); }}
-            className={`pb-4 text-[15px] font-medium transition-colors relative whitespace-nowrap ${
-              activeTab === tab.id ? 'text-black' : 'text-black/40 hover:text-black/70'
-            }`}
-          >
-            {tab.label} {tab.count > 0 && <span className={activeTab === tab.id ? 'text-black' : 'text-black/40'}>- {tab.count}</span>}
-            {activeTab === tab.id && (
-              <div className="absolute bottom-0 left-0 w-full h-[2px] bg-black" />
-            )}
-          </button>
-        ))}
-      </div>
+    <section className="card-admin rounded-3xl p-5 md:p-6"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-semibold">Payment records</h2><p className="mt-1 text-sm admin-text-muted">The review queue is separate from confirmed, rejected, and draft history.</p></div><button type="button" onClick={() => result.refetch()} disabled={result.isFetching || (view === "queue" && !permissions.canConfirm)} className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold disabled:opacity-50" style={{ borderColor: "var(--admin-border)" }}><RefreshCw className={`h-4 w-4 ${result.isFetching ? "animate-spin" : ""}`} /> Refresh</button></div>
+      <div className="mt-5 flex gap-2"><button type="button" aria-pressed={view === "queue"} onClick={() => changeView("queue")} className={`rounded-full px-4 py-2 text-sm font-semibold ${view === "queue" ? "bg-[#171717] text-white" : "border"}`} style={view === "queue" ? undefined : { borderColor: "var(--admin-border)" }}>Needs review</button><button type="button" aria-pressed={view === "history"} onClick={() => changeView("history")} className={`rounded-full px-4 py-2 text-sm font-semibold ${view === "history" ? "bg-[#171717] text-white" : "border"}`} style={view === "history" ? undefined : { borderColor: "var(--admin-border)" }}>All payment statuses</button></div>
+      <div className="mt-5 grid gap-3 border-t pt-5 sm:grid-cols-2 lg:grid-cols-4" style={{ borderColor: "var(--admin-border)" }}><label className="grid gap-1.5 text-xs font-semibold admin-text-muted">Contribution type<select value={type} onChange={(event) => { setType(event.target.value); resetPage(); }} className="input-admin rounded-xl px-3 py-2.5 text-sm outline-none"><option value="">All types</option><option value="ShareCapital">Share capital</option><option value="SavingsContribution">Savings contribution</option><option value="CommitmentFee">Commitment fee</option></select></label><label className="grid gap-1.5 text-xs font-semibold admin-text-muted">From date<input type="date" value={fromDate} onChange={(event) => { setFromDate(event.target.value); resetPage(); }} className="input-admin rounded-xl px-3 py-2.5 text-sm outline-none" /></label><label className="grid gap-1.5 text-xs font-semibold admin-text-muted">To date<input type="date" value={toDate} onChange={(event) => { setToDate(event.target.value); resetPage(); }} className="input-admin rounded-xl px-3 py-2.5 text-sm outline-none" /></label><label className="grid gap-1.5 text-xs font-semibold admin-text-muted">Reference<input value={reference} onChange={(event) => { setReference(event.target.value); resetPage(); }} placeholder="Search reference" className="input-admin rounded-xl px-3 py-2.5 text-sm outline-none" /></label></div>
+      <div className="mt-4 flex flex-wrap items-end gap-4">{view === "queue" ? <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={onlyAssignedToMe} onChange={(event) => { setOnlyAssignedToMe(event.target.checked); resetPage(); }} className="h-4 w-4 accent-amber-500" /> Assigned to me only</label> : <><label className="grid gap-1.5 text-xs font-semibold admin-text-muted">Status<select value={status} onChange={(event) => { setStatus(event.target.value as typeof status); resetPage(); }} className="input-admin rounded-xl px-3 py-2.5 text-sm outline-none"><option value="">All statuses</option><option value="Draft">Draft</option><option value="PendingConfirmation">Pending confirmation</option><option value="Confirmed">Confirmed</option><option value="Rejected">Rejected</option></select></label><label className="grid gap-1.5 text-xs font-semibold admin-text-muted">Submitted by user ID<input value={submittedByUserId} onChange={(event) => { setSubmittedByUserId(event.target.value); resetPage(); }} placeholder="Optional user ID" className="input-admin rounded-xl px-3 py-2.5 text-sm outline-none" /></label></>}</div>
+    </section>
 
-      {/* Content Area */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
-        
-        {/* Left List Pane */}
-        <div className="flex flex-col gap-2">
-          {activeTab !== 'needs-review' && (
-            <div className="py-16 text-center text-black/40 font-medium bg-white/50 rounded-2xl border border-black/5 border-dashed">
-              No items in this view.
-            </div>
-          )}
+    <section aria-label={view === "queue" ? "Pending payment submissions" : "Payment history"} className="grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(19rem,0.8fr)] xl:items-start"><div className="card-admin overflow-hidden rounded-3xl"><div className="border-b px-5 py-4" style={{ borderColor: "var(--admin-border)" }}><h2 className="text-lg font-semibold">{view === "queue" ? "Awaiting confirmation" : "All payment statuses"}</h2><p className="mt-1 text-xs admin-text-muted">{result.data ? `${result.data.totalCount} matching payment${result.data.totalCount === 1 ? "" : "s"}` : "Payment submissions"}</p></div>
+      {view === "queue" && permissions.isLoading ? <p role="status" className="p-8 text-sm admin-text-muted">Checking review access...</p> : view === "queue" && !permissions.canConfirm ? <p className="p-8 text-sm admin-text-muted">You do not have permission to confirm member payments.</p> : result.isLoading ? <p role="status" className="flex items-center justify-center gap-2 p-10 text-sm admin-text-muted"><Loader2 className="h-4 w-4 animate-spin" /> Loading payments...</p> : result.isError ? <div role="alert" className="p-8 text-sm text-red-700"><p>{getApiErrorMessage(result.error)}</p><button type="button" onClick={() => result.refetch()} className="mt-2 font-semibold underline">Retry</button></div> : !result.data?.items?.length ? <p className="p-10 text-center text-sm admin-text-muted">No payments match this view.</p> : <div className="divide-y" style={{ borderColor: "var(--admin-border)" }}>{result.data.items.map((payment) => <button key={payment.id} type="button" onClick={() => setSelected(payment)} className={`flex w-full flex-wrap items-center justify-between gap-3 px-5 py-4 text-left hover:bg-amber-400/5 ${selected?.id === payment.id ? "bg-amber-400/10" : ""}`}><div className="min-w-0"><p className="truncate text-sm font-semibold">{payment.payerName || payment.payerEmail || "Member"}</p><p className="mt-1 truncate text-xs admin-text-muted">{paymentTypeLabel(payment.type)} · {paymentDate(payment.submittedAt ?? payment.paymentDate)}</p></div><div className="text-right"><p className="text-sm font-bold">{paymentAmount(payment.amountPaid, payment.currency)}</p><div className="mt-1"><PaymentStatusBadge status={payment.status} /></div></div></button>)}</div>}
+      {result.data && result.data.totalPages > 1 && <nav aria-label="Payment pages" className="flex items-center justify-between gap-2 border-t p-4 text-sm" style={{ borderColor: "var(--admin-border)" }}><button type="button" disabled={page <= 1 || result.isFetching} onClick={() => { setPage((value) => value - 1); setSelected(null); }} className="rounded-full border px-4 py-2 disabled:opacity-40">Previous</button><span className="text-xs admin-text-muted">Page {result.data.pageNumber} of {result.data.totalPages}</span><button type="button" disabled={page >= result.data.totalPages || result.isFetching} onClick={() => { setPage((value) => value + 1); setSelected(null); }} className="rounded-full border px-4 py-2 disabled:opacity-40">Next</button></nav>}</div>
+      <aside className="card-admin rounded-3xl p-5 md:p-6 xl:sticky xl:top-24">{!selected ? <div className="py-12 text-center text-sm admin-text-muted"><FileText className="mx-auto mb-3 h-7 w-7 text-amber-500" />Select a payment to review its details.</div> : <><div className="flex items-start justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-widest text-amber-600">Payment details</p><h2 className="mt-2 text-2xl font-bold">{paymentAmount(selected.amountPaid, selected.currency)}</h2><p className="mt-1 text-sm admin-text-muted">{selected.payerName || selected.payerEmail || "Member"}</p></div><PaymentStatusBadge status={selected.status} /></div><dl className="mt-6 space-y-3 text-sm">{[["Type", paymentTypeLabel(selected.type)], ["Payment date", paymentDate(selected.paymentDate)], ["Submitted", paymentDate(selected.submittedAt)], ["Reference", selected.interacReferenceNumber || "—"], ["Method", selected.method || "—"], ["Note", selected.note || "—"], ["Assigned to", selected.assignedToName || "—"]].map(([label, value]) => <div key={label} className="flex justify-between gap-4 border-b pb-3" style={{ borderColor: "var(--admin-border)" }}><dt className="admin-text-muted">{label}</dt><dd className="max-w-[65%] text-right font-medium break-words">{value}</dd></div>)}</dl>{selected.proofFileName ? <button type="button" onClick={() => openProof(selected.proofFileName!)} disabled={proofLoading} className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold disabled:opacity-50" style={{ borderColor: "var(--admin-border)" }}><FileText className="h-4 w-4" /> {proofLoading ? "Opening proof..." : "View payment proof"}</button> : <p className="mt-5 rounded-xl border border-dashed p-3 text-xs admin-text-muted">No proof of payment attached.</p>}{proofError && <p role="alert" className="mt-3 text-xs text-red-700">{proofError}</p>}{view === "queue" && permissions.canConfirm && <div className="mt-6 flex gap-3 border-t pt-5" style={{ borderColor: "var(--admin-border)" }}><button type="button" onClick={() => setDecision({ payment: selected, kind: "reject" })} className="flex-1 rounded-full border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-700">Reject</button><button type="button" onClick={() => setDecision({ payment: selected, kind: "confirm" })} className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-[#171717] px-4 py-2.5 text-sm font-semibold text-white"><Check className="h-4 w-4" /> Confirm</button></div>}</>}</aside>
+    </section>
 
-          {activeTab === 'needs-review' && isLoading && (
-            <div className="flex justify-center py-10">
-              <Loader2 className="w-6 h-6 animate-spin text-gray-300" />
-            </div>
-          )}
-
-          {activeTab === 'needs-review' && error && (
-            <div className="flex items-center gap-3 p-4 bg-red-50 rounded-xl border border-red-100 text-red-700">
-              <AlertCircle className="w-5 h-5 shrink-0" />
-              <p className="text-sm">{getApiErrorMessage(error)}</p>
-            </div>
-          )}
-
-          {activeTab === 'needs-review' && !isLoading && !error && payments.length === 0 && (
-            <div className="py-16 text-center text-black/40 font-medium bg-white/50 rounded-2xl border border-black/5 border-dashed">
-              Queue is empty. No pending payments.
-            </div>
-          )}
-
-          {activeTab === 'needs-review' && payments.map((payment) => (
-            <div 
-              key={payment.id}
-              onClick={() => setSelectedId(selectedId === payment.id ? null : payment.id)}
-              className={`p-4 rounded-xl flex items-center justify-between cursor-pointer transition-colors border ${
-                selectedId === payment.id 
-                  ? 'bg-gradient-to-r from-[#FEFBE8] to-white border-[#E8D94B]/40 shadow-sm' 
-                  : 'bg-white border-transparent hover:border-black/10 shadow-sm'
-              }`}
-            >
-              <div className="flex items-center gap-4 min-w-0">
-                <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 border transition-colors ${
-                  selectedId === payment.id ? 'bg-[#E8D94B] border-[#E8D94B] text-black' : 'border-black/20 bg-white'
-                }`}>
-                  {selectedId === payment.id && <Check className="w-3 h-3" strokeWidth={3} />}
-                </div>
-                <div className="min-w-0">
-                  <div className="font-medium text-[15px] truncate">{payment.memberName ?? payment.memberEmail ?? "Unknown Member"}</div>
-                  <div className="text-sm text-black/50 truncate capitalize">
-                    {payment.contributionType ?? "Payment"} · {fmtDate(payment.submittedAt ?? payment.createdAt)}
-                  </div>
-                </div>
-              </div>
-              <div className="font-semibold text-[15px] shrink-0 pl-4">{fmt(payment.amount)}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* Right Details Pane */}
-        {activeTab === 'needs-review' && selectedPayment && (
-          <div className="bg-white rounded-3xl p-6 md:p-8 border border-black/5 shadow-sm xl:sticky xl:top-24 flex flex-col gap-8 animate-in fade-in slide-in-from-right-4 duration-300">
-            <div>
-              <div className="text-xs text-black/40 font-semibold tracking-widest mb-3 uppercase">
-                {selectedPayment.referenceNumber ?? selectedPayment.id?.slice(0, 8)} · {fmtDate(selectedPayment.submittedAt ?? selectedPayment.createdAt)}
-              </div>
-              <div className="text-[40px] font-semibold tracking-tight mb-2">
-                {fmt(selectedPayment.amount)}
-              </div>
-              <div className="text-[15px] text-black/60 font-medium capitalize">
-                {selectedPayment.memberName ?? selectedPayment.memberEmail} — {selectedPayment.contributionType ?? "Payment"}
-              </div>
-            </div>
-
-            {/* Receipt viewer box */}
-            {selectedPayment.proofUrl ? (
-              <a 
-                href={selectedPayment.proofUrl} 
-                target="_blank" 
-                rel="noreferrer"
-                className="bg-[#F5F3EC] rounded-2xl p-10 flex flex-col items-center justify-center text-center border border-black/5 group cursor-pointer hover:bg-[#ebe9e2] transition-colors relative overflow-hidden"
-              >
-                <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center shadow-sm mb-4 group-hover:scale-110 transition-transform">
-                  <FileText className="w-6 h-6 text-black/60" strokeWidth={1.5} />
-                </div>
-                <div className="font-medium text-[15px] mb-1 flex items-center gap-2">
-                  View proof of payment <ExternalLink className="w-4 h-4" />
-                </div>
-                <div className="text-sm text-black/50">Uploaded by member</div>
-              </a>
-            ) : (
-              <div className="bg-gray-50 rounded-2xl p-8 flex flex-col items-center justify-center text-center border border-black/5 border-dashed">
-                <div className="text-black/40 font-medium text-sm">No proof of payment attached.</div>
-              </div>
-            )}
-
-            <div className="space-y-4">
-              <div className="flex justify-between items-center border-b border-black/5 pb-4">
-                <span className="text-[14px] text-black/50">Bank reference</span>
-                <span className="font-medium text-sm">{selectedPayment.referenceNumber ?? "—"}</span>
-              </div>
-              <div className="flex justify-between items-center border-b border-black/5 pb-4">
-                <span className="text-[14px] text-black/50">Note</span>
-                <span className="font-medium text-sm">{selectedPayment.note ?? "—"}</span>
-              </div>
-              <div className="flex justify-between items-center pb-2">
-                <span className="text-[14px] text-black/50">Receipt</span>
-                <span className="font-medium text-sm text-black/70">Auto-email on confirm</span>
-              </div>
-            </div>
-
-            <div className="flex gap-3 pt-2">
-              <button 
-                onClick={() => setRejectTarget(selectedPayment)}
-                disabled={confirmMutation.isPending || rejectMutation.isPending}
-                className="px-6 py-4 rounded-full bg-white font-medium text-[15px] border border-black/10 hover:bg-red-50 hover:border-red-200 hover:text-red-600 transition shadow-sm disabled:opacity-50"
-              >
-                Reject
-              </button>
-              <button 
-                onClick={() => confirmMutation.mutate(selectedPayment.id)}
-                disabled={confirmMutation.isPending || rejectMutation.isPending}
-                className="flex-1 py-4 rounded-full bg-black text-white font-medium text-[15px] hover:bg-black/80 transition shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {confirmMutation.isPending && <Loader2 className="w-5 h-5 animate-spin" />}
-                Confirm & credit savings
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Reject modal */}
-      {rejectTarget && (
-        <RejectModal
-          payment={rejectTarget}
-          onClose={() => setRejectTarget(null)}
-          onConfirm={(reason) => rejectMutation.mutate({ id: rejectTarget.id, reason })}
-          isPending={rejectMutation.isPending}
-        />
-      )}
-    </div>
-  );
+    {decision && <DecisionDialog decision={decision} pending={confirmation.isPending || rejection.isPending} onClose={() => setDecision(null)} onConfirm={(reason) => decision.kind === "confirm" ? confirmation.mutate(decision.payment.id) : rejection.mutate({ id: decision.payment.id, reason })} />}
+    {proofUrl && <div role="dialog" aria-modal="true" aria-label="Payment proof" className="fixed inset-0 z-[80] grid place-items-center bg-black/75 p-4"><div className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white"><div className="flex items-center justify-between border-b p-4"><p className="font-semibold">Payment proof</p><button type="button" onClick={() => setProofUrl(null)} aria-label="Close proof"><X className="h-5 w-5" /></button></div><iframe src={proofUrl} title="Payment proof" className="h-[70vh] w-full" /></div></div>}
+  </div>;
 }

@@ -1,589 +1,108 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  Mail,
-  Phone,
-  ShieldCheck,
-  ShieldAlert,
-  Plus,
-  Trash2,
-  Loader2,
-  Info,
-} from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowRight, Info, Loader2, Mail, Phone, Plus, Settings2, ShieldCheck, Trash2, X } from "lucide-react";
+import toast from "react-hot-toast";
 import { adminApiFetch, getApiErrorMessage } from "@/app/lib/api-client";
 import { useAdminAuth } from "@/app/providers/AdminAuthProvider";
 import { pluckMember, formatDate } from "@/app/lib/member-profile";
-import {
-  getWithdrawalApprovalTiers,
-  updateWithdrawalApprovalTiers,
-  type ApprovalTier,
-} from "@/app/lib/withdrawal-tiers-api";
-import toast from "react-hot-toast";
+import { getWithdrawalApprovalTiers, updateWithdrawalApprovalTiers, type ApprovalTier } from "@/app/lib/withdrawal-tiers-api";
+import { getLoanDisbursementTiers, updateLoanDisbursementTiers } from "@/app/lib/loan-api";
+import { useLoanPermissions } from "@/app/components/loans/useLoanPermissions";
+import { useWithdrawalPermissions } from "@/app/components/withdrawals/useWithdrawalPermissions";
+import { formatWithdrawalAmount } from "@/app/components/withdrawals/withdrawal-display";
 
-const toggleSettings = [
-  {
-    id: "admin-setting-maintenance",
-    label: "Maintenance Mode",
-    description:
-      "Temporarily take the platform offline for maintenance. Users will see a maintenance page.",
-    defaultChecked: false,
-    danger: true,
-  },
-  {
-    id: "admin-setting-registrations",
-    label: "Open Registrations",
-    description:
-      "Allow new users to sign up. Disable to make the platform invite-only.",
-    defaultChecked: true,
-    danger: false,
-  },
-  {
-    id: "admin-setting-email-verification",
-    label: "Email Verification Required",
-    description:
-      "New users must verify their email before accessing the platform.",
-    defaultChecked: true,
-    danger: false,
-  },
-  {
-    id: "admin-setting-audit-log",
-    label: "Audit Logging",
-    description:
-      "Record all admin actions to the audit log for compliance purposes.",
-    defaultChecked: true,
-    danger: false,
-  },
-];
+type TierDraft = { minAmount: string; maxAmount: string; requiredApprovals: string };
 
-/** "RootAdmin" -> "Root Admin" */
-function humanizeRole(role: string): string {
-  return role.replace(/([a-z0-9])([A-Z])/g, "$1 $2");
+function toDraft(tier: ApprovalTier): TierDraft {
+  return { minAmount: String(tier.minAmount), maxAmount: tier.maxAmount == null ? "" : String(tier.maxAmount), requiredApprovals: String(tier.requiredApprovals) };
 }
 
-function fmt(n: number | null | undefined): string {
-  if (n == null) return "—";
-  return new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(n);
+function validateTiers(rows: TierDraft[], allowOpenEnded: boolean): ApprovalTier[] {
+  if (!rows.length) throw new Error("Add at least one approval tier before saving.");
+  const tiers = rows.map((row, index) => {
+    const minAmount = Number(row.minAmount);
+    const maxAmount = row.maxAmount.trim() === "" && allowOpenEnded ? null : Number(row.maxAmount);
+    const requiredApprovals = Number(row.requiredApprovals);
+    if (!row.minAmount.trim() || !Number.isFinite(minAmount) || minAmount < 0) throw new Error(`Tier ${index + 1}: enter a non-negative minimum amount.`);
+    if ((!allowOpenEnded && !row.maxAmount.trim()) || (maxAmount !== null && (!Number.isFinite(maxAmount) || maxAmount < minAmount))) throw new Error(`Tier ${index + 1}: enter a maximum amount that is not below the minimum.`);
+    if (!row.requiredApprovals.trim() || !Number.isInteger(requiredApprovals) || requiredApprovals < 1) throw new Error(`Tier ${index + 1}: required approvals must be a whole number of at least 1.`);
+    return { minAmount, maxAmount, requiredApprovals };
+  }).sort((a, b) => a.minAmount - b.minAmount);
+  for (let index = 1; index < tiers.length; index++) {
+    const previous = tiers[index - 1];
+    if (previous.maxAmount === null || tiers[index].minAmount <= previous.maxAmount) throw new Error(`Tier ${index + 1} overlaps the previous amount range. Keep ranges separate and open-ended tiers last.`);
+  }
+  return tiers;
 }
 
-// ─── Withdrawal Approval Tiers Card ──────────────────────────────────────────
-
-function WithdrawalApprovalTiersCard() {
+function TierEditor({ id, title, description, queryKey, load, save, allowOpenEnded, canManage, permissionLoading }: {
+  id: string;
+  title: string;
+  description: string;
+  queryKey: string;
+  load: () => Promise<ApprovalTier[]>;
+  save: (tiers: ApprovalTier[]) => Promise<unknown>;
+  allowOpenEnded: boolean;
+  canManage: boolean;
+  permissionLoading: boolean;
+}) {
   const queryClient = useQueryClient();
-
-  const { data: tiers = [], isLoading, isError, error } = useQuery({
-    queryKey: ["withdrawal-approval-tiers"],
-    queryFn: getWithdrawalApprovalTiers,
-  });
-
-  // Local editable copy
-  const [localTiers, setLocalTiers] = useState<ApprovalTier[] | null>(null);
-  const workingTiers: ApprovalTier[] = localTiers ?? tiers;
-
-  const { mutate: save, isPending } = useMutation({
-    mutationFn: (t: ApprovalTier[]) => updateWithdrawalApprovalTiers(t),
-    onSuccess: () => {
-      toast.success("Approval tiers saved.");
-      setLocalTiers(null);
-      queryClient.invalidateQueries({ queryKey: ["withdrawal-approval-tiers"] });
+  const query = useQuery({ queryKey: [queryKey], queryFn: load, enabled: canManage });
+  const [draft, setDraft] = useState<TierDraft[] | null>(null);
+  const [confirm, setConfirm] = useState<ApprovalTier[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const rows = draft ?? (query.data ?? []).map(toDraft);
+  const mutation = useMutation({
+    mutationFn: save,
+    onSuccess: async () => {
+      toast.success(`${title} updated.`);
+      setConfirm(null); setDraft(null); setError(null);
+      await queryClient.invalidateQueries({ queryKey: [queryKey] });
     },
-    onError: (err) => toast.error(getApiErrorMessage(err)),
+    onError: (reason) => setError(getApiErrorMessage(reason)),
   });
 
-  function addTier() {
-    const base: ApprovalTier[] = localTiers ?? tiers;
-    setLocalTiers([...base, { minAmount: 0, maxAmount: null, requiredApprovals: 1 }]);
+  function update(index: number, field: keyof TierDraft, value: string) {
+    setDraft(rows.map((row, rowIndex) => rowIndex === index ? { ...row, [field]: value } : row));
+    setError(null);
   }
 
-  function removeTier(idx: number) {
-    setLocalTiers(workingTiers.filter((_, i) => i !== idx));
+  function reviewChanges() {
+    try { setConfirm(validateTiers(rows, allowOpenEnded)); setError(null); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : "Check the tier amounts and try again."); }
   }
 
-  function updateTier(idx: number, patch: Partial<ApprovalTier>) {
-    setLocalTiers(workingTiers.map((t, i) => (i === idx ? { ...t, ...patch } : t)));
-  }
-
-  function handleSave() {
-    // Basic validation
-    for (const t of workingTiers) {
-      if (t.minAmount < 0) { toast.error("Min amount cannot be negative."); return; }
-      if (t.maxAmount != null && t.maxAmount < t.minAmount) { toast.error("Max amount must be ≥ min amount."); return; }
-      if (t.requiredApprovals < 1) { toast.error("Required approvals must be at least 1."); return; }
-    }
-    save(workingTiers);
-  }
-
-  const isDirty = localTiers !== null;
-
-  return (
-    <div
-      className="p-6 rounded-2xl border"
-      style={{ background: "var(--admin-surface)", borderColor: "var(--admin-border)" }}
-    >
-      <div className="flex items-start justify-between gap-4 mb-1">
-        <h2 className="font-semibold" style={{ color: "var(--admin-text)" }}>
-          Withdrawal Approval Tiers
-        </h2>
-        <button
-          id="admin-add-tier-btn"
-          type="button"
-          onClick={addTier}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all hover:opacity-90"
-          style={{ background: "var(--admin-primary)", color: "#000" }}
-        >
-          <Plus className="w-3.5 h-3.5" /> Add tier
-        </button>
-      </div>
-      <p className="text-sm mb-2" style={{ color: "var(--admin-muted)" }}>
-        Define how many approvals are required based on withdrawal or deduction amount.
-      </p>
-
-      {/* Snapshot notice */}
-      <div
-        className="flex items-start gap-2 px-3 py-2.5 rounded-xl mb-6 text-xs leading-relaxed"
-        style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", color: "var(--admin-text)" }}
-      >
-        <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: "#f59e0b" }} />
-        <span>
-          Changing these rules <strong>only affects new requests</strong>. Existing pending or approving
-          requests retain the approval count that was set when they were created.
-        </span>
-      </div>
-
-      {isLoading && (
-        <p className="text-sm py-4 text-center" style={{ color: "var(--admin-muted)" }}>
-          Loading tiers…
-        </p>
-      )}
-      {isError && (
-        <p className="text-sm py-4 text-center" style={{ color: "var(--admin-accent)" }}>
-          {getApiErrorMessage(error)}
-        </p>
-      )}
-
-      {!isLoading && !isError && workingTiers.length === 0 && (
-        <p className="text-sm py-6 text-center" style={{ color: "var(--admin-muted)" }}>
-          No tiers configured. Click <strong>Add tier</strong> to create one.
-        </p>
-      )}
-
-      {workingTiers.length > 0 && (
-        <div className="space-y-3 mb-5">
-          {/* Column headers */}
-          <div
-            className="hidden sm:grid grid-cols-[1fr_1fr_auto_auto] gap-3 text-[10px] font-bold tracking-widest uppercase px-1"
-            style={{ color: "var(--admin-muted)" }}
-          >
-            <span>Min Amount ($)</span>
-            <span>Max Amount ($, blank = unlimited)</span>
-            <span>Approvals</span>
-            <span />
-          </div>
-
-          {workingTiers.map((tier, idx) => (
-            <div
-              key={idx}
-              className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto_auto] gap-3 items-center p-3 rounded-xl"
-              style={{ background: "var(--admin-bg)", border: "1px solid var(--admin-border)" }}
-            >
-              <div className="flex flex-col gap-1">
-                <span className="sm:hidden text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--admin-muted)" }}>Min Amount ($)</span>
-                <input
-                  id={`tier-min-${idx}`}
-                  type="number"
-                  min={0}
-                  value={tier.minAmount}
-                  onChange={(e) => updateTier(idx, { minAmount: Number(e.target.value) })}
-                  className="w-full px-3 py-2 rounded-lg text-sm outline-none"
-                  style={{
-                    background: "var(--admin-surface)",
-                    border: "1px solid var(--admin-border)",
-                    color: "var(--admin-text)",
-                  }}
-                />
-              </div>
-              <div className="flex flex-col gap-1">
-                <span className="sm:hidden text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--admin-muted)" }}>Max Amount ($)</span>
-                <input
-                  id={`tier-max-${idx}`}
-                  type="number"
-                  min={0}
-                  placeholder="Unlimited"
-                  value={tier.maxAmount ?? ""}
-                  onChange={(e) =>
-                    updateTier(idx, { maxAmount: e.target.value === "" ? null : Number(e.target.value) })
-                  }
-                  className="w-full px-3 py-2 rounded-lg text-sm outline-none"
-                  style={{
-                    background: "var(--admin-surface)",
-                    border: "1px solid var(--admin-border)",
-                    color: "var(--admin-text)",
-                  }}
-                />
-              </div>
-              <div className="flex flex-col gap-1">
-                <span className="sm:hidden text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--admin-muted)" }}>Approvals</span>
-                <input
-                  id={`tier-approvals-${idx}`}
-                  type="number"
-                  min={1}
-                  value={tier.requiredApprovals}
-                  onChange={(e) => updateTier(idx, { requiredApprovals: Number(e.target.value) })}
-                  className="w-20 px-3 py-2 rounded-lg text-sm outline-none"
-                  style={{
-                    background: "var(--admin-surface)",
-                    border: "1px solid var(--admin-border)",
-                    color: "var(--admin-text)",
-                  }}
-                />
-              </div>
-              <button
-                id={`tier-remove-${idx}`}
-                type="button"
-                onClick={() => removeTier(idx)}
-                className="p-2 rounded-lg transition-colors hover:opacity-80"
-                style={{ color: "#ef4444", background: "rgba(239,68,68,0.1)" }}
-                aria-label="Remove tier"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {(isDirty || workingTiers.length > 0) && (
-        <div className="flex justify-end gap-3">
-          {isDirty && (
-            <button
-              type="button"
-              onClick={() => setLocalTiers(null)}
-              className="px-4 py-2 rounded-lg text-sm font-medium transition-all hover:opacity-70"
-              style={{ color: "var(--admin-muted)" }}
-            >
-              Discard
-            </button>
-          )}
-          <button
-            id="admin-save-tiers-btn"
-            type="button"
-            onClick={handleSave}
-            disabled={isPending || !isDirty}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{ background: "linear-gradient(135deg, #f59e0b, #ef4444)", color: "#fff" }}
-          >
-            {isPending ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</> : "Save tiers"}
-          </button>
-        </div>
-      )}
-    </div>
-  );
+  return <section id={id} className="card-admin scroll-mt-6 rounded-3xl p-5 md:p-7" aria-labelledby={`${id}-title`}>
+    <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-widest text-amber-600">Approval rules</p><h2 id={`${id}-title`} className="mt-1 text-xl font-bold">{title}</h2><p className="mt-2 max-w-2xl text-sm leading-6 admin-text-muted">{description}</p></div>{canManage && <button type="button" onClick={() => { setDraft([...rows, { minAmount: "0", maxAmount: "", requiredApprovals: "1" }]); setError(null); }} disabled={mutation.isPending || query.isLoading || query.isError} className="inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-semibold disabled:opacity-50" style={{ borderColor: "var(--admin-border)" }}><Plus className="h-4 w-4" /> Add tier</button>}</div>
+    <div className="mt-5 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs leading-5 text-amber-900"><Info className="mt-0.5 h-4 w-4 shrink-0" /><p>{allowOpenEnded ? "Saving replaces the full tier list. Withdrawal approval changes apply to new requests; existing requests keep the approval count assigned when submitted." : "Saving replaces the full tier list. Review every amount band before applying changes to future loan disbursement requests."}</p></div>
+    {permissionLoading ? <p role="status" className="mt-6 flex items-center gap-2 text-sm admin-text-muted"><Loader2 className="h-4 w-4 animate-spin" /> Checking access…</p> : !canManage ? <p className="mt-6 text-sm admin-text-muted">You do not have permission to manage these approval tiers.</p> : query.isLoading ? <p role="status" className="mt-6 flex items-center gap-2 text-sm admin-text-muted"><Loader2 className="h-4 w-4 animate-spin" /> Loading tiers…</p> : query.isError ? <div role="alert" className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"><p>{getApiErrorMessage(query.error)}</p><button type="button" onClick={() => query.refetch()} className="mt-2 font-semibold underline">Retry</button></div> : <>
+      {rows.length === 0 ? <div className="mt-6 rounded-2xl border border-dashed p-8 text-center text-sm admin-text-muted" style={{ borderColor: "var(--admin-border)" }}>No tiers configured. Add one to define approval requirements.</div> : <div className="mt-6 space-y-3">{rows.map((row, index) => <div key={index} className="grid gap-3 rounded-2xl border p-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(7rem,0.7fr)_auto] md:items-end" style={{ borderColor: "var(--admin-border)" }}><label className="grid gap-1.5 text-xs font-semibold admin-text-muted">Minimum amount<input type="number" min="0" step="0.01" value={row.minAmount} onChange={(event) => update(index, "minAmount", event.target.value)} className="input-admin w-full rounded-xl px-3 py-2.5 text-sm outline-none" /></label><label className="grid gap-1.5 text-xs font-semibold admin-text-muted">Maximum amount {allowOpenEnded && <span className="font-normal">(blank = no limit)</span>}<input type="number" min="0" step="0.01" value={row.maxAmount} onChange={(event) => update(index, "maxAmount", event.target.value)} placeholder={allowOpenEnded ? "No upper limit" : "Enter amount"} className="input-admin w-full rounded-xl px-3 py-2.5 text-sm outline-none" /></label><label className="grid gap-1.5 text-xs font-semibold admin-text-muted">Approvals<input type="number" min="1" step="1" value={row.requiredApprovals} onChange={(event) => update(index, "requiredApprovals", event.target.value)} className="input-admin w-full rounded-xl px-3 py-2.5 text-sm outline-none" /></label><button type="button" onClick={() => { setDraft(rows.filter((_, rowIndex) => rowIndex !== index)); setError(null); }} aria-label={`Remove tier ${index + 1}`} className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-red-200 text-red-700"><Trash2 className="h-4 w-4" /></button></div>)}</div>}
+      {error && <p role="alert" className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</p>}
+      {draft && <div className="mt-6 flex flex-wrap justify-end gap-3 border-t pt-5" style={{ borderColor: "var(--admin-border)" }}><button type="button" onClick={() => { setDraft(null); setError(null); }} disabled={mutation.isPending} className="rounded-full border px-5 py-2.5 text-sm font-semibold" style={{ borderColor: "var(--admin-border)" }}>Discard edits</button><button type="button" onClick={reviewChanges} disabled={mutation.isPending} className="rounded-full bg-[#171717] px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50">Review changes</button></div>}
+    </>}
+    {confirm && <div role="dialog" aria-modal="true" aria-labelledby={`${id}-confirm-title`} className="fixed inset-0 z-[60] grid place-items-center bg-black/60 p-4"><div className="card-admin max-h-[90vh] w-full max-w-md overflow-y-auto rounded-3xl p-6 shadow-2xl"><div className="flex items-start justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-widest text-amber-600">Replace configuration</p><h3 id={`${id}-confirm-title`} className="mt-1 text-xl font-bold">Save {title.toLowerCase()}?</h3></div><button type="button" onClick={() => setConfirm(null)} disabled={mutation.isPending} aria-label="Close" className="rounded-full border p-2" style={{ borderColor: "var(--admin-border)" }}><X className="h-4 w-4" /></button></div><p className="mt-3 text-sm admin-text-muted">The backend will replace the complete tier list with these {confirm.length} range{confirm.length === 1 ? "" : "s"}.</p><ol className="mt-5 space-y-2">{confirm.map((tier, index) => <li key={index} className="flex justify-between gap-3 rounded-xl border p-3 text-xs" style={{ borderColor: "var(--admin-border)" }}><span>{formatWithdrawalAmount(tier.minAmount)} – {tier.maxAmount == null ? "No upper limit" : formatWithdrawalAmount(tier.maxAmount)}</span><strong>{tier.requiredApprovals} approval{tier.requiredApprovals === 1 ? "" : "s"}</strong></li>)}</ol>{error && <p role="alert" className="mt-4 rounded-xl bg-red-50 p-3 text-xs text-red-700">{error}</p>}<div className="mt-6 flex justify-end gap-2"><button type="button" onClick={() => setConfirm(null)} disabled={mutation.isPending} className="rounded-full border px-4 py-2.5 text-sm font-semibold" style={{ borderColor: "var(--admin-border)" }}>Keep editing</button><button type="button" onClick={() => mutation.mutate(confirm)} disabled={mutation.isPending} className="inline-flex items-center gap-2 rounded-full bg-[#171717] px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50">{mutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />} Save tiers</button></div></div></div>}
+  </section>;
 }
 
 function MyAccountCard() {
-  const { user: authUser } = useAdminAuth();
-
-  const { data: staff, isLoading, isError, error } = useQuery({
-    queryKey: ["admin-my-staff-profile", authUser?.id],
-    queryFn: async () => {
-      const res = await adminApiFetch<unknown>(`/api/User/GetStaffById?userId=${encodeURIComponent(authUser!.id!)}`);
-      return pluckMember(res);
-    },
-    enabled: Boolean(authUser?.id),
-  });
-
-  const name = staff
-    ? [staff.basicInfo?.firstName, staff.basicInfo?.lastName].filter(Boolean).join(" ") || staff.email
-    : authUser?.name || authUser?.email;
-
-  const initials =
-    (name ?? "?").trim().split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]!.toUpperCase()).join("") || "?";
-
-  return (
-    <div
-      className="p-6 rounded-2xl border"
-      style={{ background: "var(--admin-surface)", borderColor: "var(--admin-border)" }}
-    >
-      <h2 className="font-semibold mb-1" style={{ color: "var(--admin-text)" }}>
-        My account
-      </h2>
-      <p className="text-sm mb-6" style={{ color: "var(--admin-muted)" }}>
-        Your own staff profile, from /api/User/GetStaffById.
-      </p>
-
-      {isLoading && (
-        <p className="text-sm" style={{ color: "var(--admin-muted)" }}>
-          Loading…
-        </p>
-      )}
-      {isError && (
-        <p className="text-sm" style={{ color: "var(--admin-accent)" }}>
-          {getApiErrorMessage(error)}
-        </p>
-      )}
-
-      {staff && (
-        <div className="flex items-start gap-4 flex-wrap">
-          <div
-            className="w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold shrink-0"
-            style={{ background: "var(--admin-primary)", color: "#000" }}
-          >
-            {initials}
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <p className="text-base font-bold truncate" style={{ color: "var(--admin-text)" }}>
-                {name ?? "Unnamed"}
-              </p>
-              {authUser?.role && (
-                <span
-                  className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase"
-                  style={{ background: "var(--admin-primary)", color: "#000" }}
-                >
-                  {humanizeRole(authUser.role)}
-                </span>
-              )}
-            </div>
-
-            <div className="mt-3 space-y-2 text-sm">
-              <div className="flex items-center gap-2">
-                <Mail className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--admin-muted)" }} />
-                <span style={{ color: "var(--admin-text)" }}>{staff.email ?? "—"}</span>
-              </div>
-              {staff.contact?.phoneNumber && (
-                <div className="flex items-center gap-2">
-                  <Phone className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--admin-muted)" }} />
-                  <span style={{ color: "var(--admin-text)" }}>{staff.contact.phoneNumber}</span>
-                </div>
-              )}
-              <div className="flex items-center gap-2">
-                {staff.isVerified ? (
-                  <ShieldCheck className="w-3.5 h-3.5 shrink-0" style={{ color: "#16a34a" }} />
-                ) : (
-                  <ShieldAlert className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--admin-muted)" }} />
-                )}
-                <span style={{ color: "var(--admin-muted)" }}>
-                  {staff.isVerified ? "Verified" : "Not verified"} · Joined {formatDate(staff.createdAt)}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+  const { user } = useAdminAuth();
+  const staff = useQuery({ queryKey: ["admin-my-staff-profile", user?.id], queryFn: async () => { const response = await adminApiFetch<unknown>(`/api/User/GetStaffById?userId=${encodeURIComponent(user!.id!)}`); return pluckMember(response); }, enabled: Boolean(user?.id) });
+  const name = staff.data ? [staff.data.basicInfo?.firstName, staff.data.basicInfo?.lastName].filter(Boolean).join(" ") || staff.data.email : user?.name || user?.email;
+  const initials = (name ?? "?").trim().split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase() ?? "").join("") || "?";
+  return <section id="my-account" className="card-admin scroll-mt-6 rounded-3xl p-5 md:p-7"><p className="text-xs font-bold uppercase tracking-widest text-amber-600">Identity</p><h2 className="mt-1 text-xl font-bold">My account</h2><p className="mt-1 text-sm admin-text-muted">Your signed-in admin identity and staff profile.</p>{staff.isLoading && <p role="status" className="mt-5 flex items-center gap-2 text-sm admin-text-muted"><Loader2 className="h-4 w-4 animate-spin" /> Loading profile…</p>}{staff.isError && <div role="alert" className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900">Staff profile could not be loaded: {getApiErrorMessage(staff.error)}. Your login details are shown below.</div>}<div className="mt-6 flex flex-wrap items-start gap-4"><span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-amber-400 text-lg font-bold text-black">{initials}</span><div className="min-w-0 space-y-2"><div className="flex flex-wrap items-center gap-2"><p className="font-semibold">{name || "Admin account"}</p>{user?.role && <span className="rounded-full bg-amber-400/15 px-2.5 py-1 text-xs font-semibold text-amber-700">{user.role.replace(/([a-z])([A-Z])/g, "$1 $2")}</span>}</div><p className="flex items-center gap-2 text-sm admin-text-muted"><Mail className="h-4 w-4" /> {staff.data?.email ?? user?.email ?? "—"}</p>{staff.data?.contact?.phoneNumber && <p className="flex items-center gap-2 text-sm admin-text-muted"><Phone className="h-4 w-4" /> {staff.data.contact.phoneNumber}</p>}{staff.data && <p className="flex items-center gap-2 text-xs admin-text-muted"><ShieldCheck className="h-4 w-4" /> {staff.data.isVerified ? "Verified" : "Not verified"} · Joined {formatDate(staff.data.createdAt)}</p>}</div></div></section>;
 }
 
 export function SettingsClient() {
-  return (
-    <div className="max-w-3xl mx-auto space-y-8">
-      {/* Header */}
-      <div>
-        <h1
-          className="text-2xl font-bold"
-          style={{ color: "var(--admin-text)" }}
-        >
-          System Settings
-        </h1>
-        <p className="mt-1 text-sm" style={{ color: "var(--admin-muted)" }}>
-          Configure global platform behaviour, security, and integrations.
-        </p>
-      </div>
-
-      {/* My account */}
-      <MyAccountCard />
-
-      {/* General settings */}
-      <div
-        className="p-6 rounded-2xl border"
-        style={{
-          background: "var(--admin-surface)",
-          borderColor: "var(--admin-border)",
-        }}
-      >
-        <h2
-          className="font-semibold mb-1"
-          style={{ color: "var(--admin-text)" }}
-        >
-          General
-        </h2>
-        <p className="text-sm mb-6" style={{ color: "var(--admin-muted)" }}>
-          Basic platform configuration.
-        </p>
-        <form id="admin-general-form" className="space-y-5">
-          {[
-            {
-              id: "admin-platform-name",
-              label: "Platform Name",
-              value: "Kajola",
-              type: "text",
-            },
-            {
-              id: "admin-support-email",
-              label: "Support Email",
-              value: "support@kajola.io",
-              type: "email",
-            },
-            {
-              id: "admin-max-users",
-              label: "Max Users per Workspace",
-              value: "100",
-              type: "number",
-            },
-          ].map((field) => (
-            <div key={field.id} className="flex flex-col gap-1.5">
-              <label
-                htmlFor={field.id}
-                className="text-xs font-medium uppercase tracking-wider"
-                style={{ color: "var(--admin-muted)" }}
-              >
-                {field.label}
-              </label>
-              <input
-                id={field.id}
-                type={field.type}
-                defaultValue={field.value}
-                className="px-4 py-3 rounded-xl text-sm outline-none"
-                style={{
-                  background: "rgba(255,255,255,0.05)",
-                  border: "1px solid var(--admin-border)",
-                  color: "var(--admin-text)",
-                }}
-              />
-            </div>
-          ))}
-          <div className="flex justify-end">
-            <button
-              id="admin-save-general"
-              type="submit"
-              className="px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90 hover:scale-105"
-              style={{
-                background: "linear-gradient(135deg, #f59e0b, #ef4444)",
-              }}
-            >
-              Save changes
-            </button>
-          </div>
-        </form>
-      </div>
-
-      {/* Toggle settings */}
-      <div
-        className="p-6 rounded-2xl border"
-        style={{
-          background: "var(--admin-surface)",
-          borderColor: "var(--admin-border)",
-        }}
-      >
-        <h2
-          className="font-semibold mb-1"
-          style={{ color: "var(--admin-text)" }}
-        >
-          Feature Flags
-        </h2>
-        <p className="text-sm mb-6" style={{ color: "var(--admin-muted)" }}>
-          Toggle platform features on or off globally.
-        </p>
-        <ul
-          className="space-y-1 divide-y"
-          style={{ borderColor: "var(--admin-border)" }}
-        >
-          {toggleSettings.map((s) => (
-            <li
-              key={s.id}
-              className="flex items-start justify-between gap-4 py-5"
-            >
-              <div>
-                <div className="flex items-center gap-2">
-                  <p
-                    className="text-sm font-medium"
-                    style={{ color: "var(--admin-text)" }}
-                  >
-                    {s.label}
-                  </p>
-                  {s.danger && (
-                    <span
-                      className="px-2 py-0.5 rounded text-xs font-semibold"
-                      style={{
-                        background: "rgba(239,68,68,0.15)",
-                        color: "#f87171",
-                      }}
-                    >
-                      Caution
-                    </span>
-                  )}
-                </div>
-                <p
-                  className="text-xs mt-1 leading-relaxed"
-                  style={{ color: "var(--admin-muted)" }}
-                >
-                  {s.description}
-                </p>
-              </div>
-              <label
-                htmlFor={s.id}
-                className="relative inline-flex items-center cursor-pointer flex-shrink-0 mt-1"
-              >
-                <input
-                  id={s.id}
-                  type="checkbox"
-                  defaultChecked={s.defaultChecked}
-                  className="sr-only peer"
-                />
-                <div
-                  className="w-10 h-6 rounded-full peer-checked:opacity-100 transition-all"
-                  style={{
-                    background: s.danger
-                      ? "rgba(239,68,68,0.5)"
-                      : "rgba(245,158,11,0.5)",
-                  }}
-                />
-              </label>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {/* Withdrawal Approval Tiers */}
-      <WithdrawalApprovalTiersCard />
-
-      {/* Danger zone */}
-      <div
-        className="p-6 rounded-2xl border"
-        style={{
-          background: "rgba(239,68,68,0.04)",
-          borderColor: "rgba(239,68,68,0.2)",
-        }}
-      >
-        <h2 className="font-semibold mb-1" style={{ color: "#f87171" }}>
-          Danger Zone
-        </h2>
-        <p className="text-sm mb-5" style={{ color: "var(--admin-muted)" }}>
-          Irreversible platform-level actions. Proceed with extreme caution.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-3">
-          <button
-            id="admin-reset-platform"
-            type="button"
-            className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
-            style={{ background: "rgba(239,68,68,0.6)" }}
-          >
-            Reset Platform Data
-          </button>
-          <button
-            id="admin-purge-cache"
-            type="button"
-            className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-80"
-            style={{
-              color: "var(--admin-muted)",
-              border: "1px solid var(--admin-border)",
-            }}
-          >
-            Purge Cache
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+  const withdrawalPermissions = useWithdrawalPermissions();
+  const loanPermissions = useLoanPermissions();
+  return <div className="mx-auto max-w-6xl space-y-6 pb-14 admin-text">
+    <header className="relative overflow-hidden rounded-3xl bg-[#181817] p-6 text-white md:p-8"><div className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-amber-400/15 blur-3xl" /><div className="relative"><p className="text-xs font-bold uppercase tracking-[0.18em] text-amber-300">Administration</p><h1 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">System settings</h1><p className="mt-3 max-w-2xl text-sm leading-6 text-white/70">Review your account and manage approval rules backed by the live API. Changes to tier lists are reviewed before you save them.</p></div></header>
+    <nav aria-label="Settings sections" className="grid gap-3 sm:grid-cols-3">{[{ href: "#my-account", title: "My account", detail: "Identity and profile" }, { href: "#withdrawal-approval-tiers", title: "Withdrawal approvals", detail: "Withdrawal and deduction bands" }, { href: "#loan-disbursement-tiers", title: "Loan disbursement", detail: "Disbursement approval bands" }].map((item) => <a key={item.href} href={item.href} className="card-admin flex items-center justify-between gap-3 rounded-2xl p-4 transition hover:-translate-y-0.5 hover:shadow-sm"><span><strong className="text-sm">{item.title}</strong><span className="mt-1 block text-xs admin-text-muted">{item.detail}</span></span><ArrowRight className="h-4 w-4 shrink-0 text-amber-600" /></a>)}</nav>
+    <MyAccountCard />
+    <TierEditor id="withdrawal-approval-tiers" title="Withdrawal approval tiers" description="Set the amount bands and distinct approvals required for new withdrawal or cooperative-deduction requests." queryKey="withdrawal-approval-tiers" load={getWithdrawalApprovalTiers} save={updateWithdrawalApprovalTiers} allowOpenEnded canManage={withdrawalPermissions.can("manageTiers")} permissionLoading={withdrawalPermissions.isLoading} />
+    <TierEditor id="loan-disbursement-tiers" title="Loan disbursement tiers" description="Set the amount bands and approval counts used by new loan disbursement requests." queryKey="loan-disbursement-tiers" load={getLoanDisbursementTiers} save={(tiers) => updateLoanDisbursementTiers(tiers.map((tier) => ({ minAmount: tier.minAmount, maxAmount: tier.maxAmount!, requiredApprovals: tier.requiredApprovals })))} allowOpenEnded={false} canManage={loanPermissions.can("approvalTiers")} permissionLoading={loanPermissions.isLoading} />
+    <p className="flex items-start gap-2 rounded-2xl border p-4 text-xs leading-5 admin-text-muted" style={{ borderColor: "var(--admin-border)" }}><Settings2 className="mt-0.5 h-4 w-4 shrink-0" /> General platform fields, feature switches, and destructive actions are not shown until their backend contracts and save flows exist.</p>
+  </div>;
 }

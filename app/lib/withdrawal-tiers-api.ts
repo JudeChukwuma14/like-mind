@@ -14,7 +14,7 @@
  * Requires: manageapprovaltiers permission.
  */
 
-import { adminApiFetch, type ApiEnvelope } from "@/app/lib/api-client";
+import { adminApiFetch, ensureApiSuccess, type ApiEnvelope } from "@/app/lib/api-client";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -54,15 +54,15 @@ export type WithdrawalApprovalTiersConfig = {
  * Requires: manageapprovaltiers permission.
  */
 export async function getWithdrawalApprovalTiers(): Promise<ApprovalTier[]> {
-  const res = await adminApiFetch<ApiEnvelope<WithdrawalApprovalTiersConfig | ApprovalTier[]>>(
+  const res = await adminApiFetch<ApiEnvelope<WithdrawalApprovalTiersConfig | ApprovalTier[]> | WithdrawalApprovalTiersConfig | ApprovalTier[]>(
     "/api/WithdrawalApprovalTiers",
   );
-  const data = res.data;
+  const data = Array.isArray(res) ? res : "success" in res ? ensureApiSuccess(res).data : res;
   if (!data) return [];
   // Handle both { tiers: [...] } and bare array shapes defensively
   if (Array.isArray(data)) return data as ApprovalTier[];
   if ("tiers" in data && Array.isArray(data.tiers)) return data.tiers;
-  return [];
+  throw new Error("The withdrawal approval tiers response had an unexpected format.");
 }
 
 /**
@@ -87,8 +87,9 @@ export async function getWithdrawalApprovalTiers(): Promise<ApprovalTier[]> {
 export async function updateWithdrawalApprovalTiers(
   tiers: ApprovalTier[],
 ): Promise<unknown> {
-  return adminApiFetch<unknown>("/api/WithdrawalApprovalTiers", {
+  const response = await adminApiFetch<ApiEnvelope<unknown>>("/api/WithdrawalApprovalTiers", {
     method: "PUT",
     body: { tiers },
   });
+  return ensureApiSuccess(response);
 }

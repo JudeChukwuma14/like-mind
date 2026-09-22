@@ -2,9 +2,9 @@
  * savings-api.ts
  *
  * Typed wrappers for the Savings endpoints consumed by members.
- * All calls go through `apiFetch` which injects the member JWT.
+ * Calls use the member JWT on the cooperative API host.
  *
- * Endpoint base: NEXT_PUBLIC_API_BASE_URL
+ * Endpoint base: NEXT_PUBLIC_ADMIN_API_BASE_URL
  *
  * Key distinction:
  *   - A SUBMITTED payment is NOT yet savings.
@@ -12,7 +12,7 @@
  *   - Only confirmed transactions affect the available savings balance.
  */
 
-import { apiFetch, type ApiEnvelope } from "@/app/lib/api-client";
+import { ensureApiSuccess, memberProfileApiFetch, type ApiEnvelope } from "@/app/lib/api-client";
 import type { PaymentDraft } from "@/app/lib/payments-api";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -27,13 +27,15 @@ export type SavingsTransactionType =
 
 export type SavingsTransaction = {
   id: string;
+  transactionType: string | null;
+  category: string | null;
+  contributionType: string | null;
   amount: number | null;
-  type: SavingsTransactionType | null;
-  /** Human-readable description */
+  balanceAfter: number | null;
+  reference: string | null;
   description: string | null;
-  /** ISO date string */
+  transactionDate: string | null;
   createdAt: string | null;
-  referenceId: string | null;
 };
 
 export type SavingsAccount = {
@@ -85,8 +87,8 @@ export async function getMySavings(params: GetMySavingsParams = {}): Promise<Sav
   if (params.reference) q.set("reference", params.reference);
 
   const url = `/api/Savings/GetMySavings${q.toString() ? `?${q.toString()}` : ""}`;
-  const res = await apiFetch<ApiEnvelope<SavingsAccount>>(url);
-  return res.data ?? null;
+  const res = await memberProfileApiFetch<ApiEnvelope<SavingsAccount | null>>(url);
+  return ensureApiSuccess(res).data ?? null;
 }
 
 /**
@@ -94,7 +96,9 @@ export async function getMySavings(params: GetMySavingsParams = {}): Promise<Sav
  *
  * Returns the authenticated member's payment drafts.
  */
-export async function getMyDrafts(params: GetMyDraftsParams = {}): Promise<PaymentDraft[]> {
+export type PaymentDraftPage = { items: PaymentDraft[]; pageNumber: number; pageSize: number; totalCount: number; totalPages: number };
+
+export async function getMyDraftsPage(params: GetMyDraftsParams = {}): Promise<PaymentDraftPage> {
   const q = new URLSearchParams();
   if (params.page) q.set("page", String(params.page));
   if (params.pageSize) q.set("pageSize", String(params.pageSize));
@@ -104,12 +108,26 @@ export async function getMyDrafts(params: GetMyDraftsParams = {}): Promise<Payme
   if (params.reference) q.set("reference", params.reference);
 
   const url = `/api/Savings/GetMyDrafts${q.toString() ? `?${q.toString()}` : ""}`;
-  // NOTE: Depending on the backend this might be a paginated envelope. We return the array for now.
-  const res = await apiFetch<ApiEnvelope<PaymentDraft[] | any>>(url);
-  if (res.data && Array.isArray(res.data)) {
-    return res.data;
-  } else if (res.data && Array.isArray(res.data.items)) {
-    return res.data.items;
+  const res = await memberProfileApiFetch<ApiEnvelope<PaymentDraft[] | PaymentDraftPage>>(url);
+  const data = ensureApiSuccess(res).data;
+  if (data == null) return { items: [], pageNumber: 1, pageSize: 20, totalCount: 0, totalPages: 1 };
+  if (Array.isArray(data)) return { items: data, pageNumber: 1, pageSize: data.length, totalCount: data.length, totalPages: 1 };
+  if (data && Array.isArray(data.items)) return data;
+  throw new Error("The payment drafts response had an unexpected format.");
+}
+
+/** Convenience for the draft editor; list screens should use getMyDraftsPage. */
+export async function getMyDrafts(params: GetMyDraftsParams = {}): Promise<PaymentDraft[]> {
+  return (await getMyDraftsPage(params)).items;
+}
+
+/** Locate a draft when the backend has no GET-by-id route. */
+export async function getMyDraftById(id: string): Promise<PaymentDraft | null> {
+  for (let page = 1; page <= 20; page++) {
+    const result = await getMyDraftsPage({ page, pageSize: 100 });
+    const draft = result.items.find((item) => item.id === id);
+    if (draft) return draft;
+    if (page >= result.totalPages || result.items.length === 0) break;
   }
-  return [];
+  return null;
 }

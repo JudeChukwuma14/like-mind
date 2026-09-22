@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
 import toast from "react-hot-toast";
@@ -10,13 +10,17 @@ import { State } from "country-state-city";
 import { useSetupStore } from "../useSetupStore";
 import { useRedirectIfAccountExists } from "../useSetupGuard";
 import { CountrySelect } from "@/app/(user)/apply/contact-information/CountrySelect";
-import { adminApiFetch, getApiErrorMessage, type ApiEnvelope } from "@/app/lib/api-client";
+import { adminApiFetch, ensureApiSuccess, getApiErrorMessage, type ApiEnvelope } from "@/app/lib/api-client";
 import { FadeUp } from "@/app/components/Motion";
 
 type CreateAccountResponse = ApiEnvelope<{
-  cooperativeAccount: { id: string };
-  resume: boolean;
-}>;
+  cooperativeId?: string;
+  cooperativeAccountId?: string;
+  cooperativeAccount?: { id?: string; cooperativeId?: string };
+  resume?: boolean;
+} | null> & { cooperativeId?: string };
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function PasswordReq({
   met,
@@ -44,15 +48,12 @@ function PasswordReq({
 export default function SetupWelcomePage() {
   const router = useRouter();
   const { data, setData, isClient } = useSetupStore();
-  const [mounted, setMounted] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showEmail, setShowEmail] = useState(false);
 
-  useEffect(() => setMounted(true), []);
-
   const createAccount = useMutation({
-    mutationFn: async () =>
-      adminApiFetch<CreateAccountResponse>("/api/CooperativeAccount/CreateAccount", {
+    mutationFn: async () => {
+      const res = ensureApiSuccess(await adminApiFetch<CreateAccountResponse>("/api/CooperativeAccount/CreateAccount", {
         method: "POST",
         body: {
           email: data.email,
@@ -64,9 +65,21 @@ export default function SetupWelcomePage() {
           societyOrProvince: data.societyOrProvince,
           password: data.password,
         },
-      }),
-    onSuccess: (res) => {
-      setData({ cooperativeAccountId: res.data.cooperativeAccount.id });
+      }));
+      // CompleteSetup takes the account ID from CreateAccount. It is not the
+      // distinct cooperativeId returned after setup is completed.
+      const cooperativeAccountId = [
+        res.data?.cooperativeAccountId,
+        res.data?.cooperativeAccount?.id,
+        res.data?.cooperativeAccount?.cooperativeId,
+        res.data?.cooperativeId,
+        res.cooperativeId,
+      ].find((value): value is string => typeof value === "string" && UUID_PATTERN.test(value));
+      if (!cooperativeAccountId) throw new Error("The account response did not include a cooperative account ID. The account may already have been created; contact support before retrying.");
+      return cooperativeAccountId;
+    },
+    onSuccess: (cooperativeAccountId) => {
+      setData({ cooperativeAccountId });
       toast.success("Account created!");
       router.push("/setup/cooperative-profile");
     },
@@ -79,7 +92,7 @@ export default function SetupWelcomePage() {
 
   useRedirectIfAccountExists(isClient, data.cooperativeAccountId);
 
-  if (!isClient || !mounted || data.cooperativeAccountId) return null;
+  if (!isClient || data.cooperativeAccountId) return null;
 
   const password = data.password;
   const hasLength = password.length >= 12;

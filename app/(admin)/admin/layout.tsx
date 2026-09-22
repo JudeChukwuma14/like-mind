@@ -31,6 +31,7 @@ import { ThemeToggle } from "@/app/components/ThemeToggle";
 import Image from "next/image";
 import { useRequireAdminAuth } from "./useAdminGuard";
 import { useAdminAuth } from "@/app/providers/AdminAuthProvider";
+import { CooperativeSelectionProvider } from "@/app/providers/CooperativeSelectionProvider";
 
 /** "RootAdmin" -> "Root Admin" */
 function humanizeRole(role: string): string {
@@ -423,6 +424,7 @@ export default function AdminDashboardLayout({
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const { isAuthenticated, isLoading } = useRequireAdminAuth();
+  const { user } = useAdminAuth();
 
   const sidebarWidth = collapsed ? 72 : 220;
 
@@ -465,7 +467,9 @@ export default function AdminDashboardLayout({
           }}
         >
           <div className="p-4 md:p-8 lg:px-12 lg:py-10 max-w-[1200px]">
-            {children}
+            <CooperativeSelectionProvider key={`${user?.id ?? ""}:${String(user?.claims.jti ?? "")}`}>
+              {children}
+            </CooperativeSelectionProvider>
           </div>
         </div>
       </main>

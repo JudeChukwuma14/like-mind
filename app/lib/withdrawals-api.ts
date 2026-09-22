@@ -15,17 +15,17 @@
  *   - Approving requires: approvewithdrawal permission.
  *   - Initiating a deduction requires: initiatededuction permission.
  *
- * Member calls → `apiFetch` (member JWT)
+ * Member calls → `memberProfileApiFetch` (member JWT on cooperative API host)
  * Admin calls  → `adminApiFetch` (admin JWT)
  *
  * Endpoint base:
- *   NEXT_PUBLIC_API_BASE_URL (member withdraw)
- *   NEXT_PUBLIC_ADMIN_API_BASE_URL (admin approve/reject/deduct/list)
+ *   NEXT_PUBLIC_ADMIN_API_BASE_URL (member and admin withdrawals endpoints)
  */
 
 import {
-  apiFetch,
   adminApiFetch,
+  memberProfileApiFetch,
+  ensureApiSuccess,
   type ApiEnvelope,
 } from "@/app/lib/api-client";
 
@@ -59,6 +59,7 @@ export type WithdrawalApprovalRecord = {
 export type WithdrawalRequest = {
   id: string;
   type: WithdrawalType | null;
+  category?: "Withdrawal" | "CooperativeDeduction" | string | null;
   memberId: string | null;
   memberName: string | null;
   memberEmail: string | null;
@@ -143,10 +144,11 @@ export type GetWithdrawalsParams = {
 export async function requestWithdrawal(
   payload: CreateWithdrawalPayload,
 ): Promise<unknown> {
-  return apiFetch<unknown>("/api/Withdrawals/Withdraw", {
+  const response = await memberProfileApiFetch<ApiEnvelope<unknown>>("/api/Withdrawals/Withdraw", {
     method: "POST",
     body: payload,
   });
+  return ensureApiSuccess(response);
 }
 
 // ─── Admin endpoints ──────────────────────────────────────────────────────────
@@ -162,10 +164,11 @@ export async function requestWithdrawal(
 export async function initiateDeduction(
   payload: CreateDeductionPayload,
 ): Promise<unknown> {
-  return adminApiFetch<unknown>("/api/Withdrawals/Deduct", {
+  const response = await adminApiFetch<ApiEnvelope<unknown>>("/api/Withdrawals/Deduct", {
     method: "POST",
     body: payload,
   });
+  return ensureApiSuccess(response);
 }
 
 /**
@@ -176,9 +179,7 @@ export async function initiateDeduction(
  *
  * Requires: approvewithdrawal permission for admin-wide view.
  */
-export async function getWithdrawals(
-  params: GetWithdrawalsParams = {},
-): Promise<WithdrawalPage> {
+function withdrawalsPath(params: GetWithdrawalsParams): string {
   const q = new URLSearchParams();
   if (params.page) q.set("page", String(params.page));
   if (params.pageSize) q.set("pageSize", String(params.pageSize));
@@ -186,16 +187,28 @@ export async function getWithdrawals(
   if (params.status) q.set("status", params.status);
   if (params.onlyMine != null) q.set("onlyMine", String(params.onlyMine));
 
-  const url = `/api/Withdrawals${q.toString() ? `?${q.toString()}` : ""}`;
-  const res = await adminApiFetch<ApiEnvelope<WithdrawalPage>>(url);
+  return `/api/Withdrawals${q.toString() ? `?${q.toString()}` : ""}`;
+}
 
-  const data = res.data;
+function withdrawalPage(response: ApiEnvelope<WithdrawalPage | WithdrawalRequest[]> | WithdrawalPage | WithdrawalRequest[]): WithdrawalPage {
+  const data = Array.isArray(response) ? response : "success" in response ? ensureApiSuccess(response).data : response;
   if (!data) return { items: [], pageNumber: 1, pageSize: 20, totalCount: 0, totalPages: 1 };
   if (Array.isArray(data)) {
     const arr = data as WithdrawalRequest[];
     return { items: arr, pageNumber: 1, pageSize: arr.length, totalCount: arr.length, totalPages: 1 };
   }
   return data as WithdrawalPage;
+}
+
+export async function getWithdrawals(params: GetWithdrawalsParams = {}): Promise<WithdrawalPage> {
+  const response = await adminApiFetch<ApiEnvelope<WithdrawalPage | WithdrawalRequest[]> | WithdrawalPage | WithdrawalRequest[]>(withdrawalsPath(params));
+  return withdrawalPage(response);
+}
+
+/** Same list endpoint, but use the member JWT on the cooperative API host. */
+export async function getMyWithdrawals(params: Omit<GetWithdrawalsParams, "onlyMine"> = {}): Promise<WithdrawalPage> {
+  const response = await memberProfileApiFetch<ApiEnvelope<WithdrawalPage | WithdrawalRequest[]> | WithdrawalPage | WithdrawalRequest[]>(withdrawalsPath({ ...params, onlyMine: true }));
+  return withdrawalPage(response);
 }
 
 /**
@@ -209,10 +222,10 @@ export async function getWithdrawals(
 export async function getWithdrawal(
   withdrawalId: string,
 ): Promise<WithdrawalRequest> {
-  const res = await adminApiFetch<ApiEnvelope<WithdrawalRequest>>(
+  const res = await adminApiFetch<ApiEnvelope<WithdrawalRequest> | WithdrawalRequest>(
     `/api/Withdrawals/${encodeURIComponent(withdrawalId)}`,
   );
-  return res.data;
+  return "success" in res ? ensureApiSuccess(res).data : res;
 }
 
 /**
@@ -233,10 +246,11 @@ export async function approveWithdrawal(
   withdrawalId: string,
   payload: ApproveWithdrawalPayload,
 ): Promise<unknown> {
-  return adminApiFetch<unknown>(
+  const response = await adminApiFetch<ApiEnvelope<unknown>>(
     `/api/Withdrawals/${encodeURIComponent(withdrawalId)}/Approve`,
     { method: "POST", body: payload },
   );
+  return ensureApiSuccess(response);
 }
 
 /**
@@ -256,8 +270,9 @@ export async function rejectWithdrawal(
   withdrawalId: string,
   payload: RejectWithdrawalPayload,
 ): Promise<unknown> {
-  return adminApiFetch<unknown>(
+  const response = await adminApiFetch<ApiEnvelope<unknown>>(
     `/api/Withdrawals/${encodeURIComponent(withdrawalId)}/Reject`,
     { method: "POST", body: payload },
   );
+  return ensureApiSuccess(response);
 }

@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Check, FileText, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { Check, FileText, Loader2, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getMyDrafts } from "@/app/lib/savings-api";
-import { submitPayment } from "@/app/lib/payments-api";
+import { getMyDraftById } from "@/app/lib/savings-api";
+import { submitPayment, getPaymentProofBlobUrl } from "@/app/lib/payments-api";
 import { getApiErrorMessage } from "@/app/lib/api-client";
 import toast from "react-hot-toast";
 
@@ -21,20 +21,34 @@ export default function ReviewPaymentPage() {
   const draftId = searchParams?.get("draftId") || "";
   const queryClient = useQueryClient();
 
-  const [confirmed, setConfirmed] = useState(true);
+  const [confirmed, setConfirmed] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
-  const { data: drafts = [], isLoading, error } = useQuery({
-    queryKey: ["my-drafts"],
-    queryFn: () => getMyDrafts(),
+  useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
+
+  async function openProof(fileName: string) {
+    setPreviewLoading(true);
+    setPreviewError(null);
+    try { setPreviewUrl(await getPaymentProofBlobUrl(fileName, "member")); }
+    catch (error) { setPreviewError(getApiErrorMessage(error)); }
+    finally { setPreviewLoading(false); }
+  }
+
+  const { data: draft, isLoading, error } = useQuery({
+    queryKey: ["my-draft", draftId],
+    queryFn: () => getMyDraftById(draftId),
+    enabled: Boolean(draftId),
   });
-
-  const draft = drafts.find((d: any) => d.id === draftId);
 
   const { mutate: submit, isPending } = useMutation({
     mutationFn: () => submitPayment(draftId),
     onSuccess: () => {
       toast.success("Payment submitted for confirmation!");
       queryClient.invalidateQueries({ queryKey: ["my-drafts"] });
+      queryClient.invalidateQueries({ queryKey: ["my-draft"] });
+      queryClient.invalidateQueries({ queryKey: ["my-payments"] });
       router.push("/dashboard/cash-wallet/confirm-payment/success");
     },
     onError: (err) => {
@@ -55,6 +69,10 @@ export default function ReviewPaymentPage() {
 
   if (isLoading) {
     return <div className="p-12 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-gray-300" /></div>;
+  }
+
+  if (error) {
+    return <div role="alert" className="p-12 text-center text-red-700">{getApiErrorMessage(error)}</div>;
   }
 
   if (!draft) {
@@ -125,25 +143,28 @@ export default function ReviewPaymentPage() {
             {draft.proofFileName && (
               <div className="flex items-center justify-between p-4">
                 <span className="text-sm text-gray-500">Proof</span>
-                <span className="flex items-center gap-1.5 text-sm font-medium text-[#111]">
-                  <FileText size={16} />
-                  {draft.proofFileName}
-                </span>
+                <button
+                  type="button"
+                  onClick={() => openProof(draft.proofFileName!)}
+                  disabled={previewLoading}
+                  className="flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-800 transition-colors max-w-[200px]"
+                >
+                  <FileText size={16} className="shrink-0" />
+                  <span className="truncate">{previewLoading ? "Opening..." : draft.proofFileName.split('/').pop() || "Document"}</span>
+                </button>
               </div>
             )}
           </div>
+          {previewError && <p role="alert" className="mb-4 text-sm text-red-700">{previewError}</p>}
 
           <form onSubmit={handleSubmit}>
             {/* Checkbox */}
             <label className="flex items-center gap-3 p-4 mb-8 bg-white border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
-              <div className={`w-5 h-5 rounded flex items-center justify-center shrink-0 border transition-colors ${confirmed ? 'bg-[#111] border-[#111] text-white' : 'bg-white border-gray-300'}`}>
-                {confirmed && <Check size={14} strokeWidth={3} />}
-              </div>
               <input 
                 type="checkbox" 
                 checked={confirmed}
                 onChange={(e) => setConfirmed(e.target.checked)}
-                className="hidden" 
+                className="h-5 w-5 shrink-0 accent-[#111]"
               />
               <span className="text-sm font-medium text-[#111]">
                 I confirm the details above are accurate. Admin will be notified.
@@ -180,6 +201,26 @@ export default function ReviewPaymentPage() {
         </div>
       </div>
       
+      {/* Document Preview Modal */}
+      {previewUrl && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" onClick={() => setPreviewUrl(null)}>
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
+          <div
+            className="relative w-full max-w-4xl max-h-[90vh] bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center p-4 border-b">
+              <h3 className="font-semibold text-lg">Document Preview</h3>
+              <button onClick={() => setPreviewUrl(null)} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition">
+                <X className="w-4 h-4 text-gray-600" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto p-4 bg-gray-50 flex items-center justify-center min-h-[60vh]">
+              <iframe src={previewUrl} className="w-full h-full min-h-[65vh] rounded-xl border-none" title="Payment proof" />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
