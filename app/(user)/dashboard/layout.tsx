@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { ThemeToggle } from "@/app/components/ThemeToggle";
+import { AskAiPanel } from "@/app/components/AskAiPanel";
 import { useUnreadAnnouncements } from "@/app/lib/useAnnouncements";
 import { UserAuthProvider, useUserAuth } from "@/app/providers/UserAuthProvider";
 import { useRequireUserAuth } from "./useUserGuard";
@@ -137,6 +138,7 @@ function Sidebar({
   const displayName = user?.name || user?.email || "Member";
   const displayRole = user?.role ? humanizeRole(user.role) : "Member";
   const avatarInitials = initialsFor(displayName);
+  const [askAiOpen, setAskAiOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -270,14 +272,16 @@ function Sidebar({
         {/* Ask AI button */}
         {!collapsed && (
           <button
+            type="button"
+            onClick={() => setAskAiOpen(true)}
             className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-medium transition-all duration-300 hover:shadow-sm hover:-translate-y-0.5"
             style={{
-              background: "linear-gradient(135deg, rgba(245,158,11,0.1), rgba(239,68,68,0.05))",
-              color: "#f59e0b",
-              border: "1px solid rgba(245,158,11,0.2)",
+              background: "color-mix(in srgb, var(--brand) 10%, transparent)",
+              color: "var(--brand-hover)",
+              border: "1px solid color-mix(in srgb, var(--brand) 25%, transparent)",
             }}
           >
-            <span className="text-amber-500 text-sm">✦</span>
+            <span className="text-sm">✦</span>
             <span className="font-semibold tracking-wide">Ask LikeMind AI</span>
           </button>
         )}
@@ -369,6 +373,8 @@ function Sidebar({
           </div>
         </div>
       )}
+
+      <AskAiPanel open={askAiOpen} onClose={() => setAskAiOpen(false)} brandName="LikeMind" />
     </>
   );
 }
@@ -432,7 +438,7 @@ function Topbar({
         </button>
 
         <div className="hidden sm:block">
-          <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-0.5">
+          <p className="text-[10px] font-bold text-(--accent-600) uppercase tracking-widest mb-0.5">
             {category}
           </p>
           <h2 className="text-lg font-bold" style={{ color: "var(--dash-text)" }}>{mainTitle}</h2>

@@ -44,7 +44,7 @@ export default function NextOfKinPage() {
                   required
                   value={data.nokFullName}
                   onChange={(e) => setData({ nokFullName: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-(--accent-500) focus:ring-2 focus:ring-(--accent-200) outline-none transition-all bg-white"
                   placeholder="John Morgan"
                 />
               </div>
@@ -54,7 +54,7 @@ export default function NextOfKinPage() {
                   <select
                     value={data.nokRelationship}
                     onChange={(e) => setData({ nokRelationship: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white appearance-none"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-(--accent-500) focus:ring-2 focus:ring-(--accent-200) outline-none transition-all bg-white appearance-none"
                   >
                     <option value="Spouse">Spouse</option>
                     <option value="Parent">Parent</option>
@@ -77,7 +77,7 @@ export default function NextOfKinPage() {
                     required
                     value={data.nokEmail}
                     onChange={(e) => setData({ nokEmail: e.target.value })}
-                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white"
+                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-(--accent-500) focus:ring-2 focus:ring-(--accent-200) outline-none transition-all bg-white"
                     placeholder="john.morgan@outlook.com"
                   />
                 </div>
@@ -148,7 +148,7 @@ export default function NextOfKinPage() {
                   step={1}
                   value={data.nokSharePercentage}
                   onChange={(e) => setData({ nokSharePercentage: e.target.value })}
-                  className="w-full pl-4 pr-10 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white"
+                  className="w-full pl-4 pr-10 py-3 rounded-xl border border-gray-200 focus:border-(--accent-500) focus:ring-2 focus:ring-(--accent-200) outline-none transition-all bg-white"
                   placeholder="100"
                 />
                 <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm">%</span>

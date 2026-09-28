@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Users, Building2, ClipboardCheck, Clock } from "lucide-react";
+import { Users, Building2, ClipboardCheck, Clock, CheckCircle2 } from "lucide-react";
 import { FadeUp, StaggerChildren, StaggerItem, HoverScale, FadeIn } from "@/app/components/Motion";
 
 export const metadata: Metadata = {
@@ -47,37 +47,50 @@ const governanceBlocks = [
 ];
 
 const leadership = [
+  { name: "Odee Nwafor", role: "President / Board Chairman" },
+  { name: "Ibrahim Oladapo", role: "Vice President / Director" },
+  { name: "Dare Adeyiga", role: "Secretary / Director" },
+  { name: "Jaffa Brown", role: "Treasurer / Director" },
+  { name: "Adeola Awopetu", role: "Investment Coordinator / Director" },
+  { name: "Yinka Takode", role: "Investment Advisor / Director" },
+];
+
+function initials(name: string) {
+  return name
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase();
+}
+
+const eligibility = [
   {
-    name: "Jane Smith",
-    role: "Chair · 2024 — 2027",
-    description:
-      "Former CIBC compliance officer. Co-founder. Re-elected unanimously in the 2024 General Assembly.",
-    image:
-      "https://images.unsplash.com/photo-1500829243541-74b67eecdf65?w=200&h=200&fit=crop", // yellow flowers placeholder
+    title: "Age Requirement",
+    description: "Must be at least 18 years old to join.",
   },
   {
-    name: "Emmanuel Okoye",
-    role: "Vice Chair · 2024 — 2027",
-    description:
-      "Real estate developer, Calgary. Leads housing investment council. 11 years on board.",
-    image:
-      "https://images.unsplash.com/photo-1500829243541-74b67eecdf65?w=200&h=200&fit=crop",
+    title: "Residency Status",
+    description: "Must be a Canadian resident for tax purposes.",
   },
   {
-    name: "Ngozi Kalu",
-    role: "Treasurer · 2025 — 2028",
-    description:
-      "CPA, ex-EY. Oversees audit, treasury and quarterly disclosures. Joined the cooperative in 2018.",
-    image:
-      "https://images.unsplash.com/photo-1500829243541-74b67eecdf65?w=200&h=200&fit=crop",
+    title: "Employment or Business Status",
+    description: "Must be gainfully employed, self-employed, or involved in a verifiable business venture.",
   },
   {
-    name: "Sade Makinde",
-    role: "Secretary · 2025 — 2028",
-    description:
-      "Lawyer specializing in cooperative law. Drafted the 2023 bylaw amendments and welfare policy.",
-    image:
-      "https://images.unsplash.com/photo-1500829243541-74b67eecdf65?w=200&h=200&fit=crop",
+    title: "Referral",
+    description: "Must be referred by an existing member who is in good standing for at least 6 months, or a reputable community leader.",
+  },
+  {
+    title: "Financial Capability",
+    description: "Must demonstrate the ability to meet the financial obligations of membership — share capital contributions, savings requirements, and fees.",
+  },
+  {
+    title: "Character and Integrity",
+    description: "Must be of good moral standing with no criminal record.",
+  },
+  {
+    title: "Shared Interest",
+    description: "Must align with the cooperative's objectives and be willing to actively participate in its activities.",
   },
 ];
 
@@ -114,6 +127,46 @@ export default function AboutPage() {
               six sectors and seven provinces.
             </p>
           </FadeIn>
+        </div>
+      </section>
+
+      {/* Mission & Vision */}
+      <section className="px-6 pb-20 md:pb-28">
+        <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
+          <FadeUp>
+            <div
+              className="h-full p-8 md:p-10 rounded-3xl border shadow-sm"
+              style={{ background: "var(--mkt-card)", borderColor: "var(--mkt-border)" }}
+            >
+              <p className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: "var(--mkt-accent)" }}>
+                — OUR MISSION
+              </p>
+              <p className="text-base leading-relaxed" style={{ color: "var(--mkt-text)" }}>
+                Our mission is to create wealth and financial security for our members through
+                collective investment in real estate, technology, agriculture, social services,
+                renewable energy and other sectors. Grounded in ethical principles and a deep
+                commitment to inclusivity, we unite professionals of African heritage in Canada to
+                explore and seize growth opportunities. We are dedicated to fostering transparency,
+                promoting sustainability, and empowering individuals to invest in — and benefit
+                from — thriving real estate markets and other sectors beyond.
+              </p>
+            </div>
+          </FadeUp>
+          <FadeUp>
+            <div
+              className="h-full p-8 md:p-10 rounded-3xl border shadow-sm"
+              style={{ background: "var(--mkt-card)", borderColor: "var(--mkt-border)" }}
+            >
+              <p className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: "var(--mkt-accent)" }}>
+                — VISION
+              </p>
+              <p className="text-base leading-relaxed" style={{ color: "var(--mkt-text)" }}>
+                To be a leading cooperative that champions shared prosperity, long-term economic
+                growth, and financial empowerment for its members, building a future rooted in
+                collaboration, inclusivity, and sustainable wealth creation.
+              </p>
+            </div>
+          </FadeUp>
         </div>
       </section>
 
@@ -194,19 +247,54 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Leadership Profiles */}
+      {/* Who Can Join */}
+      <section className="px-6 py-16">
+        <div className="max-w-5xl mx-auto">
+          <FadeUp>
+            <p className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: "var(--mkt-accent)" }}>
+              — WHO CAN JOIN
+            </p>
+            <h2 className="text-4xl md:text-[2.75rem] font-bold tracking-tight leading-[1.1] mb-12" style={{ color: "var(--mkt-text)" }}>
+              Membership eligibility
+            </h2>
+          </FadeUp>
+
+          <StaggerChildren className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {eligibility.map((item) => (
+              <StaggerItem key={item.title}>
+                <div
+                  className="flex items-start gap-4 p-6 rounded-2xl border h-full"
+                  style={{ background: "var(--mkt-card)", borderColor: "var(--mkt-border)" }}
+                >
+                  <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" style={{ color: "var(--mkt-accent)" }} />
+                  <div>
+                    <h3 className="font-bold text-sm mb-1.5" style={{ color: "var(--mkt-text)" }}>
+                      {item.title}
+                    </h3>
+                    <p className="text-sm leading-relaxed" style={{ color: "var(--mkt-muted)" }}>
+                      {item.description}
+                    </p>
+                  </div>
+                </div>
+              </StaggerItem>
+            ))}
+          </StaggerChildren>
+        </div>
+      </section>
+
+      {/* Board Members */}
       <section className="px-6 py-24 md:py-32">
         <div className="max-w-5xl mx-auto">
           <FadeUp>
             <p className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: "var(--mkt-accent)" }}>
-              — LEADERSHIP PROFILES
+              — BOARD MEMBERS
             </p>
             <h2 className="text-4xl md:text-[3rem] font-bold tracking-tight leading-tight mb-16" style={{ color: "var(--mkt-text)" }}>
               Elected by members. Accountable to members.
             </h2>
           </FadeUp>
 
-          <StaggerChildren className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <StaggerChildren className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {leadership.map((leader) => (
               <StaggerItem key={leader.name}>
                 <HoverScale scale={1.03}>
@@ -214,22 +302,17 @@ export default function AboutPage() {
                     className="rounded-3xl p-6 md:p-8 border shadow-sm flex flex-col h-full cursor-default"
                     style={{ background: "var(--mkt-card)", borderColor: "var(--mkt-border)" }}
                   >
-                    <div className="w-16 h-16 rounded-2xl overflow-hidden mb-6 shrink-0 border" style={{ borderColor: "var(--mkt-border)" }}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={leader.image}
-                        alt={leader.name}
-                        className="w-full h-full object-cover"
-                      />
+                    <div
+                      className="w-16 h-16 rounded-2xl mb-6 shrink-0 border flex items-center justify-center font-bold text-lg"
+                      style={{ borderColor: "var(--mkt-border)", background: "var(--mkt-bg)", color: "var(--mkt-accent)" }}
+                    >
+                      {initials(leader.name)}
                     </div>
                     <h3 className="font-bold text-[1.1rem]" style={{ color: "var(--mkt-text)" }}>
                       {leader.name}
                     </h3>
-                    <p className="text-[11px] font-semibold mb-5 mt-1 tracking-wide uppercase" style={{ color: "var(--mkt-accent)" }}>
+                    <p className="text-[11px] font-semibold mt-1 tracking-wide uppercase" style={{ color: "var(--mkt-accent)" }}>
                       {leader.role}
-                    </p>
-                    <p className="text-[13px] leading-relaxed flex-1" style={{ color: "var(--mkt-muted)" }}>
-                      {leader.description}
                     </p>
                   </div>
                 </HoverScale>

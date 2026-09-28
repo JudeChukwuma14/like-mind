@@ -222,7 +222,7 @@ export default function BankingPage() {
                 We send a{" "}
                 <span className="font-semibold text-[#171717]">$1</span>{" "}
                 verification micro-transfer to{" "}
-                <span className="text-[#3b82f6]">confirm</span> the address
+                <span className="text-(--accent-600)">confirm</span> the address
                 before it can receive payouts.
               </p>
             </div>

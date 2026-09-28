@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { Home, Wheat, Laptop, HeartHandshake, TrendingUp, Vote } from "lucide-react";
 import { FaqAccordion } from "./FaqAccordion";
 import {
   FadeUp,
@@ -27,32 +28,32 @@ const stats = [
 
 const features = [
   {
-    icon: "🏠",
+    icon: <Home className="w-6 h-6" style={{ color: "var(--mkt-accent)" }} />,
     title: "Real Estate",
     desc: "Pooled co-investment in residential and commercial properties across Canada.",
   },
   {
-    icon: "🌾",
+    icon: <Wheat className="w-6 h-6" style={{ color: "var(--mkt-accent)" }} />,
     title: "Agriculture",
     desc: "Long-horizon farmland and agri-business holdings with stable returns.",
   },
   {
-    icon: "💻",
+    icon: <Laptop className="w-6 h-6" style={{ color: "var(--mkt-accent)" }} />,
     title: "Technology",
     desc: "Equity participation in vetted African-Canadian tech ventures.",
   },
   {
-    icon: "❤️",
+    icon: <HeartHandshake className="w-6 h-6" style={{ color: "var(--mkt-accent)" }} />,
     title: "Welfare Schemes",
     desc: "Emergency funds, health support, and education grants for members.",
   },
   {
-    icon: "📈",
+    icon: <TrendingUp className="w-6 h-6" style={{ color: "var(--mkt-accent)" }} />,
     title: "Transparent Returns",
     desc: "Quarterly statements. Open books. No hidden management fees.",
   },
   {
-    icon: "🗳️",
+    icon: <Vote className="w-6 h-6" style={{ color: "var(--mkt-accent)" }} />,
     title: "Democratic Governance",
     desc: "Every member has exactly one vote at the annual council, regardless of capital.",
   },
@@ -61,22 +62,43 @@ const features = [
 const steps = [
   {
     num: "01",
-    title: "Apply Online",
-    desc: "Complete a 10-minute application with your basic personal and financial details.",
+    title: "Application Submission",
+    desc: "Complete and submit a membership application with your details.",
     cta: "Start application",
     href: "/apply",
   },
   {
     num: "02",
-    title: "We Review",
-    desc: "Our member-elected committee reviews applications within 5 business days.",
+    title: "Screening & Approval",
+    desc: "The Board of Directors reviews your application and verifies alignment with cooperative values.",
     cta: null,
     href: null,
   },
   {
     num: "03",
-    title: "Welcome In",
-    desc: "Upon approval you get full access to the member portal, investments, and voting rights.",
+    title: "Payment of Fees",
+    desc: "Approved applicants pay a one-time $200 membership registration fee.",
+    cta: null,
+    href: null,
+  },
+  {
+    num: "04",
+    title: "Wallet Activation",
+    desc: "A digital wallet is created for you with a minimum first contribution of $500 to begin investing.",
+    cta: null,
+    href: null,
+  },
+  {
+    num: "05",
+    title: "Orientation Session",
+    desc: "Attend an onboarding session covering cooperative operations, responsibilities and opportunities.",
+    cta: null,
+    href: null,
+  },
+  {
+    num: "06",
+    title: "Membership Confirmation",
+    desc: "Once onboarding is complete, you're officially enrolled with full cooperative rights.",
     cta: "Learn more",
     href: "/about",
   },
@@ -309,7 +331,12 @@ export default function HomePage() {
                       borderColor: "var(--mkt-border)",
                     }}
                   >
-                    <div className="text-4xl mb-5">{f.icon}</div>
+                    <div
+                      className="w-12 h-12 rounded-2xl flex items-center justify-center mb-5 border"
+                      style={{ background: "var(--mkt-card)", borderColor: "var(--mkt-border)" }}
+                    >
+                      {f.icon}
+                    </div>
                     <h3 className="text-lg font-bold mb-3 group-hover:text-[#facc15] transition-colors" style={{ color: "var(--mkt-text)" }}>
                       {f.title}
                     </h3>
@@ -334,17 +361,11 @@ export default function HomePage() {
               How It Works
             </p>
             <h2 className="text-4xl md:text-5xl font-bold tracking-tight" style={{ color: "var(--mkt-text)" }}>
-              Join in three steps
+              Join in six steps
             </h2>
           </FadeUp>
 
-          <StaggerChildren className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
-            {/* Connector line (desktop) */}
-            <div
-              className="hidden md:block absolute top-10 left-[calc(16.67%+2rem)] right-[calc(16.67%+2rem)] h-px"
-              style={{ background: "var(--mkt-border)" }}
-            />
-
+          <StaggerChildren className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 relative">
             {steps.map((step) => (
               <StaggerItem key={step.num}>
                 <div className="flex flex-col items-center text-center relative">

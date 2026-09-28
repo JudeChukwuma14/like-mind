@@ -259,7 +259,7 @@ export default function AcknowledgementPage() {
                     required
                     value={data.password}
                     onChange={(e) => setData({ password: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-(--accent-500) focus:ring-2 focus:ring-(--accent-200) outline-none transition-all bg-white"
                     placeholder="Create a password"
                   />
                 </div>
@@ -270,7 +270,7 @@ export default function AcknowledgementPage() {
                     required
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-(--accent-500) focus:ring-2 focus:ring-(--accent-200) outline-none transition-all bg-white"
                     placeholder="Re-enter password"
                   />
                 </div>

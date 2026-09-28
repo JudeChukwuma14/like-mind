@@ -268,7 +268,7 @@ export default function MembersPage() {
                 className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
                 style={{ background: (importResult.failed ?? 0) > 0 ? "#fef3c7" : "#dcfce7" }}
               >
-                {(importResult.failed ?? 0) > 0 ? <AlertTriangle className="w-5 h-5 text-amber-700" /> : <CheckCircle2 className="w-5 h-5 text-green-700" />}
+                {(importResult.failed ?? 0) > 0 ? <AlertTriangle className="w-5 h-5 text-(--accent-700)" /> : <CheckCircle2 className="w-5 h-5 text-green-700" />}
               </div>
               <div>
                 <h2 id="import-result-title" className="text-base font-bold" style={{ color: "var(--admin-text)" }}>Import processed</h2>
@@ -351,7 +351,7 @@ export default function MembersPage() {
 
       <header className="card-admin flex flex-col gap-5 rounded-3xl p-6 md:flex-row md:items-center md:justify-between md:p-8">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-amber-600">People · Directory</p>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-(--accent-600)">People · Directory</p>
           <h1 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">Members</h1>
           <p className="mt-2 max-w-xl text-sm leading-6 admin-text-muted">Find an account, review its details, and manage verification or access from one place.</p>
         </div>

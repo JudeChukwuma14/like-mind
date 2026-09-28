@@ -43,13 +43,13 @@ function SectionHeader({ eyebrow, title, onEdit }: { eyebrow: string; title: str
   return (
     <div className="flex items-start justify-between mb-6">
       <div>
-        <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-1">{eyebrow}</p>
+        <p className="text-[10px] font-bold text-(--accent-600) uppercase tracking-widest mb-1">{eyebrow}</p>
         <h2 className="text-xl font-bold" style={{ color: "var(--dash-text)" }}>
           {title}
         </h2>
       </div>
       {onEdit && (
-        <button type="button" onClick={onEdit} className="text-xs font-bold text-amber-600 hover:text-amber-700 mt-1">
+        <button type="button" onClick={onEdit} className="text-xs font-bold text-(--accent-600) hover:text-(--accent-700) mt-1">
           Edit
         </button>
       )}
@@ -80,7 +80,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 const inputClass =
-  "w-full px-3.5 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-amber-400/40 transition-all";
+  "w-full px-3.5 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-(--accent-400)/40 transition-all";
 
 function inputStyle(): React.CSSProperties {
   return { background: "var(--dash-bg)", borderColor: "var(--dash-border)", color: "var(--dash-text)" };
@@ -165,7 +165,7 @@ export function ProfileClient() {
             style={{ background: "var(--dash-surface)" }}
           >
             <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
-              <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-amber-100 flex items-center justify-center text-3xl font-medium text-[#111] shrink-0">
+              <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-(--accent-100) flex items-center justify-center text-3xl font-medium text-[#111] shrink-0">
                 {initials}
               </div>
               <div>

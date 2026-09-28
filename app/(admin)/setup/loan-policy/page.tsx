@@ -65,7 +65,7 @@ export default function LoanPolicyPage() {
         subtitle={
           <>
             <span className="text-[#a09880]">Eligibility, terms, and the </span>
-            <span className="text-[#3b82f6]">rails</span>
+            <span className="text-(--accent-600)">rails</span>
             <span className="text-[#a09880]"> for approving credit.</span>
           </>
         }

@@ -77,7 +77,7 @@ export default function EmploymentPage() {
                     required
                     value={data.employerName}
                     onChange={(e) => setData({ employerName: e.target.value })}
-                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white"
+                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-(--accent-500) focus:ring-2 focus:ring-(--accent-200) outline-none transition-all bg-white"
                     placeholder="RBC Royal Bank"
                   />
                 </div>
@@ -88,7 +88,7 @@ export default function EmploymentPage() {
                   <select
                     value={data.industry}
                     onChange={(e) => setData({ industry: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white appearance-none"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-(--accent-500) focus:ring-2 focus:ring-(--accent-200) outline-none transition-all bg-white appearance-none"
                   >
                     <option value="">Select industry</option>
                     <option value="Banking & Finance">Banking & Finance</option>
@@ -110,7 +110,7 @@ export default function EmploymentPage() {
                   required
                   value={data.jobTitle}
                   onChange={(e) => setData({ jobTitle: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-(--accent-500) focus:ring-2 focus:ring-(--accent-200) outline-none transition-all bg-white"
                   placeholder="Senior Compliance Analyst"
                 />
               </div>
@@ -123,7 +123,7 @@ export default function EmploymentPage() {
                     required
                     value={data.workLocation}
                     onChange={(e) => setData({ workLocation: e.target.value })}
-                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white"
+                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-(--accent-500) focus:ring-2 focus:ring-(--accent-200) outline-none transition-all bg-white"
                     placeholder="Toronto, ON"
                   />
                 </div>
@@ -138,7 +138,7 @@ export default function EmploymentPage() {
                   step={0.5}
                   value={data.yearsInRole}
                   onChange={(e) => setData({ yearsInRole: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-(--accent-500) focus:ring-2 focus:ring-(--accent-200) outline-none transition-all bg-white"
                   placeholder="4.5"
                 />
               </div>

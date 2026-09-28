@@ -481,7 +481,7 @@ export default function RoleDetailPage() {
                           style={
                             selCount > 0
                               ? {
-                                  background: "rgba(252,211,77,0.15)",
+                                  background: "color-mix(in srgb, var(--admin-primary) 15%, transparent)",
                                   color: "var(--admin-primary)",
                                 }
                               : {

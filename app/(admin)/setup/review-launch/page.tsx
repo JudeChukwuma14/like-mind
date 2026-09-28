@@ -84,7 +84,7 @@ function SummarySection({ icon: Icon, title, lines, editHref, warning }: Summary
       </div>
       <Link
         href={editHref}
-        className="text-xs font-semibold text-[#3b82f6] hover:text-blue-700 transition-colors shrink-0 mt-1"
+        className="text-xs font-semibold text-(--accent-600) hover:text-(--accent-700) transition-colors shrink-0 mt-1"
       >
         Edit
       </Link>

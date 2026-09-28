@@ -69,8 +69,8 @@ export default function LoanCalculatorPage() {
       </Link>
 
       <header className="relative overflow-hidden rounded-3xl bg-[#181817] p-6 text-white md:p-8">
-        <div className="pointer-events-none absolute -right-12 -top-20 h-52 w-52 rounded-full bg-cyan-400/15 blur-3xl" />
-        <p className="relative text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-300">Loan calculator</p>
+        <div className="pointer-events-none absolute -right-12 -top-20 h-52 w-52 rounded-full bg-(--accent-400)/15 blur-3xl" />
+        <p className="relative text-[10px] font-bold uppercase tracking-[0.2em] text-(--accent-300)">Loan calculator</p>
         <h1 className="relative mt-2 text-3xl font-bold tracking-tight">Calculate repayment</h1>
         <p className="relative mt-2 max-w-xl text-sm leading-6 text-white/65">
           Get an estimate, then continue directly to a pre-filled application.
@@ -93,7 +93,7 @@ export default function LoanCalculatorPage() {
             required
             aria-invalid={Boolean(error?.fieldErrors.amount)}
             aria-describedby="calculator-amount-help calculator-amount-error"
-            className={`input-dash rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-400/30 ${error?.fieldErrors.amount ? "ring-2 ring-red-400" : ""}`}
+            className={`input-dash rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-(--accent-400)/30 ${error?.fieldErrors.amount ? "ring-2 ring-red-400" : ""}`}
           />
           <span id="calculator-amount-help" className="text-xs font-normal dash-text-muted">
             Enter any amount — your cooperative&apos;s policy is checked when you calculate.
@@ -116,7 +116,7 @@ export default function LoanCalculatorPage() {
             required
             aria-invalid={Boolean(error?.fieldErrors.tenure)}
             aria-describedby="calculator-tenure-help calculator-tenure-error"
-            className={`input-dash rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-400/30 ${error?.fieldErrors.tenure ? "ring-2 ring-red-400" : ""}`}
+            className={`input-dash rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-(--accent-400)/30 ${error?.fieldErrors.tenure ? "ring-2 ring-red-400" : ""}`}
           />
           <span id="calculator-tenure-help" className="text-xs font-normal dash-text-muted">
             Enter any term in whole months — your cooperative&apos;s policy is checked when you calculate.
@@ -147,7 +147,7 @@ export default function LoanCalculatorPage() {
               <h2 className="text-xl font-bold">Calculation result</h2>
               <p className="mt-1 text-sm dash-text-muted">The loan service supplied these figures.</p>
             </div>
-            <Link href={applyHref} className="inline-flex items-center justify-center gap-2 rounded-full bg-cyan-500 px-5 py-3 text-sm font-bold text-black">
+            <Link href={applyHref} className="inline-flex items-center justify-center gap-2 rounded-full bg-(--accent-500) px-5 py-3 text-sm font-bold text-black">
               Apply with these values <ArrowRight className="h-4 w-4" />
             </Link>
           </div>

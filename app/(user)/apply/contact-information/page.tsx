@@ -82,7 +82,7 @@ export default function ContactInformationPage() {
                   required
                   value={data.homeAddress}
                   onChange={(e) => setData({ homeAddress: e.target.value })}
-                  className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white"
+                  className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-(--accent-500) focus:ring-2 focus:ring-(--accent-200) outline-none transition-all bg-white"
                   placeholder="14 Lansdowne Avenue, Unit 3B"
                 />
               </div>
@@ -117,7 +117,7 @@ export default function ContactInformationPage() {
                       const state = states.find((s) => s.isoCode === e.target.value);
                       setData({ province: state?.name ?? "", provinceCode: e.target.value, city: "" });
                     }}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white appearance-none disabled:bg-gray-50/50 disabled:text-gray-400"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-(--accent-500) focus:ring-2 focus:ring-(--accent-200) outline-none transition-all bg-white appearance-none disabled:bg-gray-50/50 disabled:text-gray-400"
                   >
                     <option value="">
                       {states.length === 0 ? "No states/provinces" : "Select"}
@@ -149,7 +149,7 @@ export default function ContactInformationPage() {
                     value={data.city}
                     onChange={(e) => setData({ city: e.target.value })}
                     disabled={!data.provinceCode}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white disabled:bg-gray-50/50 disabled:text-gray-400"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-(--accent-500) focus:ring-2 focus:ring-(--accent-200) outline-none transition-all bg-white disabled:bg-gray-50/50 disabled:text-gray-400"
                     placeholder={data.provinceCode ? "Enter your city" : "Select province first"}
                   />
                 )}
@@ -161,7 +161,7 @@ export default function ContactInformationPage() {
                   required
                   value={data.postalCode}
                   onChange={(e) => setData({ postalCode: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white uppercase"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-(--accent-500) focus:ring-2 focus:ring-(--accent-200) outline-none transition-all bg-white uppercase"
                   placeholder="M6K 2W5"
                 />
               </div>
@@ -184,7 +184,7 @@ export default function ContactInformationPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Personal email
                   {googlePrefilled && (
-                    <span className="ml-2 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-full">
+                    <span className="ml-2 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-(--accent-600) bg-(--accent-50) border border-(--accent-100) px-2 py-0.5 rounded-full">
                       <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="currentColor"><path d="M12.545 10.239v3.821h5.445c-.712 2.315-2.647 3.972-5.445 3.972a6.033 6.033 0 110-12.064c1.498 0 2.866.549 3.921 1.453l2.814-2.814A9.969 9.969 0 0012.545 2C7.021 2 2.543 6.477 2.543 12s4.478 10 10.002 10c8.396 0 10.249-7.85 9.426-11.748l-9.426-.013z"/></svg>
                       Pre-filled from Google
                     </span>
@@ -200,15 +200,15 @@ export default function ContactInformationPage() {
                       setGooglePrefilled(false);
                       setData({ email: e.target.value });
                     }}
-                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white"
+                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-(--accent-500) focus:ring-2 focus:ring-(--accent-200) outline-none transition-all bg-white"
                     placeholder="alex.morgan@gmail.com"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="mt-8 flex gap-3 p-4 bg-indigo-50/50 text-indigo-800 rounded-xl border border-indigo-100">
-              <Info className="w-5 h-5 shrink-0 text-indigo-500 mt-0.5" />
+            <div className="mt-8 flex gap-3 p-4 bg-(--accent-50)/50 text-(--accent-800) rounded-xl border border-(--accent-100)">
+              <Info className="w-5 h-5 shrink-0 text-(--accent-500) mt-0.5" />
               <p className="text-sm">
                 We'll send a verification email after submission. Address changes after activation require a 5-day cooling period.
               </p>

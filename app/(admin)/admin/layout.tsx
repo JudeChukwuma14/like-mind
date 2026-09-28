@@ -208,8 +208,8 @@ function AdminSidebar({
                       style={
                         active
                           ? {
-                              background: "#facc15",
-                              color: "#0a0a0a",
+                              background: "var(--brand)",
+                              color: "var(--brand-fg)",
                             }
                           : {
                               color: "var(--admin-muted)",
@@ -373,7 +373,7 @@ function AdminTopbar({
         <div className="min-w-0 hidden sm:block">
           <p
             className="text-[10px] font-bold uppercase tracking-widest mb-0.5"
-            style={{ color: "#0891b2" }}
+            style={{ color: "var(--brand-hover)" }}
           >
             {category}
           </p>

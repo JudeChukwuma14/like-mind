@@ -20,6 +20,9 @@ export function paymentTypeLabel(value: string | null | undefined): string {
 export function PaymentStatusBadge({ status }: { status: string | null | undefined }) {
   const normalized = status?.toLowerCase();
   const pending = normalized === "pendingconfirmation" || normalized === "submitted";
+  // "Pending" uses amber, not brand color, to match WithdrawalStatusBadge's convention — a status
+  // color that's the same regardless of which product this is, not a product-brand accent.
   const classes = pending ? "border-amber-200 bg-amber-50 text-amber-800" : normalized === "confirmed" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : normalized === "rejected" ? "border-red-200 bg-red-50 text-red-800" : "border-gray-200 bg-gray-50 text-gray-700";
   return <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${classes}`}>{pending ? "Pending confirmation" : status || "Unknown"}</span>;
 }
+

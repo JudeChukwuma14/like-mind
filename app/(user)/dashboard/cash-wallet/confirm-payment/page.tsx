@@ -334,9 +334,9 @@ export default function ConfirmPaymentPage() {
           
           {/* Payment guidance */}
           <div className="bg-gradient-to-br from-gray-900 via-black to-gray-900 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden border border-gray-800">
-            <div className="absolute -top-12 -right-12 w-32 h-32 bg-amber-500/20 rounded-full blur-3xl"></div>
+            <div className="absolute -top-12 -right-12 w-32 h-32 bg-(--accent-500)/20 rounded-full blur-3xl"></div>
             
-            <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-6 relative z-10">
+            <p className="text-[10px] font-bold text-(--accent-400) uppercase tracking-widest mb-6 relative z-10">
               Before you submit
             </p>
             

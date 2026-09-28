@@ -8,12 +8,12 @@ const faqs = [
     num: "01",
     question: "Who can become a member?",
     answer:
-      "Any Canadian permanent resident, citizen or work-permit holder over 18 years of age. Members of the diaspora abroad may join as Associate (Tier 01) and upgrade to full membership upon arrival.",
+      "You must be at least 18 years old, a Canadian resident for tax purposes, and gainfully employed, self-employed or involved in a verifiable business venture. You'll also need a referral from an existing member in good standing for at least 6 months (or a reputable community leader), the financial capability to meet share capital, savings and fee obligations, good moral standing with no criminal record, and a genuine interest in the cooperative's objectives.",
   },
   {
     num: "02",
     question: "How long does the application review take?",
-    answer: "We typically review completed applications within five business days. Once approved, you'll have full access to Kajola's platforms, tools, and investment opportunities.",
+    answer: "We typically review completed applications within five business days. Once approved, you'll have full access to LikeMinds' platforms, tools, and investment opportunities.",
   },
   {
     num: "03",

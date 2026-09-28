@@ -83,12 +83,12 @@ export function ThemeToggle({
     >
       {/* Track */}
       <span className="relative w-8 h-4.5 rounded-full flex items-center px-0.5 transition-colors duration-300"
-        style={{ background: isDark ? "rgba(250,204,21,0.3)" : "rgba(0,0,0,0.15)" }}
+        style={{ background: isDark ? "color-mix(in srgb, var(--brand-hover) 30%, transparent)" : "rgba(0,0,0,0.15)" }}
       >
         <span
           className="w-3.5 h-3.5 rounded-full transition-all duration-300 shadow-sm"
           style={{
-            background: isDark ? "#facc15" : "#6b7280",
+            background: isDark ? "var(--brand-hover)" : "#6b7280",
             transform: isDark ? "translateX(14px)" : "translateX(0)",
           }}
         />

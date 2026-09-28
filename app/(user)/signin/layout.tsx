@@ -34,7 +34,7 @@ export default function SignInLayout({ children }: { children: React.ReactNode }
         </Link>
 
         <div className="mt-16 lg:mt-0">
-          <p className="text-[10px] font-mono uppercase tracking-widest text-amber-500 mb-4">
+          <p className="text-[10px] font-mono uppercase tracking-widest text-(--brand-hover) mb-4">
             — {panel.label}
           </p>
           <h1 className="text-4xl lg:text-5xl font-bold tracking-tight leading-[1.1] whitespace-pre-line">

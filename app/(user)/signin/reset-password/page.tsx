@@ -59,7 +59,7 @@ export default function ResetPasswordPage() {
 
   return (
     <>
-      <p className="text-[10px] font-mono uppercase tracking-widest text-indigo-600 mb-2">
+      <p className="text-[10px] font-mono uppercase tracking-widest text-(--accent-600) mb-2">
         03 — New password
       </p>
       <h2 className="text-3xl font-bold text-[#171717] mb-8">Set new password</h2>
@@ -72,7 +72,7 @@ export default function ResetPasswordPage() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white"
+            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-(--accent-500) focus:ring-2 focus:ring-(--accent-200) outline-none transition-all bg-white"
             placeholder="alex@likemind.co"
           />
         </div>
@@ -84,7 +84,7 @@ export default function ResetPasswordPage() {
             required
             value={code}
             onChange={(e) => setCode(e.target.value)}
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white"
+            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-(--accent-500) focus:ring-2 focus:ring-(--accent-200) outline-none transition-all bg-white"
             placeholder="Code from your email"
           />
         </div>
@@ -97,7 +97,7 @@ export default function ResetPasswordPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 pr-11 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white"
+              className="w-full px-4 py-3 pr-11 rounded-xl border border-gray-200 focus:border-(--accent-500) focus:ring-2 focus:ring-(--accent-200) outline-none transition-all bg-white"
               placeholder="••••••••••••"
             />
             <button
@@ -119,7 +119,7 @@ export default function ResetPasswordPage() {
               required
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full px-4 py-3 pr-11 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white"
+              className="w-full px-4 py-3 pr-11 rounded-xl border border-gray-200 focus:border-(--accent-500) focus:ring-2 focus:ring-(--accent-200) outline-none transition-all bg-white"
               placeholder="••••••••••••"
             />
             <button

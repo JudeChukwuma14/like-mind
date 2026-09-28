@@ -57,7 +57,7 @@ export default function InvestmentsPage() {
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-1">
+            <p className="text-[10px] font-bold text-(--accent-600) uppercase tracking-widest mb-1">
               PLANS
             </p>
             <h2 className="text-xl font-bold">Investment plans</h2>
@@ -87,8 +87,8 @@ export default function InvestmentsPage() {
                   <h3 className="text-lg font-bold">
                     Calgary Apartments · LikeMinds Estate
                   </h3>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-50 text-purple-600 flex items-center gap-1 border border-purple-100/50">
-                    <span className="w-1 h-1 rounded-full bg-purple-500"></span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-(--accent-50) text-(--accent-600) flex items-center gap-1 border border-(--accent-100)/50">
+                    <span className="w-1 h-1 rounded-full bg-(--accent-500)"></span>
                     Subscribed
                   </span>
                 </div>

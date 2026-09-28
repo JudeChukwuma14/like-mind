@@ -82,7 +82,7 @@ export default function CooperativeProfilePage() {
         step={2}
         title="Cooperative profile"
         subtitle={
-          <span className="text-[#3b82f6]">
+          <span className="text-(--accent-600)">
             Shows on receipts, the member portal, and audit reports.
           </span>
         }
@@ -246,7 +246,7 @@ export default function CooperativeProfilePage() {
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploadLogo.isPending}
-                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#3b82f6] hover:text-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-(--accent-600) hover:text-(--accent-700) disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
                   >
                     {uploadLogo.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                     {data.logoFileName ? "Replace" : "Upload"}

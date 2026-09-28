@@ -378,9 +378,9 @@ function ReassignDialog({
       <div className="flex items-start gap-3">
         <div
           className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
-          style={{ background: "rgba(99,102,241,0.12)" }}
+          style={{ background: "var(--accent-100)" }}
         >
-          <UserCog className="w-5 h-5" style={{ color: "#6366f1" }} />
+          <UserCog className="w-5 h-5" style={{ color: "var(--brand-hover)" }} />
         </div>
         <div>
           <h2 className="text-base font-bold" style={{ color: "var(--admin-text)" }}>
@@ -469,7 +469,7 @@ function ReassignDialog({
         {selectedUserId && (
           <div
             className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs"
-            style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.25)" }}
+            style={{ background: "color-mix(in srgb, var(--brand-hover) 8%, transparent)", border: "1px solid color-mix(in srgb, var(--brand-hover) 25%, transparent)" }}
           >
             <span style={{ color: "var(--admin-text)" }}>
               Assigning to <strong>{selectedUserName}</strong>
@@ -504,7 +504,7 @@ function ReassignDialog({
           disabled={!selectedUserId || isPending}
           onClick={() => onReassign(selectedUserId)}
           className="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-semibold transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
-          style={{ background: "#6366f1", color: "#fff" }}
+          style={{ background: "var(--brand-hover)", color: "#fff" }}
         >
           {isPending ? (
             <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Reassigning…</>
@@ -608,7 +608,7 @@ function ApprovalRow({
               disabled={isMutating}
               onClick={() => onAction({ kind: "reassign", request })}
               className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all hover:opacity-90 disabled:opacity-40"
-              style={{ background: "rgba(99,102,241,0.1)", color: "#6366f1" }}
+              style={{ background: "var(--accent-100)", color: "var(--brand-hover)" }}
             >
               <UserCog className="w-3 h-3" />
               Reassign

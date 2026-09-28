@@ -28,7 +28,7 @@ export default function DashboardOverviewPage() {
           style={{ background: "var(--dash-surface)", borderColor: "var(--dash-border)" }}
         >
           {/* Subtle gradient background effect */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-amber-100 rounded-full blur-3xl opacity-30 -translate-y-1/2 translate-x-1/4 pointer-events-none" />
+          <div className="absolute top-0 right-0 w-64 h-64 bg-(--accent-100) rounded-full blur-3xl opacity-30 -translate-y-1/2 translate-x-1/4 pointer-events-none" />
 
           <div className="relative z-10">
             <p
@@ -77,7 +77,7 @@ export default function DashboardOverviewPage() {
           style={{ background: "var(--nav-bg)", color: "var(--nav-text)" }}
         >
           <div>
-            <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-3">
+            <p className="text-[10px] font-bold text-(--accent-500) uppercase tracking-widest mb-3">
               NEXT DUE - 15 APRIL
             </p>
             <p className="text-4xl md:text-5xl font-bold tracking-tighter mb-1">
@@ -104,7 +104,7 @@ export default function DashboardOverviewPage() {
           style={{ background: "var(--dash-surface)", borderColor: "var(--dash-border)" }}
         >
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600">
+            <div className="w-8 h-8 rounded-lg bg-(--accent-50) flex items-center justify-center text-(--accent-600)">
               <CreditCard className="w-4 h-4" />
             </div>
             <span className="text-sm" style={{ color: "var(--dash-muted)" }}>Savings balance</span>
@@ -122,7 +122,7 @@ export default function DashboardOverviewPage() {
           style={{ background: "var(--dash-surface)", borderColor: "var(--dash-border)" }}
         >
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600">
+            <div className="w-8 h-8 rounded-lg bg-(--accent-50) flex items-center justify-center text-(--accent-600)">
               <TrendingUp className="w-4 h-4" />
             </div>
             <span className="text-sm" style={{ color: "var(--dash-muted)" }}>Investment balance</span>
@@ -132,8 +132,8 @@ export default function DashboardOverviewPage() {
             className="text-[10px] font-bold tracking-wider flex items-center gap-1.5 uppercase"
             style={{ color: "var(--dash-muted)" }}
           >
-            <span className="w-full max-w-10 h-1 bg-amber-100 rounded-full overflow-hidden block">
-              <span className="bg-amber-400 w-[60%] h-full block" />
+            <span className="w-full max-w-10 h-1 bg-(--accent-100) rounded-full overflow-hidden block">
+              <span className="bg-(--accent-400) w-[60%] h-full block" />
             </span>
             $ 1,200,000 / $ 2,000,000 monthly cap
           </div>
@@ -166,7 +166,7 @@ export default function DashboardOverviewPage() {
         >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
             <div>
-              <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-1">
+              <p className="text-[10px] font-bold text-(--accent-600) uppercase tracking-widest mb-1">
                 ACTIVITY
               </p>
               <h2 className="text-lg font-bold">Recent contributions</h2>
@@ -202,7 +202,7 @@ export default function DashboardOverviewPage() {
                 month: "APR",
                 title: "April savings contribution",
                 ref: "REF #SAV-2684-118 · 14 Apr",
-                badge: { label: "Pending review", bg: "bg-amber-50", text: "text-amber-600", border: "border-amber-100/50", dot: "bg-amber-500" },
+                badge: { label: "Pending review", bg: "bg-(--accent-50)", text: "text-(--accent-600)", border: "border-(--accent-100)/50", dot: "bg-(--accent-500)" },
                 amount: "+ $ 25,000",
               },
               {
@@ -276,7 +276,7 @@ export default function DashboardOverviewPage() {
             </span>
             <Link
               href="#"
-              className="text-xs font-bold text-amber-600 hover:text-amber-700 flex items-center gap-1"
+              className="text-xs font-bold text-(--accent-600) hover:text-(--accent-700) flex items-center gap-1"
             >
               View all activity <ArrowRight className="w-3.5 h-3.5" />
             </Link>
@@ -291,13 +291,13 @@ export default function DashboardOverviewPage() {
             style={{ background: "var(--dash-surface)", borderColor: "var(--dash-border)" }}
           >
             <div className="flex items-center justify-between mb-6">
-              <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest flex items-center gap-2">
+              <p className="text-[10px] font-bold text-(--accent-600) uppercase tracking-widest flex items-center gap-2">
                 INBOX{" "}
-                <span className="bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded-sm">
+                <span className="bg-(--accent-50) text-(--accent-600) px-1.5 py-0.5 rounded-sm">
                   5 NEW
                 </span>
               </p>
-              <Link href="#" className="text-xs font-bold text-amber-600 hover:text-amber-700">
+              <Link href="#" className="text-xs font-bold text-(--accent-600) hover:text-(--accent-700)">
                 View all
               </Link>
             </div>
@@ -305,7 +305,7 @@ export default function DashboardOverviewPage() {
             <div className="space-y-5">
               {[
                 {
-                  dot: "bg-amber-500",
+                  dot: "bg-(--accent-500)",
                   title: "April dues reminder",
                   time: "2h",
                   body: "Pay by 15 April to stay current.",
@@ -349,7 +349,7 @@ export default function DashboardOverviewPage() {
             className="rounded-3xl p-6 shadow-[0_2px_10px_rgba(0,0,0,0.04)] border"
             style={{ background: "var(--dash-surface)", borderColor: "var(--dash-border)" }}
           >
-            <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-4">
+            <p className="text-[10px] font-bold text-(--accent-600) uppercase tracking-widest mb-4">
               SHARE CAPITAL
             </p>
             <p className="text-xl font-bold tracking-tight mb-1">

@@ -36,7 +36,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <>
-      <p className="text-[10px] font-mono uppercase tracking-widest text-indigo-600 mb-2">Reset</p>
+      <p className="text-[10px] font-mono uppercase tracking-widest text-(--accent-600) mb-2">Reset</p>
       <h2 className="text-3xl font-bold text-[#171717] mb-2">Forgot password?</h2>
       <p className="text-sm text-gray-500 mb-8">Enter your email. We&apos;ll send a reset link.</p>
 
@@ -48,7 +48,7 @@ export default function ForgotPasswordPage() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white"
+            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-(--accent-500) focus:ring-2 focus:ring-(--accent-200) outline-none transition-all bg-white"
             placeholder="alex@likemind.co"
           />
         </div>

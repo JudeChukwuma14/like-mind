@@ -4,7 +4,7 @@ import { SessionProvider } from "@/app/providers/SessionProvider";
 export default function ApplyLayout({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider>
-      <div className="flex min-h-screen bg-[#f4efe6] text-[#171717] font-sans selection:bg-yellow-200">
+      <div className="flex min-h-screen bg-[#f4efe6] text-[#171717] font-sans selection:bg-(--accent-200)">
         <div className="hidden lg:block shrink-0">
           <Sidebar />
         </div>

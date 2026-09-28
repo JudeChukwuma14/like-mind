@@ -61,7 +61,7 @@ export default function WithdrawalPolicyPage() {
         subtitle={
           <>
             <span className="text-[#a09880]">When members can </span>
-            <span className="text-[#3b82f6]">pull</span>
+            <span className="text-(--accent-600)">pull</span>
             <span className="text-[#a09880]"> funds out and how the cooperative pays.</span>
           </>
         }

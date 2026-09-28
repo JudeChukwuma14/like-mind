@@ -40,9 +40,9 @@ export default function RefereePage() {
           </h1>
           <p className="text-lg text-gray-600 mb-8">A current member (Tier 02+) who can confirm you.</p>
 
-          <div className="mb-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-purple-50 rounded-2xl border border-purple-100">
+          <div className="mb-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-(--accent-50) rounded-2xl border border-(--accent-100)">
             <div className="flex items-start gap-4">
-              <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-purple-600 shrink-0 shadow-sm">
+              <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-(--accent-600) shrink-0 shadow-sm">
                 <Info className="w-4 h-4" />
               </div>
               <div>
@@ -70,7 +70,7 @@ export default function RefereePage() {
                   required
                   value={data.refereeFullName}
                   onChange={(e) => setData({ refereeFullName: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-(--accent-500) focus:ring-2 focus:ring-(--accent-200) outline-none transition-all bg-white"
                   placeholder="Jane Smith"
                 />
               </div>
@@ -80,7 +80,7 @@ export default function RefereePage() {
                   type="text"
                   value={data.refereeMemberId}
                   onChange={(e) => setData({ refereeMemberId: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-(--accent-500) focus:ring-2 focus:ring-(--accent-200) outline-none transition-all bg-white"
                   placeholder="LM-0014"
                 />
               </div>
@@ -96,7 +96,7 @@ export default function RefereePage() {
                     required
                     value={data.refereeEmail}
                     onChange={(e) => setData({ refereeEmail: e.target.value })}
-                    className="w-full pl-12 pr-32 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white"
+                    className="w-full pl-12 pr-32 py-3 rounded-xl border border-gray-200 focus:border-(--accent-500) focus:ring-2 focus:ring-(--accent-200) outline-none transition-all bg-white"
                     placeholder="jane@likeminds.coop"
                   />
                   {data.refereeEmail.includes("@likeminds.coop") && (
@@ -115,7 +115,7 @@ export default function RefereePage() {
                   <select
                     value={data.refereeRelationship}
                     onChange={(e) => setData({ refereeRelationship: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white appearance-none"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-(--accent-500) focus:ring-2 focus:ring-(--accent-200) outline-none transition-all bg-white appearance-none"
                   >
                     <option value="Mentor / Colleague">Mentor / Colleague</option>
                     <option value="Friend">Friend</option>
@@ -137,7 +137,7 @@ export default function RefereePage() {
                 step={1}
                 value={data.refereeKnownDuration}
                 onChange={(e) => setData({ refereeKnownDuration: e.target.value })}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-(--accent-500) focus:ring-2 focus:ring-(--accent-200) outline-none transition-all bg-white"
                 placeholder="4"
               />
             </div>

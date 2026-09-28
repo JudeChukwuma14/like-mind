@@ -128,7 +128,7 @@ export default function WelcomePage() {
                   value={emailValue}
                   onChange={(e) => setEmailValue(e.target.value)}
                   placeholder="you@example.com"
-                  className="w-full pl-11 pr-4 py-3.5 rounded-full border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white text-sm"
+                  className="w-full pl-11 pr-4 py-3.5 rounded-full border border-gray-200 focus:border-(--accent-500) focus:ring-2 focus:ring-(--accent-200) outline-none transition-all bg-white text-sm"
                 />
               </div>
               <button

@@ -93,7 +93,7 @@ export default function SignInPage() {
   if (step === "verify") {
     return (
       <>
-        <p className="text-[10px] font-mono uppercase tracking-widest text-indigo-600 mb-2">
+        <p className="text-[10px] font-mono uppercase tracking-widest text-(--accent-600) mb-2">
           Verify
         </p>
         <h2 className="text-3xl font-bold text-[#171717] mb-2">Check your email</h2>
@@ -113,7 +113,7 @@ export default function SignInPage() {
               value={code}
               onChange={(e) => setCode(e.target.value)}
               placeholder="Enter code"
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white tracking-widest text-center"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-(--accent-500) focus:ring-2 focus:ring-(--accent-200) outline-none transition-all bg-white tracking-widest text-center"
             />
           </div>
 
@@ -139,7 +139,7 @@ export default function SignInPage() {
               type="button"
               onClick={() => resend.mutate()}
               disabled={resend.isPending}
-              className="text-sm font-semibold text-indigo-600 hover:text-indigo-700 transition-colors disabled:opacity-60"
+              className="text-sm font-semibold text-(--accent-600) hover:text-(--accent-700) transition-colors disabled:opacity-60"
             >
               {resend.isPending ? "Sending…" : "Resend code"}
             </button>
@@ -152,11 +152,11 @@ export default function SignInPage() {
   return (
     <>
       <div className="flex items-center justify-between mb-2">
-        <p className="text-[10px] font-mono uppercase tracking-widest text-indigo-600">Sign in</p>
+        <p className="text-[10px] font-mono uppercase tracking-widest text-(--accent-600)">Sign in</p>
         <button
           type="button"
           onClick={() => setMode(mode === "password" ? "email-only" : "password")}
-          className="text-xs font-medium text-indigo-600 hover:text-indigo-700"
+          className="text-xs font-medium text-(--accent-600) hover:text-(--accent-700)"
         >
           {mode === "password" ? "Use email only instead" : "Use password instead"}
         </button>
@@ -171,7 +171,7 @@ export default function SignInPage() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white"
+            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-(--accent-500) focus:ring-2 focus:ring-(--accent-200) outline-none transition-all bg-white"
             placeholder="alex@likemind.co"
           />
         </div>
@@ -186,7 +186,7 @@ export default function SignInPage() {
               <label className="block text-sm font-medium text-gray-700">Password</label>
               <Link
                 href="/signin/forgot-password"
-                className="text-xs font-medium text-indigo-600 hover:text-indigo-700"
+                className="text-xs font-medium text-(--accent-600) hover:text-(--accent-700)"
               >
                 Forgot password?
               </Link>
@@ -197,7 +197,7 @@ export default function SignInPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 pr-11 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white"
+                className="w-full px-4 py-3 pr-11 rounded-xl border border-gray-200 focus:border-(--accent-500) focus:ring-2 focus:ring-(--accent-200) outline-none transition-all bg-white"
                 placeholder="••••••••"
               />
               <button
@@ -244,7 +244,7 @@ export default function SignInPage() {
 
       <p className="text-center text-sm text-gray-500 mt-4">
         Need help signing in?{" "}
-        <a href="mailto:admin@likemind.co" className="text-indigo-600 hover:text-indigo-700 font-medium">
+        <a href="mailto:admin@likemind.co" className="text-(--accent-600) hover:text-(--accent-700) font-medium">
           Contact admin
         </a>
       </p>
@@ -255,7 +255,7 @@ export default function SignInPage() {
       >
         <div
           className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
-          style={{ background: "linear-gradient(135deg, #f97316, #a855f7)" }}
+          style={{ background: "linear-gradient(135deg, var(--brand), var(--brand-hover))" }}
         >
           <Sparkles className="w-3.5 h-3.5 text-white" />
         </div>

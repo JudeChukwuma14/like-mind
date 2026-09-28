@@ -190,7 +190,7 @@ function NumberField({
           step={step}
           value={Number.isFinite(value) ? value : ""}
           onChange={(event) => onChange(numberInput(event.target.value))}
-          className={`input-admin w-full rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-400/30 ${unit ? "pr-20" : ""}`}
+          className={`input-admin w-full rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-(--accent-400)/30 ${unit ? "pr-20" : ""}`}
         />
         {unit && (
           <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-xs admin-text-muted">
@@ -224,7 +224,7 @@ function ToggleField({
         type="checkbox"
         checked={checked}
         onChange={(event) => onChange(event.target.checked)}
-        className="h-5 w-5 shrink-0 accent-cyan-500"
+        className="h-5 w-5 shrink-0 accent-(--accent-500)"
       />
     </label>
   );
@@ -249,7 +249,7 @@ function PolicyEditor({
         className="rounded-2xl border p-5 md:p-6"
         style={{ borderColor: "var(--admin-border)" }}
       >
-        <h3 className="text-sm font-bold uppercase tracking-widest text-cyan-600">
+        <h3 className="text-sm font-bold uppercase tracking-widest text-(--accent-600)">
           Loan terms
         </h3>
         <p className="mt-1 text-xs admin-text-muted">
@@ -293,7 +293,7 @@ function PolicyEditor({
         className="rounded-2xl border p-5 md:p-6"
         style={{ borderColor: "var(--admin-border)" }}
       >
-        <h3 className="text-sm font-bold uppercase tracking-widest text-cyan-600">
+        <h3 className="text-sm font-bold uppercase tracking-widest text-(--accent-600)">
           Eligibility
         </h3>
         <p className="mt-1 text-xs admin-text-muted">
@@ -368,7 +368,7 @@ function PolicyEditor({
         className="rounded-2xl border p-5 md:p-6"
         style={{ borderColor: "var(--admin-border)" }}
       >
-        <h3 className="text-sm font-bold uppercase tracking-widest text-cyan-600">
+        <h3 className="text-sm font-bold uppercase tracking-widest text-(--accent-600)">
           Repayment and alerts
         </h3>
         <p className="mt-1 text-xs admin-text-muted">
@@ -744,10 +744,10 @@ export default function AdminLoanPolicyPage() {
       </Link>
 
       <header className="relative overflow-hidden rounded-3xl bg-[#181817] p-6 text-white md:p-8">
-        <div className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-cyan-400/15 blur-3xl" />
+        <div className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-(--accent-400)/15 blur-3xl" />
         <div className="relative flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-300">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-(--accent-300)">
               Loan governance
             </p>
             <h1 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">
@@ -759,7 +759,7 @@ export default function AdminLoanPolicyPage() {
             </p>
           </div>
           <span className="inline-flex shrink-0 items-center gap-2 self-start rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold text-white/90">
-            <ShieldCheck className="h-4 w-4 text-cyan-300" /> Approval
+            <ShieldCheck className="h-4 w-4 text-(--accent-300)" /> Approval
             controlled
           </span>
         </div>
@@ -794,7 +794,7 @@ export default function AdminLoanPolicyPage() {
                 key={step.number}
                 className="card-admin flex items-start gap-3 rounded-2xl p-4"
               >
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-cyan-400/15 text-xs font-bold text-cyan-700">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-(--accent-400)/15 text-xs font-bold text-(--accent-700)">
                   {step.number}
                 </span>
                 <div>
@@ -832,7 +832,7 @@ export default function AdminLoanPolicyPage() {
           {permissions.error && (
             <p
               role="alert"
-              className="rounded-2xl border border-cyan-200 bg-cyan-50 p-4 text-sm text-cyan-900"
+              className="rounded-2xl border border-(--accent-200) bg-(--accent-50) p-4 text-sm text-(--accent-900)"
             >
               Editing and review are unavailable because permissions could not
               be loaded. {getLoanScreenError(permissions.error)}
@@ -863,7 +863,7 @@ export default function AdminLoanPolicyPage() {
                     setFormError(null);
                   }}
                   aria-current={view === tab.id ? "page" : undefined}
-                  className={`flex min-w-0 items-center gap-3 rounded-xl px-4 py-3 text-left transition-colors ${view === tab.id ? "bg-[#181817] text-white shadow-sm" : "hover:bg-cyan-400/10"}`}
+                  className={`flex min-w-0 items-center gap-3 rounded-xl px-4 py-3 text-left transition-colors ${view === tab.id ? "bg-[#181817] text-white shadow-sm" : "hover:bg-(--accent-400)/10"}`}
                 >
                   {tab.id === "overview" ? (
                     <CircleCheck className="h-5 w-5 shrink-0" />
@@ -890,7 +890,7 @@ export default function AdminLoanPolicyPage() {
             <section className="card-admin rounded-3xl p-5 md:p-7">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-cyan-600">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-(--accent-600)">
                     In effect now
                   </p>
                   <h2 className="mt-1 text-xl font-semibold">Live policy</h2>
@@ -940,7 +940,7 @@ export default function AdminLoanPolicyPage() {
           {view === "propose" && canManage && (
             <section className="card-admin rounded-3xl p-5 md:p-7">
               <div className="flex items-start gap-3">
-                <FilePenLine className="mt-0.5 h-5 w-5 text-cyan-500" />
+                <FilePenLine className="mt-0.5 h-5 w-5 text-(--accent-500)" />
                 <div>
                   <h2 className="text-xl font-semibold">
                     Propose a policy change
@@ -991,7 +991,7 @@ export default function AdminLoanPolicyPage() {
                   {draft && (
                     <div
                       role="status"
-                      className="flex items-center gap-3 rounded-2xl border border-cyan-200 bg-cyan-50 p-4 text-sm text-cyan-900"
+                      className="flex items-center gap-3 rounded-2xl border border-(--accent-200) bg-(--accent-50) p-4 text-sm text-(--accent-900)"
                     >
                       <FilePenLine className="h-5 w-5 shrink-0" />
                       <span>
@@ -1050,7 +1050,7 @@ export default function AdminLoanPolicyPage() {
             <section className="card-admin rounded-3xl p-5 md:p-7">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="flex items-start gap-3">
-                  <ShieldCheck className="mt-0.5 h-5 w-5 text-cyan-500" />
+                  <ShieldCheck className="mt-0.5 h-5 w-5 text-(--accent-500)" />
                   <div>
                     <h2 className="text-xl font-semibold">Pending proposals</h2>
                     <p className="mt-1 text-sm admin-text-muted">
@@ -1118,7 +1118,7 @@ export default function AdminLoanPolicyPage() {
                       >
                         <div className="flex flex-wrap items-start justify-between gap-4">
                           <div>
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-cyan-600">
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-(--accent-600)">
                               Proposal {id ? id.slice(0, 8) : index + 1}
                             </p>
                             <p className="mt-1 text-sm admin-text-muted">
@@ -1145,7 +1145,7 @@ export default function AdminLoanPolicyPage() {
                               </p>
                             )}
                             {ownProposal && permissions.isRootAdmin && (
-                              <p className="mt-1 text-xs text-cyan-700">
+                              <p className="mt-1 text-xs text-(--accent-700)">
                                 Your proposal · RootAdmin review attempt
                               </p>
                             )}
@@ -1186,7 +1186,7 @@ export default function AdminLoanPolicyPage() {
                               </button>
                             </div>
                           ) : ownProposal && !permissions.isRootAdmin ? (
-                            <span className="rounded-full bg-cyan-100 px-3 py-1 text-xs font-semibold text-cyan-900">
+                            <span className="rounded-full bg-(--accent-100) px-3 py-1 text-xs font-semibold text-(--accent-900)">
                               Your proposal · review unavailable
                             </span>
                           ) : (
@@ -1233,7 +1233,7 @@ export default function AdminLoanPolicyPage() {
           >
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-cyan-600">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-(--accent-600)">
                   Final check
                 </p>
                 <h2
@@ -1280,7 +1280,7 @@ export default function AdminLoanPolicyPage() {
                     <dt className="font-semibold">{change.label}</dt>
                     <dd className="break-words">
                       <span className="admin-text-muted">{change.before}</span>
-                      <span aria-hidden="true" className="mx-2 text-cyan-600">
+                      <span aria-hidden="true" className="mx-2 text-(--accent-600)">
                         →
                       </span>
                       <strong>{change.after}</strong>
@@ -1365,7 +1365,7 @@ export default function AdminLoanPolicyPage() {
             {review.proposerId === user?.id && (
               <p
                 role="note"
-                className="mt-3 rounded-xl border border-cyan-300 bg-cyan-50 p-3 text-xs text-cyan-900"
+                className="mt-3 rounded-xl border border-(--accent-300) bg-(--accent-50) p-3 text-xs text-(--accent-900)"
               >
                 You proposed this change. Swagger says self-review is not
                 allowed; this RootAdmin attempt may be rejected by the backend.

@@ -118,7 +118,7 @@ export default function ReviewPaymentPage() {
         
         {/* Left: Review Area */}
         <div className="flex-1 w-full bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-gray-100">
-          <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-2">
+          <p className="text-[10px] font-bold text-(--accent-600) uppercase tracking-widest mb-2">
             Step 2 of 2
           </p>
           <h2 className="text-2xl font-bold text-[#111] mb-6">Review and submit</h2>
@@ -147,7 +147,7 @@ export default function ReviewPaymentPage() {
                   type="button"
                   onClick={() => openProof(draft.proofFileName!)}
                   disabled={previewLoading}
-                  className="flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-800 transition-colors max-w-[200px]"
+                  className="flex items-center gap-1.5 text-sm font-medium text-(--accent-600) hover:text-(--accent-800) transition-colors max-w-[200px]"
                 >
                   <FileText size={16} className="shrink-0" />
                   <span className="truncate">{previewLoading ? "Opening..." : draft.proofFileName.split('/').pop() || "Document"}</span>

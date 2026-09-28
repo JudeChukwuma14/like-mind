@@ -225,8 +225,8 @@ export default function LoanApprovalTiersPage() {
         <ArrowLeft className="h-4 w-4" /> Back to loans
       </Link>
       <header className="relative overflow-hidden rounded-3xl bg-[#181817] p-6 text-white md:p-8">
-        <div className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-cyan-400/15 blur-3xl" />
-        <p className="relative text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-300">
+        <div className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-(--accent-400)/15 blur-3xl" />
+        <p className="relative text-[10px] font-bold uppercase tracking-[0.2em] text-(--accent-300)">
           Loan governance
         </p>
         <h1 className="relative mt-2 text-3xl font-bold tracking-tight">
@@ -296,7 +296,7 @@ export default function LoanApprovalTiersPage() {
                   ordered[0].minAmount !== 0 && (
                     <p
                       role="alert"
-                      className="rounded-2xl border border-cyan-300 bg-cyan-50 p-4 text-sm text-cyan-900"
+                      className="rounded-2xl border border-(--accent-300) bg-(--accent-50) p-4 text-sm text-(--accent-900)"
                     >
                       The lowest tier currently starts at{" "}
                       {formatMoney(ordered[0].minAmount)}. Change its minimum to
@@ -307,7 +307,7 @@ export default function LoanApprovalTiersPage() {
                   ordered[ordered.length - 1].maxAmount !== null && (
                     <p
                       role="alert"
-                      className="rounded-2xl border border-cyan-300 bg-cyan-50 p-4 text-sm text-cyan-900"
+                      className="rounded-2xl border border-(--accent-300) bg-(--accent-50) p-4 text-sm text-(--accent-900)"
                     >
                       The final tier currently ends at{" "}
                       {formatMoney(
@@ -334,11 +334,11 @@ export default function LoanApprovalTiersPage() {
                         style={isFinal ? { borderColor: "#22d3ee", boxShadow: "0 0 0 1px #22d3ee" } : { borderColor: "var(--admin-border)" }}
                       >
                         <div className="mb-3 flex flex-wrap items-center gap-2">
-                          <p className="text-xs font-bold uppercase tracking-wider text-cyan-600">
+                          <p className="text-xs font-bold uppercase tracking-wider text-(--accent-600)">
                             Tier {index + 1}
                           </p>
                           {isFinal && (
-                            <span className="rounded-full bg-cyan-500 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
+                            <span className="rounded-full bg-(--accent-500) px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
                               Final band · must stay open-ended
                             </span>
                           )}
@@ -374,7 +374,7 @@ export default function LoanApprovalTiersPage() {
                                   resortIfSafe(matched);
                                   setFormError(null);
                                 }}
-                                className="justify-self-start text-[11px] font-semibold text-cyan-700 underline underline-offset-2"
+                                className="justify-self-start text-[11px] font-semibold text-(--accent-700) underline underline-offset-2"
                               >
                                 Must start at exactly {formatMoney(previousInOrder.maxAmount ?? undefined)} — use this
                               </button>
@@ -506,7 +506,7 @@ export default function LoanApprovalTiersPage() {
                               );
                               setFormError(null);
                             }}
-                            className="rounded-full border border-cyan-400 px-4 py-2.5 text-sm font-semibold text-cyan-700"
+                            className="rounded-full border border-(--accent-400) px-4 py-2.5 text-sm font-semibold text-(--accent-700)"
                           >
                             Make final tier open-ended
                           </button>
@@ -558,7 +558,7 @@ export default function LoanApprovalTiersPage() {
           {canReview && (
             <section className="card-admin rounded-3xl p-5 md:p-7">
               <div className="flex items-center gap-3">
-                <ShieldCheck className="h-5 w-5 text-cyan-500" />
+                <ShieldCheck className="h-5 w-5 text-(--accent-500)" />
                 <h2 className="text-xl font-semibold">Pending proposals</h2>
               </div>
               {permissions.isRootAdmin && (
@@ -602,7 +602,7 @@ export default function LoanApprovalTiersPage() {
                       >
                         <div className="flex flex-wrap items-start justify-between gap-3">
                           <div>
-                            <p className="text-xs font-bold uppercase tracking-widest text-cyan-600">
+                            <p className="text-xs font-bold uppercase tracking-widest text-(--accent-600)">
                               Proposal {id ? id.slice(0, 8) : index + 1}
                             </p>
                             <p className="mt-1 text-sm admin-text-muted">
@@ -616,7 +616,7 @@ export default function LoanApprovalTiersPage() {
                               required
                             </p>
                             {ownProposal && permissions.isRootAdmin && (
-                              <p className="mt-1 text-xs text-cyan-700">
+                              <p className="mt-1 text-xs text-(--accent-700)">
                                 Your proposal · Review attempt
                               </p>
                             )}
@@ -651,7 +651,7 @@ export default function LoanApprovalTiersPage() {
                               </button>
                             </div>
                           ) : ownProposal ? (
-                            <span className="rounded-full bg-cyan-100 px-3 py-1 text-xs font-semibold text-cyan-800">
+                            <span className="rounded-full bg-(--accent-100) px-3 py-1 text-xs font-semibold text-(--accent-800)">
                               Your proposal · review unavailable
                             </span>
                           ) : (
@@ -881,7 +881,7 @@ export default function LoanApprovalTiersPage() {
             {review.proposerId === user?.id && (
               <p
                 role="note"
-                className="mt-3 rounded-xl border border-cyan-300 bg-cyan-50 p-3 text-xs text-cyan-900"
+                className="mt-3 rounded-xl border border-(--accent-300) bg-(--accent-50) p-3 text-xs text-(--accent-900)"
               >
                 You proposed this change.
               </p>

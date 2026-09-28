@@ -10,11 +10,13 @@
   border-radius: 0.75rem;
   border: 1px solid #e5e7eb;
   background: #fff;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 .likemind-phone-input.PhoneInput:focus-within {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+  border-color: #f8d800;
+  box-shadow: 0 0 0 2px rgba(248, 216, 0, 0.3);
 }
 .likemind-phone-input .PhoneInputInput {
   border: none;
@@ -47,58 +49,64 @@
   box-shadow: 0 0 0 2px rgba(245, 197, 24, 0.3);
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   THEME SYSTEM
-   Driven by data-theme="light|dark" on <html>.
-   Set by inline script in app/layout.tsx before first paint.
-   ═══════════════════════════════════════════════════════════════ */
 
-/* ── Light theme ────────────────────────────────────────────── */
 [data-theme="light"] {
   color-scheme: light;
 
   /* Global surface */
-  --bg:            #f6f4eb;
-  --bg-elevated:   #ffffff;
-  --fg:            #111111;
-  --fg-muted:      #6b7280;
-  --border:        #e5e7eb;
-  --border-subtle: rgba(0,0,0,0.06);
+  --bg: #f6f4eb;
+  --bg-elevated: #ffffff;
+  --fg: #111111;
+  --fg-muted: #6b7280;
+  --border: #e5e7eb;
+  --border-subtle: rgba(0, 0, 0, 0.06);
 
   /* Marketing / Landing */
-  --mkt-bg:        #f6f4eb;
-  --mkt-card:      #ffffff;
-  --mkt-text:      #111111;
-  --mkt-muted:     #6b7280;
-  --mkt-border:    #e5e7eb;
-  --mkt-accent:    #a89f91;
+  --mkt-bg: #f6f4eb;
+  --mkt-card: #ffffff;
+  --mkt-text: #111111;
+  --mkt-muted: #6b7280;
+  --mkt-border: #e5e7eb;
+  --mkt-accent: #a89f91;
 
-  /* User dashboard */
-  --dash-bg:       #f4efe6;
-  --dash-surface:  #ffffff;
-  --dash-border:   #e2ddd6;
-  --dash-primary:  #f59e0b;
-  --dash-accent:   #22d3ee;
-  --dash-text:     #171717;
-  --dash-muted:    #737373;
+  /* User dashboard — Likeminds brand: golden yellow primary, charcoal text, cream neutrals */
+  --dash-bg: #fbf8ef;
+  --dash-surface: #ffffff;
+  --dash-border: #ede6d0;
+  --dash-primary: #f8d800;
+  --dash-accent: #f8d800;
+  --dash-text: #1f1f1f;
+  --dash-muted: #6b6558;
 
   /* Admin */
-  --admin-bg:      #fcfbf8;
+  --admin-bg: #fbf8ef;
   --admin-surface: #ffffff;
-  --admin-border:  #e5e0d8;
-  --admin-primary: #fcd34d;
-  --admin-accent:  #ef4444;
-  --admin-text:    #171717;
-  --admin-muted:   #737373;
+  --admin-border: #ede6d0;
+  --admin-primary: #f8d800;
+  --admin-accent: #f8d800;
+  --admin-text: #1f1f1f;
+  --admin-muted: #6b6558;
 
   /* Shared brand */
-  --brand:         #facc15;
-  --brand-fg:      #0a0a0a;
-  --brand-hover:   #fde68a;
+  --brand: #f8d800;
+  --brand-fg: #1f1f1f;
+  --brand-hover: #fbe86a;
+
+  
+  --accent-50: #fefceb;
+  --accent-100: #fef8d2;
+  --accent-200: #fdf1a5;
+  --accent-300: #fbe86a;
+  --accent-400: #fadf2e;
+  --accent-500: #e1c509;
+  --accent-600: #baa308;
+  --accent-700: #988506;
+  --accent-800: #7f7005;
+  --accent-900: #625604;
 
   /* Navbar / dark strip */
-  --nav-bg:        #0a0a0a;
-  --nav-text:      #ffffff;
+  --nav-bg: #0a0a0a;
+  --nav-text: #ffffff;
 }
 
 /* ── Dark theme ─────────────────────────────────────────────── */
@@ -106,47 +114,59 @@
   color-scheme: dark;
 
   /* Global surface */
-  --bg:            #0f0f0f;
-  --bg-elevated:   #1a1a1a;
-  --fg:            #f0ede8;
-  --fg-muted:      #9ca3af;
-  --border:        #2a2a2a;
-  --border-subtle: rgba(255,255,255,0.07);
+  --bg: #0f0f0f;
+  --bg-elevated: #1a1a1a;
+  --fg: #f0ede8;
+  --fg-muted: #9ca3af;
+  --border: #2a2a2a;
+  --border-subtle: rgba(255, 255, 255, 0.07);
 
   /* Marketing / Landing */
-  --mkt-bg:        #0f0f0f;
-  --mkt-card:      #1a1a1a;
-  --mkt-text:      #f0ede8;
-  --mkt-muted:     #9ca3af;
-  --mkt-border:    #2a2a2a;
-  --mkt-accent:    #a89f91;
+  --mkt-bg: #0f0f0f;
+  --mkt-card: #1a1a1a;
+  --mkt-text: #f0ede8;
+  --mkt-muted: #9ca3af;
+  --mkt-border: #2a2a2a;
+  --mkt-accent: #a89f91;
 
-  /* User dashboard */
-  --dash-bg:       #111111;
-  --dash-surface:  #0d0d0d;
-  --dash-border:   #2a2a2a;
-  --dash-primary:  #f59e0b;
-  --dash-accent:   #22d3ee;
-  --dash-text:     #f0ede8;
-  --dash-muted:    #9ca3af;
+  /* User dashboard — dark charcoal surfaces (the supporting color) with the same golden yellow and cream text */
+  --dash-bg: #1f1f1f;
+  --dash-surface: #2a2a28;
+  --dash-border: #3a3a36;
+  --dash-primary: #f8d800;
+  --dash-accent: #f8d800;
+  --dash-text: #f8f4e4;
+  --dash-muted: #b8b2a0;
 
   /* Admin */
-  --admin-bg:      #111111;
-  --admin-surface: #1a1a1a;
-  --admin-border:  #2a2a2a;
-  --admin-primary: #fcd34d;
-  --admin-accent:  #ef4444;
-  --admin-text:    #f0ede8;
-  --admin-muted:   #9ca3af;
+  --admin-bg: #1f1f1f;
+  --admin-surface: #2a2a28;
+  --admin-border: #3a3a36;
+  --admin-primary: #f8d800;
+  --admin-accent: #f8d800;
+  --admin-text: #f8f4e4;
+  --admin-muted: #b8b2a0;
 
   /* Shared brand */
-  --brand:         #facc15;
-  --brand-fg:      #0a0a0a;
-  --brand-hover:   #fde68a;
+  --brand: #f8d800;
+  --brand-fg: #1f1f1f;
+  --brand-hover: #ffed70;
+
+  /* Same brand accent scale as light mode — see the light theme block for why these don't vary by theme. */
+  --accent-50: #fefceb;
+  --accent-100: #fef8d2;
+  --accent-200: #fdf1a5;
+  --accent-300: #fbe86a;
+  --accent-400: #fadf2e;
+  --accent-500: #e1c509;
+  --accent-600: #baa308;
+  --accent-700: #988506;
+  --accent-800: #7f7005;
+  --accent-900: #625604;
 
   /* Navbar */
-  --nav-bg:        #0a0a0a;
-  --nav-text:      #ffffff;
+  --nav-bg: #0a0a0a;
+  --nav-text: #ffffff;
 }
 
 /* ── Legacy support (Tailwind @theme inline) ────────────────── */
@@ -178,7 +198,20 @@ html {
     box-shadow 0.25s ease;
 }
 /* Exclude colour transitions on text to avoid blurry re-renders */
-a, button, span, p, h1, h2, h3, h4, h5, h6, label, input, select, textarea {
+a,
+button,
+span,
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+label,
+input,
+select,
+textarea {
   transition:
     background-color 0.25s ease,
     border-color 0.25s ease,
@@ -191,60 +224,140 @@ a, button, span, p, h1, h2, h3, h4, h5, h6, label, input, select, textarea {
    HERO ANIMATIONS
    ═══════════════════════════════════════════════════════════════ */
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(32px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(32px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 @keyframes floatY {
-  0%, 100% { transform: translateY(0px); }
-  50%       { transform: translateY(-12px); }
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
 }
 @keyframes shimmer {
-  0%   { background-position: -200% center; }
-  100% { background-position: 200% center; }
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
 }
 @keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.92); }
-  to   { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 @keyframes slideDown {
-  from { opacity: 0; transform: translateY(-16px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(250,204,21,0.4); }
-  50%       { box-shadow: 0 0 24px 8px rgba(250,204,21,0.15); }
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(248, 216, 0, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 24px 8px rgba(248, 216, 0, 0.15);
+  }
 }
 @keyframes marquee {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
 }
 @keyframes countUp {
-  from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.animate-fade-up       { animation: fadeUp 0.7s ease-out both; }
-.animate-fade-in       { animation: fadeIn 0.7s ease-out both; }
-.animate-scale-in      { animation: scaleIn 0.6s ease-out both; }
-.animate-float         { animation: floatY 5s ease-in-out infinite; }
-.animate-slide-down    { animation: slideDown 0.4s ease-out both; }
-.animate-pulse-glow    { animation: pulse-glow 2.5s ease-in-out infinite; }
-.animate-marquee       { animation: marquee 30s linear infinite; }
+.animate-fade-up {
+  animation: fadeUp 0.7s ease-out both;
+}
+.animate-fade-in {
+  animation: fadeIn 0.7s ease-out both;
+}
+.animate-scale-in {
+  animation: scaleIn 0.6s ease-out both;
+}
+.animate-float {
+  animation: floatY 5s ease-in-out infinite;
+}
+.animate-slide-down {
+  animation: slideDown 0.4s ease-out both;
+}
+.animate-pulse-glow {
+  animation: pulse-glow 2.5s ease-in-out infinite;
+}
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+}
 
-.delay-100  { animation-delay: 0.1s; }
-.delay-200  { animation-delay: 0.2s; }
-.delay-300  { animation-delay: 0.3s; }
-.delay-400  { animation-delay: 0.4s; }
-.delay-500  { animation-delay: 0.5s; }
-.delay-600  { animation-delay: 0.6s; }
-.delay-700  { animation-delay: 0.7s; }
+.delay-100 {
+  animation-delay: 0.1s;
+}
+.delay-200 {
+  animation-delay: 0.2s;
+}
+.delay-300 {
+  animation-delay: 0.3s;
+}
+.delay-400 {
+  animation-delay: 0.4s;
+}
+.delay-500 {
+  animation-delay: 0.5s;
+}
+.delay-600 {
+  animation-delay: 0.6s;
+}
+.delay-700 {
+  animation-delay: 0.7s;
+}
 
 .shimmer-text {
-  background: linear-gradient(90deg, #facc15 0%, #fde68a 40%, #facc15 60%, #b45309 100%);
+  background: linear-gradient(
+    90deg,
+    #facc15 0%,
+    #fde68a 40%,
+    #facc15 60%,
+    #b45309 100%
+  );
   background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -257,33 +370,67 @@ a, button, span, p, h1, h2, h3, h4, h5, h6, label, input, select, textarea {
    ═══════════════════════════════════════════════════════════════ */
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: rgba(156,163,175,0.5) transparent;
+  scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
 }
-.custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
-.custom-scrollbar::-webkit-scrollbar-track  { background: transparent; }
-.custom-scrollbar::-webkit-scrollbar-thumb  { background-color: rgba(156,163,175,0.5); border-radius: 20px; }
-.custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: rgba(156,163,175,0.8); }
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.5);
+  border-radius: 20px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(156, 163, 175, 0.8);
+}
 
 .dark-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,0.15) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
 }
-.dark-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
-.dark-scrollbar::-webkit-scrollbar-track  { background: transparent; }
-.dark-scrollbar::-webkit-scrollbar-thumb  { background-color: rgba(255,255,255,0.15); border-radius: 20px; }
-.dark-scrollbar::-webkit-scrollbar-thumb:hover { background-color: rgba(255,255,255,0.25); }
+.dark-scrollbar::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+.dark-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.dark-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+}
+.dark-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.25);
+}
 
 html {
   scrollbar-width: thin;
   scrollbar-color: #cbd5e1 var(--bg);
 }
-::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background-color: #94a3b8; }
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: #94a3b8;
+}
 
-[data-theme="dark"] ::-webkit-scrollbar-thumb { background-color: #374151; }
-[data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background-color: #4b5563; }
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background-color: #374151;
+}
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background-color: #4b5563;
+}
 
 /* ═══════════════════════════════════════════════════════════════
    SEMANTIC UTILITY CLASSES
@@ -292,32 +439,72 @@ html {
    ═══════════════════════════════════════════════════════════════ */
 
 /* ── Global surface ─────────────────────────────────────────── */
-.bg-theme          { background: var(--bg); }
-.bg-surface        { background: var(--bg-elevated); }
-.text-theme        { color: var(--fg); }
-.text-muted        { color: var(--fg-muted); }
-.border-theme      { border-color: var(--border); }
+.bg-theme {
+  background: var(--bg);
+}
+.bg-surface {
+  background: var(--bg-elevated);
+}
+.text-theme {
+  color: var(--fg);
+}
+.text-muted {
+  color: var(--fg-muted);
+}
+.border-theme {
+  border-color: var(--border);
+}
 
 /* ── Dashboard (user) ───────────────────────────────────────── */
-.dash-bg           { background: var(--dash-bg); }
-.dash-surface      { background: var(--dash-surface); }
-.dash-text         { color: var(--dash-text); }
-.dash-text-muted   { color: var(--dash-muted); }
-.dash-border       { border-color: var(--dash-border); }
+.dash-bg {
+  background: var(--dash-bg);
+}
+.dash-surface {
+  background: var(--dash-surface);
+}
+.dash-text {
+  color: var(--dash-text);
+}
+.dash-text-muted {
+  color: var(--dash-muted);
+}
+.dash-border {
+  border-color: var(--dash-border);
+}
 
 /* ── Admin ──────────────────────────────────────────────────── */
-.admin-bg          { background: var(--admin-bg); }
-.admin-surface     { background: var(--admin-surface); }
-.admin-text        { color: var(--admin-text); }
-.admin-text-muted  { color: var(--admin-muted); }
-.admin-border      { border-color: var(--admin-border); }
+.admin-bg {
+  background: var(--admin-bg);
+}
+.admin-surface {
+  background: var(--admin-surface);
+}
+.admin-text {
+  color: var(--admin-text);
+}
+.admin-text-muted {
+  color: var(--admin-muted);
+}
+.admin-border {
+  border-color: var(--admin-border);
+}
 
 /* ── Marketing ──────────────────────────────────────────────── */
-.mkt-bg            { background: var(--mkt-bg); }
-.mkt-card          { background: var(--mkt-card); }
-.mkt-text          { color: var(--mkt-text); }
-.mkt-text-muted    { color: var(--mkt-muted); }
-.mkt-border        { border-color: var(--mkt-border); }
+.mkt-bg {
+  background: var(--mkt-bg);
+}
+.mkt-card {
+  background: var(--mkt-card);
+}
+.mkt-text {
+  color: var(--mkt-text);
+}
+.mkt-text-muted {
+  color: var(--mkt-muted);
+}
+.mkt-border {
+  border-color: var(--mkt-border);
+}
 
 /* ── Reusable component patterns ────────────────────────────── */
 .card-theme {
@@ -374,11 +561,13 @@ html {
 .admin-workload-card {
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition:
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
 }
 .admin-workload-card:hover {
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   border-color: var(--admin-primary);
 }
 
@@ -389,15 +578,23 @@ html {
   transition: box-shadow 0.2s ease;
 }
 .dash-card-hover:hover {
-  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
 /* ── Hover Utilities (replaces onMouseEnter/onMouseLeave JS) ─── */
 .hover-dash-border-mix:hover {
-  background-color: color-mix(in srgb, var(--dash-border) 60%, transparent) !important;
+  background-color: color-mix(
+    in srgb,
+    var(--dash-border) 60%,
+    transparent
+  ) !important;
 }
 .hover-dash-border-mix-50:not(.active):hover {
-  background-color: color-mix(in srgb, var(--dash-border) 50%, transparent) !important;
+  background-color: color-mix(
+    in srgb,
+    var(--dash-border) 50%,
+    transparent
+  ) !important;
 }
 .hover-dash-bg:hover {
   background-color: var(--dash-bg) !important;
@@ -411,4 +608,3 @@ html {
 .hover-mkt-text:hover {
   color: var(--mkt-text) !important;
 }
-

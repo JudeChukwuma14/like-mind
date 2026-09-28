@@ -892,7 +892,7 @@ function TabButton({
                 }
               : highlight && count > 0
                 ? {
-                    background: "rgba(252,211,77,0.2)",
+                    background: "color-mix(in srgb, var(--admin-primary) 20%, transparent)",
                     color: "var(--admin-primary)",
                   }
                 : {

@@ -55,7 +55,7 @@ export function SearchableSelect<T extends SearchableItem>({
         type="button"
         disabled={disabled}
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white text-left disabled:bg-gray-50/50 disabled:text-gray-400 disabled:cursor-not-allowed"
+        className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-gray-200 focus:border-(--accent-500) focus:ring-2 focus:ring-(--accent-200) outline-none transition-all bg-white text-left disabled:bg-gray-50/50 disabled:text-gray-400 disabled:cursor-not-allowed"
       >
         <span className="flex items-center gap-2 truncate">
           {selected ? (

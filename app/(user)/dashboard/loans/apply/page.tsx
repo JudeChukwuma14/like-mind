@@ -103,8 +103,8 @@ export default function ApplyForLoanPage({ searchParams }: { searchParams: Apply
         <ArrowLeft className="h-4 w-4" /> Back to loans
       </Link>
       <header className="relative overflow-hidden rounded-3xl bg-[#181817] p-6 text-white md:p-8">
-        <div className="pointer-events-none absolute -right-12 -top-20 h-52 w-52 rounded-full bg-cyan-400/15 blur-3xl" />
-        <p className="relative text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-300">Application</p>
+        <div className="pointer-events-none absolute -right-12 -top-20 h-52 w-52 rounded-full bg-(--accent-400)/15 blur-3xl" />
+        <p className="relative text-[10px] font-bold uppercase tracking-[0.2em] text-(--accent-300)">Application</p>
         <h1 className="relative mt-2 text-3xl font-bold tracking-tight">Apply for a loan</h1>
         <p className="relative mt-2 max-w-xl text-sm leading-6 text-white/65">
           Your cooperative&apos;s policy is checked when you submit, so its allowed term may be shorter than the calculator range.
@@ -112,7 +112,7 @@ export default function ApplyForLoanPage({ searchParams }: { searchParams: Apply
       </header>
 
       {(principal || tenure) && (
-        <div className="flex flex-col gap-3 rounded-2xl border border-indigo-100 bg-indigo-50 p-4 text-sm text-indigo-900 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 rounded-2xl border border-(--accent-100) bg-(--accent-50) p-4 text-sm text-(--accent-900) sm:flex-row sm:items-center sm:justify-between">
           <span className="inline-flex items-center gap-2"><Calculator className="h-4 w-4" /> Values carried over from your calculation.</span>
           <Link href="/dashboard/loans/calculate" className="font-semibold underline underline-offset-2">Recalculate</Link>
         </div>
@@ -131,7 +131,7 @@ export default function ApplyForLoanPage({ searchParams }: { searchParams: Apply
               onChange={(event) => { setPrincipal(event.target.value); setPolicyTenureMax(undefined); clearField("amount"); }}
               aria-invalid={Boolean(error?.fieldErrors.amount)}
               aria-describedby="apply-amount-help apply-amount-error"
-              className={`input-dash rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-400/30 ${error?.fieldErrors.amount ? "ring-2 ring-red-400" : ""}`}
+              className={`input-dash rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-(--accent-400)/30 ${error?.fieldErrors.amount ? "ring-2 ring-red-400" : ""}`}
             />
             <span id="apply-amount-help" className="text-xs font-normal dash-text-muted">
               The cooperative policy checks the amount when you submit.
@@ -151,7 +151,7 @@ export default function ApplyForLoanPage({ searchParams }: { searchParams: Apply
               onChange={(event) => { setTenure(event.target.value); clearField("tenure"); }}
               aria-invalid={Boolean(error?.fieldErrors.tenure)}
               aria-describedby="apply-tenure-help apply-tenure-error"
-              className={`input-dash rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-400/30 ${error?.fieldErrors.tenure ? "ring-2 ring-red-400" : ""}`}
+              className={`input-dash rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-(--accent-400)/30 ${error?.fieldErrors.tenure ? "ring-2 ring-red-400" : ""}`}
             />
             <span id="apply-tenure-help" className="text-xs font-normal dash-text-muted">
               {policyTenureMax
@@ -163,7 +163,7 @@ export default function ApplyForLoanPage({ searchParams }: { searchParams: Apply
               <button
                 type="button"
                 onClick={() => { setTenure(String(error.suggestedTenure)); clearField("tenure"); }}
-                className="justify-self-start rounded-full bg-cyan-100 px-3 py-1.5 text-xs font-bold text-cyan-900"
+                className="justify-self-start rounded-full bg-(--accent-100) px-3 py-1.5 text-xs font-bold text-(--accent-900)"
               >
                 Use {error.suggestedTenure} months
               </button>
@@ -179,7 +179,7 @@ export default function ApplyForLoanPage({ searchParams }: { searchParams: Apply
             value={purpose}
             onChange={(event) => { setPurpose(event.target.value); clearField("purpose"); }}
             aria-invalid={Boolean(error?.fieldErrors.purpose)}
-            className={`input-dash resize-y rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-400/30 ${error?.fieldErrors.purpose ? "ring-2 ring-red-400" : ""}`}
+            className={`input-dash resize-y rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-(--accent-400)/30 ${error?.fieldErrors.purpose ? "ring-2 ring-red-400" : ""}`}
           />
           {error?.fieldErrors.purpose && <span className="text-xs font-medium text-red-600">{error.fieldErrors.purpose}</span>}
         </label>
@@ -187,7 +187,7 @@ export default function ApplyForLoanPage({ searchParams }: { searchParams: Apply
         <fieldset className="space-y-3">
           <div className="flex items-center justify-between">
             <legend className="text-sm font-semibold">Guarantor email addresses</legend>
-            <button type="button" onClick={() => setContacts((items) => [...items, ""])} className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600">
+            <button type="button" onClick={() => setContacts((items) => [...items, ""])} className="inline-flex items-center gap-1 text-xs font-bold text-(--accent-600)">
               <Plus className="h-4 w-4" /> Add email
             </button>
           </div>
@@ -218,7 +218,7 @@ export default function ApplyForLoanPage({ searchParams }: { searchParams: Apply
         </fieldset>
 
         <label className={`flex cursor-pointer items-center gap-4 rounded-2xl border border-dashed p-5 ${error?.fieldErrors.file ? "border-red-400" : ""}`} style={!error?.fieldErrors.file ? { borderColor: "var(--dash-border)" } : undefined}>
-          <Upload className="h-6 w-6 text-cyan-500" />
+          <Upload className="h-6 w-6 text-(--accent-500)" />
           <span className="min-w-0"><span className="block text-sm font-semibold">Bank statement file</span><span className="block truncate text-xs dash-text-muted">{file?.name ?? "Choose a file"}</span></span>
           <input type="file" onChange={(event) => { setFile(event.target.files?.[0] ?? null); clearField("file"); }} className="sr-only" />
         </label>

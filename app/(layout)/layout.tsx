@@ -96,9 +96,15 @@ function Navbar() {
             onClick={() => setMenuOpen(!menuOpen)}
             aria-label="Toggle menu"
           >
-            <span className={`block h-0.5 bg-white rounded-full transition-all duration-300 ${menuOpen ? "w-6 rotate-45 translate-y-2" : "w-6"}`} />
-            <span className={`block h-0.5 bg-white rounded-full transition-all duration-300 ${menuOpen ? "opacity-0 w-0" : "w-5"}`} />
-            <span className={`block h-0.5 bg-white rounded-full transition-all duration-300 ${menuOpen ? "w-6 -rotate-45 -translate-y-2" : "w-6"}`} />
+            <span
+              className={`block h-0.5 bg-white rounded-full transition-all duration-300 ${menuOpen ? "w-6 rotate-45 translate-y-2" : "w-6"}`}
+            />
+            <span
+              className={`block h-0.5 bg-white rounded-full transition-all duration-300 ${menuOpen ? "opacity-0 w-0" : "w-5"}`}
+            />
+            <span
+              className={`block h-0.5 bg-white rounded-full transition-all duration-300 ${menuOpen ? "w-6 -rotate-45 -translate-y-2" : "w-6"}`}
+            />
           </button>
         </div>
       </div>
@@ -164,15 +170,20 @@ function Footer() {
         <div className="flex flex-col md:flex-row justify-between items-start gap-12 mb-12">
           {/* Brand */}
           <div className="flex flex-col gap-4 max-w-xs">
-            <Image
-              src="/Likemind.png"
-              alt="LikeMinds Cooperative Logo"
-              width={100}
-              height={100}
-              className="object-contain"
-              style={{ width: "auto", height: "auto" }}
-            />
-            <p className="text-sm leading-relaxed" style={{ color: "var(--mkt-muted)" }}>
+            <Link href="/" className="flex items-center group shrink-0">
+              <Image
+                src="/Likemind.png"
+                alt="LikeMinds Cooperative Logo"
+                width={70}
+                height={70}
+                className="object-contain transition-transform duration-300 group-hover:scale-105"
+                style={{ width: "auto", height: "auto" }}
+              />
+            </Link>
+            <p
+              className="text-sm leading-relaxed"
+              style={{ color: "var(--mkt-muted)" }}
+            >
               A member-owned cooperative pooling capital across real estate,
               agriculture, tech and welfare since 2014.
             </p>
@@ -224,9 +235,14 @@ function Footer() {
         {/* Bottom bar */}
         <div
           className="pt-8 border-t flex flex-col md:flex-row items-center justify-between gap-4 text-xs font-medium"
-          style={{ borderColor: "var(--mkt-border)", color: "var(--mkt-muted)" }}
+          style={{
+            borderColor: "var(--mkt-border)",
+            color: "var(--mkt-muted)",
+          }}
         >
-          <p>© 2026 LikeMinds Cooperative · Federally registered Canadian co-op</p>
+          <p>
+            © 2026 LikeMinds Cooperative · Federally registered Canadian co-op
+          </p>
           <div className="flex gap-6">
             {["Privacy", "Terms", "Accessibility"].map((t) => (
               <Link
@@ -250,7 +266,10 @@ export default function MarketingLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "var(--mkt-bg)" }}>
+    <div
+      className="min-h-screen flex flex-col"
+      style={{ background: "var(--mkt-bg)" }}
+    >
       <Navbar />
       <main className="flex-1 pt-16">{children}</main>
       <Footer />

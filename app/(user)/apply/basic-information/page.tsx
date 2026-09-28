@@ -51,7 +51,7 @@ export default function BasicInformationPage() {
                     required
                     value={data.title}
                     onChange={(e) => setData({ title: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white appearance-none"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-(--accent-500) focus:ring-2 focus:ring-(--accent-200) outline-none transition-all bg-white appearance-none"
                   >
                     <option value="">Select</option>
                     <option value="Mr">Mr</option>
@@ -71,7 +71,7 @@ export default function BasicInformationPage() {
                   required
                   value={data.firstName}
                   onChange={(e) => setData({ firstName: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-(--accent-500) focus:ring-2 focus:ring-(--accent-200) outline-none transition-all bg-white"
                   placeholder="Alexandra"
                 />
               </div>
@@ -81,7 +81,7 @@ export default function BasicInformationPage() {
                   type="text"
                   value={data.middleName}
                   onChange={(e) => setData({ middleName: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-(--accent-500) focus:ring-2 focus:ring-(--accent-200) outline-none transition-all bg-white"
                   placeholder="Smith"
                 />
               </div>
@@ -92,7 +92,7 @@ export default function BasicInformationPage() {
                   required
                   value={data.lastName}
                   onChange={(e) => setData({ lastName: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-(--accent-500) focus:ring-2 focus:ring-(--accent-200) outline-none transition-all bg-white"
                   placeholder="Morgan"
                 />
               </div>
@@ -129,7 +129,7 @@ export default function BasicInformationPage() {
                     max={new Date().toISOString().slice(0, 10)}
                     value={data.dob}
                     onChange={(e) => setData({ dob: e.target.value })}
-                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white text-gray-700 appearance-none"
+                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-(--accent-500) focus:ring-2 focus:ring-(--accent-200) outline-none transition-all bg-white text-gray-700 appearance-none"
                   />
                 </div>
               </div>
@@ -143,7 +143,7 @@ export default function BasicInformationPage() {
                   required
                   value={data.residencyStatus}
                   onChange={(e) => setData({ residencyStatus: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-(--accent-500) focus:ring-2 focus:ring-(--accent-200) outline-none transition-all bg-white"
                   placeholder="e.g. Citizen, Permanent Resident, Visa holder"
                 />
               </div>
@@ -154,7 +154,7 @@ export default function BasicInformationPage() {
                   required
                   value={data.provinceOfResidence}
                   onChange={(e) => setData({ provinceOfResidence: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-(--accent-500) focus:ring-2 focus:ring-(--accent-200) outline-none transition-all bg-white"
                   placeholder="e.g. Ontario, British Columbia, Alberta"
                 />
               </div>
