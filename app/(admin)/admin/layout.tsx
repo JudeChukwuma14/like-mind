@@ -31,7 +31,6 @@ import { ThemeToggle } from "@/app/components/ThemeToggle";
 import Image from "next/image";
 import { useRequireAdminAuth } from "./useAdminGuard";
 import { useAdminAuth } from "@/app/providers/AdminAuthProvider";
-import { CooperativeSelectionProvider } from "@/app/providers/CooperativeSelectionProvider";
 
 /** "RootAdmin" -> "Root Admin" */
 function humanizeRole(role: string): string {
@@ -41,13 +40,21 @@ function humanizeRole(role: string): string {
 function initialsFor(label: string): string {
   const parts = label.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return "?";
-  return parts.slice(0, 2).map((p) => p[0]!.toUpperCase()).join("");
+  return parts
+    .slice(0, 2)
+    .map((p) => p[0]!.toUpperCase())
+    .join("");
 }
 
 /* ─── Nav items matching image: Overview, Applications, Members,
        Contributions, Loans, Investment, Withdrawals, Reports,
        Announcements, Audit logs, Settings ───────────────────── */
-type NavItem = { href: string; label: string; icon: LucideIcon; badge?: number };
+type NavItem = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  badge?: number;
+};
 
 const navGroups: { label: string; items: NavItem[] }[] = [
   {
@@ -65,7 +72,11 @@ const navGroups: { label: string; items: NavItem[] }[] = [
       { href: "/admin/loans", label: "Loans", icon: HandCoins },
       { href: "/admin/investments", label: "Investment", icon: TrendingUp },
       { href: "/admin/withdrawals", label: "Withdrawals", icon: ArrowUpRight },
-      { href: "/admin/contacts", label: "Contact Messages", icon: MessageSquare },
+      {
+        href: "/admin/contacts",
+        label: "Contact Messages",
+        icon: MessageSquare,
+      },
     ],
   },
   {
@@ -92,7 +103,10 @@ function pageTitleFor(pathname: string): { category: string; title: string } {
     i.href === "/admin" ? pathname === "/admin" : pathname.startsWith(i.href),
   );
   const group = item && navGroups.find((g) => g.items.includes(item));
-  return { category: group?.label || "OVERVIEW", title: item?.label ?? "Dashboard" };
+  return {
+    category: group?.label || "OVERVIEW",
+    title: item?.label ?? "Dashboard",
+  };
 }
 
 /* ─── Sidebar ───────────────────────────────────────────────── */
@@ -144,21 +158,14 @@ function AdminSidebar({
         }}
       >
         <Link href="/" className="flex items-center gap-3 min-w-0">
-          {/* <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold shrink-0 text-black"
-            style={{ background: "var(--admin-primary)" }}
-          >
-            L
-          </div>
-          {!collapsed && (
-            <span
-              className="font-bold truncate text-lg"
-              style={{ color: "var(--admin-text)" }}
-            >
-              LikeMind
-            </span>
-          )} */}
-          <Image src="/Likemind.png" alt="Logo" width={50} height={50} style={{ width: "auto", height: "auto" }} />
+      
+          <Image
+            src="/Likemind.png"
+            alt="Logo"
+            width={50}
+            height={50}
+            style={{ width: "auto", height: "auto" }}
+          />
         </Link>
 
         {/* Collapse toggle — desktop only */}
@@ -201,15 +208,18 @@ function AdminSidebar({
                       style={
                         active
                           ? {
-                              background: "rgba(245,158,11,0.15)",
-                              color: "#f59e0b",
+                              background: "#facc15",
+                              color: "#0a0a0a",
                             }
                           : {
                               color: "var(--admin-muted)",
                             }
                       }
                     >
-                      <item.icon className="w-[18px] h-[18px] shrink-0" strokeWidth={2} />
+                      <item.icon
+                        className="w-[18px] h-[18px] shrink-0"
+                        strokeWidth={2}
+                      />
                       {!collapsed && (
                         <span className="truncate flex-1">{item.label}</span>
                       )}
@@ -352,18 +362,25 @@ function AdminTopbar({
           onClick={onMobileToggle}
           aria-label={mobileOpen ? "Close menu" : "Open menu"}
         >
-          {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          {mobileOpen ? (
+            <X className="w-5 h-5" />
+          ) : (
+            <Menu className="w-5 h-5" />
+          )}
         </button>
 
         {/* Page title */}
         <div className="min-w-0 hidden sm:block">
           <p
             className="text-[10px] font-bold uppercase tracking-widest mb-0.5"
-            style={{ color: "#f59e0b" }}
+            style={{ color: "#0891b2" }}
           >
             {category}
           </p>
-          <h1 className="text-lg font-bold truncate" style={{ color: "var(--admin-text)" }}>
+          <h1
+            className="text-lg font-bold truncate"
+            style={{ color: "var(--admin-text)" }}
+          >
             {title}
           </h1>
         </div>
@@ -424,7 +441,6 @@ export default function AdminDashboardLayout({
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const { isAuthenticated, isLoading } = useRequireAdminAuth();
-  const { user } = useAdminAuth();
 
   const sidebarWidth = collapsed ? 72 : 220;
 
@@ -467,9 +483,7 @@ export default function AdminDashboardLayout({
           }}
         >
           <div className="p-4 md:p-8 lg:px-12 lg:py-10 max-w-[1200px]">
-            <CooperativeSelectionProvider key={`${user?.id ?? ""}:${String(user?.claims.jti ?? "")}`}>
-              {children}
-            </CooperativeSelectionProvider>
+            {children}
           </div>
         </div>
       </main>

@@ -4,10 +4,20 @@
  */
 import { ApiError, adminApiFetch, memberProfileApiFetch } from "@/app/lib/api-client";
 
-/** Validation limits returned by GET /api/Loan/Calculate. */
+/**
+ * Structural floors only — NOT a policy ceiling. The real maximum loan amount
+ * and term come from each cooperative's Loan Policy (`maximumAmountAllowed`,
+ * `maxTermMonths` — see loan-governance-api.ts), which members have no way to
+ * read directly (getLoanPolicy is admin-only). Never hardcode an upper bound
+ * here: a fixed max would silently block a member from a figure their actual
+ * policy allows, and would go stale the moment an admin changes it. Let the
+ * backend reject an out-of-policy figure and surface its real message instead
+ * (see getLoanErrorDetails's suggestedTenure, which learns the true tenure
+ * ceiling from a live rejection rather than assuming one upfront).
+ */
 export const LOAN_CALCULATOR_LIMITS = {
-  amount: { min: 100, max: 6000 },
-  tenureMonths: { min: 1, max: 60 },
+  amount: { min: 0.01 },
+  tenureMonths: { min: 1 },
 } as const;
 
 export const LOAN_STATUSES = [
@@ -50,7 +60,8 @@ export type GetLoansParams = {
 
 export type LoanApprovalTier = {
   minAmount: number;
-  maxAmount: number;
+  /** null = open-ended (no upper limit) — every real tier ladder needs exactly one, on its last tier. */
+  maxAmount: number | null;
   requiredApprovals: number;
 };
 
@@ -219,19 +230,49 @@ export function repayFromSavings(installmentId: string, amountPaid: number): Pro
   }).then(ensureSuccessfulResponse);
 }
 
-export function submitRepaymentProof(installmentId: string, payload: RepaymentProofPayload): Promise<unknown> {
+export type SubmitRepaymentProofResult = {
+  /**
+   * The id of the LoanRepaymentClaim this creates, if the (undocumented)
+   * response includes one under any of the usual names. The backend has no
+   * way for an admin to discover a pending claim on their own — see
+   * reviewRepaymentClaim below — so this is currently the ONLY way a claim id
+   * reaches anyone: the member has to read it here and pass it along.
+   */
+  claimId: string | undefined;
+  raw: unknown;
+};
+
+export async function submitRepaymentProof(installmentId: string, payload: RepaymentProofPayload): Promise<SubmitRepaymentProofResult> {
   const formData = new FormData();
   formData.append("AmountPaid", String(payload.AmountPaid));
   formData.append("ProofFile", payload.ProofFile);
   if (payload.Note?.trim()) formData.append("Note", payload.Note.trim());
-  return memberProfileApiFetch<unknown>(`/api/Loan/Installments/${encodeURIComponent(installmentId)}/SubmitRepaymentProof`, {
-    method: "POST",
-    body: formData,
-  }).then(ensureSuccessfulResponse);
+  const response = ensureSuccessfulResponse(
+    await memberProfileApiFetch<unknown>(`/api/Loan/Installments/${encodeURIComponent(installmentId)}/SubmitRepaymentProof`, {
+      method: "POST",
+      body: formData,
+    }),
+  );
+  const data = unwrapLoanResponse(response);
+  const claimId = isRecord(data)
+    ? ([getCaseInsensitive(data, "id"), getCaseInsensitive(data, "claimId"), getCaseInsensitive(data, "repaymentClaimId")]
+        .find((value): value is string => typeof value === "string" && value.trim() !== ""))
+    : undefined;
+  return { claimId, raw: response };
 }
 
+/**
+ * Admin decision on a member-submitted repayment claim. Unlike every other
+ * review action in this file, there is no GET for a claim — nothing to look up
+ * or confirm before deciding. The caller must already know the claim id (see
+ * SubmitRepaymentProofResult above) and, per the endpoint's own description, on
+ * approval the underlying installment is credited immediately.
+ */
 export function reviewRepaymentClaim(claimId: string, approve: boolean, reviewNote: string): Promise<unknown> {
-  return postAdmin(`/api/Loan/RepaymentClaims/${encodeURIComponent(claimId)}/Review`, { approve, reviewNote });
+  return postAdmin(`/api/Loan/RepaymentClaims/${encodeURIComponent(claimId)}/Review`, {
+    approve,
+    ...(reviewNote.trim() ? { reviewNote: reviewNote.trim() } : {}),
+  });
 }
 
 function parseTierResponse(response: unknown): LoanApprovalTier[] {
@@ -245,9 +286,14 @@ function parseTierResponse(response: unknown): LoanApprovalTier[] {
   return value.flatMap((item) => {
     if (!isRecord(item)) return [];
     const minAmount = Number(getCaseInsensitive(item, "minAmount"));
-    const maxAmount = Number(getCaseInsensitive(item, "maxAmount"));
+    // Number(null) is 0, not NaN — coercing blindly would silently turn a real open-ended tier
+    // (maxAmount: null from the backend) into "capped at 0", which is a different, wrong tier and
+    // wouldn't get caught by the finite-check below since 0 is finite. Preserve null explicitly.
+    const rawMax = getCaseInsensitive(item, "maxAmount");
+    const maxAmount = rawMax == null || rawMax === "" ? null : Number(rawMax);
     const requiredApprovals = Number(getCaseInsensitive(item, "requiredApprovals"));
-    return [{ minAmount, maxAmount, requiredApprovals }].filter((tier) => Object.values(tier).every(Number.isFinite));
+    if (!Number.isFinite(minAmount) || (maxAmount !== null && !Number.isFinite(maxAmount)) || !Number.isFinite(requiredApprovals)) return [];
+    return [{ minAmount, maxAmount, requiredApprovals }];
   });
 }
 

@@ -1,480 +1,655 @@
 "use client";
 
-import { useState } from "react";
-import { 
-  Search, Bell, Filter, Calendar, ChevronLeft, ChevronRight, Plus, 
-  Trash2, PauseCircle, ChevronDown, Check, X
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  ChevronDown,
+  Loader2,
+  Plus,
+  Search,
+  ShieldAlert,
+  Trash2,
+  X,
 } from "lucide-react";
+import toast from "react-hot-toast";
+import { CooperativeIdStatus } from "@/app/components/CooperativeIdStatus";
+import { getApiErrorMessage } from "@/app/lib/api-client";
+import {
+  INTERVAL_UNITS,
+  PARTICIPATION_MODES,
+  type CreateInvestmentPoolPayload,
+  type IntervalUnit,
+  type ParticipantOverride,
+  type ParticipationMode,
+} from "@/app/lib/investment-pool-api";
+import { useCooperativeId } from "@/app/lib/useCooperativeId";
+import { useInvestmentPoolPermissions } from "@/app/lib/useInvestmentPoolPermissions";
+import {
+  useApproveInvestmentPool,
+  useCreateInvestmentPool,
+  useEligibilityPreview,
+  useInvestmentPool,
+  useRecentInvestmentPools,
+  useRejectInvestmentPool,
+} from "@/app/lib/useInvestmentPools";
 
-export default function InvestmentsPage() {
-  const [activeView, setActiveView] = useState("dashboard"); // 'dashboard' | 'edit-pool'
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [activeFilterStatus, setActiveFilterStatus] = useState('Open');
-  const [activeFilterLockin, setActiveFilterLockin] = useState('91-500 days');
+const LABEL = "mb-3 block text-[10px] font-bold uppercase tracking-widest admin-text-muted";
+const FIELD =
+  "input-admin w-full rounded-xl px-4 py-3 text-sm outline-none transition focus:ring-2 focus:ring-[color:var(--brand)]/40";
+const FIELD_INVALID = "ring-2 ring-red-400/60";
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-  const mockPools = [
-    { 
-      id: 1, 
-      name: "Treasury bills · Q2", 
-      desc: "FGN 91-day · UBA broker",
-      lockIn: "91 days", 
-      capital: "$5.2M", 
-      investors: 42, 
-      yield: "11.8%", 
-      status: "OPEN", 
-      statusColor: "bg-green-100 text-green-700" 
-    },
-    { 
-      id: 2, 
-      name: "Lekki land syndicate", 
-      desc: "Co-op pool · 24-month lock",
-      lockIn: "24 mo", 
-      capital: "$4.6M", 
-      investors: 28, 
-      yield: "~14%", 
-      status: "FUNDING", 
-      statusColor: "bg-amber-100 text-amber-700" 
-    },
-    { 
-      id: 3, 
-      name: "Stanbic money market", 
-      desc: "Open-ended · daily liquid",
-      lockIn: "No lock", 
-      capital: "$1.8M", 
-      investors: 36, 
-      yield: "9.2%", 
-      status: "OPEN", 
-      statusColor: "bg-green-100 text-green-700" 
-    },
-    { 
-      id: 4, 
-      name: "Lagos State bond series", 
-      desc: "Sovereign · 5-year · semi-annual",
-      lockIn: "5 yrs", 
-      capital: "$820K", 
-      investors: 9, 
-      yield: "13.4%", 
-      status: "CLOSED", 
-      statusColor: "bg-red-100 text-red-700" 
-    },
-  ];
+const STATUS_STYLE: Record<string, string> = {
+  Draft: "bg-gray-100 text-gray-700",
+  PendingApproval: "bg-amber-100 text-amber-700",
+  Open: "bg-green-100 text-green-700",
+  Closed: "bg-gray-100 text-gray-500",
+  Rejected: "bg-red-100 text-red-700",
+};
 
-  if (activeView === "edit-pool") {
-    return (
-      <div className="text-[#111110]">
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
-            <div>
-              <div className="text-xs font-semibold tracking-widest text-black/40 uppercase mb-2">
-                MODULES / EDIT POOL
-              </div>
-              <h1 className="text-4xl font-medium tracking-tight">Treasury bills · Q2</h1>
-            </div>
-            <div className="flex gap-3">
-              <button className="px-6 py-2.5 rounded-full bg-white font-medium text-sm border border-black/5 hover:bg-black/5 transition shadow-sm flex items-center gap-2">
-                <Trash2 className="w-4 h-4" /> Discard
-              </button>
-              <button 
-                onClick={() => setActiveView("dashboard")}
-                className="px-6 py-2.5 rounded-full bg-white font-medium text-sm border border-black/5 hover:bg-black/5 transition shadow-sm"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={() => setActiveView("dashboard")}
-                className="px-6 py-2.5 rounded-full bg-black text-white font-medium text-sm hover:bg-black/80 transition shadow-sm flex items-center gap-2"
-              >
-                <Plus className="w-4 h-4 rotate-45" /> Save changes
-              </button>
-            </div>
-          </div>
+function money(value: number | null): string {
+  return value === null ? "—" : `$${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+}
 
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-            <div className="xl:col-span-2 space-y-6">
-              
-              {/* 01 - IDENTITY */}
-              <div>
-                <div className="text-xs font-semibold tracking-widest text-black/40 uppercase mb-3 pl-1">
-                  01 - IDENTITY
-                </div>
-                <div className="bg-white rounded-2xl p-6 border border-black/5 shadow-sm space-y-6">
-                  <div>
-                    <label className="block text-xs font-semibold tracking-widest text-black/40 uppercase mb-2">
-                      POOL NAME
-                    </label>
-                    <input 
-                      type="text" 
-                      defaultValue="Treasury bills · Q3" 
-                      className="w-full bg-white rounded-xl p-4 border border-black/20 focus:border-black outline-none font-medium text-[15px] transition-colors"
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-xs font-semibold tracking-widest text-black/40 uppercase mb-2">
-                        ASSET CLASS
-                      </label>
-                      <div className="relative">
-                        <select className="w-full bg-white rounded-xl p-4 border border-black/5 font-medium appearance-none outline-none cursor-pointer">
-                          <option>Sovereign · short-term</option>
-                        </select>
-                        <ChevronDown className="w-4 h-4 absolute right-4 top-1/2 -translate-y-1/2 text-black/40 pointer-events-none" />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold tracking-widest text-black/40 uppercase mb-2">
-                        CUSTODIAN
-                      </label>
-                      <div className="relative">
-                        <select className="w-full bg-white rounded-xl p-4 border border-black/5 font-medium appearance-none outline-none cursor-pointer">
-                          <option>UBA Treasury</option>
-                        </select>
-                        <ChevronDown className="w-4 h-4 absolute right-4 top-1/2 -translate-y-1/2 text-black/40 pointer-events-none" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+// ─── New pool ──────────────────────────────────────────────────────────────────
 
-              {/* 02 - TERMS */}
-              <div>
-                <div className="text-xs font-semibold tracking-widest text-black/40 uppercase mb-3 pl-1 mt-8">
-                  02 - TERMS
-                </div>
-                <div className="bg-white rounded-2xl p-6 border border-black/5 shadow-sm space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div>
-                      <label className="block text-xs font-semibold tracking-widest text-black/40 uppercase mb-2">
-                        TARGET CAPITAL
-                      </label>
-                      <input 
-                        type="text" 
-                        defaultValue="$5,000,000" 
-                        className="w-full bg-white rounded-xl p-4 border border-black/5 font-medium text-[15px] outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold tracking-widest text-black/40 uppercase mb-2">
-                        MIN TICKET
-                      </label>
-                      <input 
-                        type="text" 
-                        defaultValue="$25,000" 
-                        className="w-full bg-white rounded-xl p-4 border border-black/5 font-medium text-[15px] outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold tracking-widest text-black/40 uppercase mb-2">
-                        LOCK-IN
-                      </label>
-                      <input 
-                        type="text" 
-                        defaultValue="91 days" 
-                        className="w-full bg-white rounded-xl p-4 border border-black/5 font-medium text-[15px] outline-none"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold tracking-widest text-black/40 uppercase mb-2">
-                      DISTRIBUTION
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      <button className="px-5 py-2.5 rounded-full bg-black text-white font-medium text-sm">
-                        At maturity
-                      </button>
-                      <button className="px-5 py-2.5 rounded-full bg-white border border-black/10 font-medium text-sm text-black/60 hover:text-black hover:border-black/20 transition-colors">
-                        Quarterly
-                      </button>
-                      <button className="px-5 py-2.5 rounded-full bg-white border border-black/10 font-medium text-sm text-black/60 hover:text-black hover:border-black/20 transition-colors">
-                        Compound
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
+function EligibilityRulesFields({
+  minTenureMonths,
+  setMinTenureMonths,
+  excludeActiveLoan,
+  setExcludeActiveLoan,
+}: {
+  minTenureMonths: string;
+  setMinTenureMonths: (v: string) => void;
+  excludeActiveLoan: boolean;
+  setExcludeActiveLoan: (v: boolean) => void;
+}) {
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div>
+        <label htmlFor="pool-min-tenure" className="mb-2 block text-xs font-semibold admin-text-muted">
+          Minimum tenure (months)
+        </label>
+        <input
+          id="pool-min-tenure"
+          type="number"
+          min={0}
+          step={1}
+          value={minTenureMonths}
+          onChange={(event) => setMinTenureMonths(event.target.value)}
+          placeholder="No minimum"
+          className={FIELD}
+        />
+      </div>
+      <label className="flex items-center gap-3 self-end pb-3 text-sm font-medium">
+        <input
+          type="checkbox"
+          checked={excludeActiveLoan}
+          onChange={(event) => setExcludeActiveLoan(event.target.checked)}
+          className="h-5 w-5 accent-(--brand)"
+        />
+        Exclude members with an active loan
+      </label>
+    </div>
+  );
+}
 
-              {/* 03 - MEMBER ELIGIBILITY */}
-              <div>
-                <div className="text-xs font-semibold tracking-widest text-black/40 uppercase mb-3 pl-1 mt-8">
-                  03 - MEMBER ELIGIBILITY
-                </div>
-                <div className="bg-white rounded-2xl p-6 border border-black/5 shadow-sm">
-                  <div className="flex flex-wrap gap-2">
-                    <button className="px-5 py-2.5 rounded-full bg-white border border-black/20 font-medium text-sm text-black flex items-center gap-2">
-                      Tier 2 +
-                    </button>
-                    <button className="px-5 py-2.5 rounded-full bg-white border border-black/20 font-medium text-sm text-black flex items-center gap-2">
-                      12 mo tenure
-                    </button>
-                    <button className="px-5 py-2.5 rounded-full bg-white border border-black/20 font-medium text-sm text-black flex items-center gap-2">
-                      No active loan
-                    </button>
-                  </div>
-                </div>
-              </div>
+function NewPoolForm({
+  cooperativeId,
+  onCreated,
+}: {
+  cooperativeId: string | undefined;
+  onCreated: (poolId: string, name: string) => void;
+}) {
+  const create = useCreateInvestmentPool();
+  const preview = useEligibilityPreview();
+  const previewTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-              {/* DANGER ZONE */}
-              <div>
-                <div className="text-xs font-semibold tracking-widest text-red-500/60 uppercase mb-3 pl-1 mt-8">
-                  DANGER ZONE
-                </div>
-                <div className="bg-white rounded-2xl p-6 border border-red-100 shadow-sm space-y-4">
-                  <div className="flex items-center justify-between p-4 rounded-xl border border-black/5 hover:border-black/10 transition-colors">
-                    <div>
-                      <div className="font-semibold mb-1">Pause new investments</div>
-                      <div className="text-[13px] text-black/50">Hides pool from members. Existing tickets continue to mature.</div>
-                    </div>
-                    <button className="px-5 py-2 rounded-full bg-white border border-black/20 font-medium text-sm hover:bg-black/5 transition">
-                      Pause
-                    </button>
-                  </div>
-                  
-                  <div className="flex items-center justify-between p-4 rounded-xl border border-red-100 bg-red-50/30">
-                    <div>
-                      <div className="font-semibold mb-1">Delete pool</div>
-                      <div className="text-[13px] text-black/50">Available only when no active tickets remain. Audit log retained.</div>
-                    </div>
-                    <button className="px-5 py-2 rounded-full bg-red-800 text-white font-medium text-sm hover:bg-red-900 transition shadow-sm">
-                      Delete pool
-                    </button>
-                  </div>
-                </div>
-              </div>
+  const [name, setName] = useState("");
+  const [assetClass, setAssetClass] = useState("");
+  const [custodian, setCustodian] = useState("");
+  const [targetCapital, setTargetCapital] = useState("");
+  const [indicativeYield, setIndicativeYield] = useState("");
+  const [isContinuous, setIsContinuous] = useState(false);
+  const [cycleLengthValue, setCycleLengthValue] = useState("12");
+  const [cycleLengthUnit, setCycleLengthUnit] = useState<IntervalUnit>(INTERVAL_UNITS.months);
+  const [payoutValue, setPayoutValue] = useState("");
+  const [payoutUnit, setPayoutUnit] = useState<IntervalUnit>(INTERVAL_UNITS.months);
+  const [contributionPercent, setContributionPercent] = useState("");
+  const [participationMode, setParticipationMode] = useState<ParticipationMode>(PARTICIPATION_MODES.allEligibleMembers);
+  const [minTenureMonths, setMinTenureMonths] = useState("");
+  const [excludeActiveLoan, setExcludeActiveLoan] = useState(false);
+  const [overrides, setOverrides] = useState<ParticipantOverride[]>([]);
+  const [submitted, setSubmitted] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
-            </div>
+  const rules = useMemo(
+    () => ({
+      minTenureMonths: minTenureMonths.trim() ? Number(minTenureMonths) : null,
+      excludeMembersWithActiveLoan: excludeActiveLoan,
+    }),
+    [minTenureMonths, excludeActiveLoan],
+  );
 
-            {/* Right side info panel */}
-            <div>
-              <div className="sticky top-8 space-y-4">
-                <div className="bg-[#111110] text-white rounded-3xl p-6 md:p-8 shadow-xl">
-                  <div className="text-[10px] font-semibold tracking-widest text-white/50 uppercase mb-6 flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
-                    LIVE PERFORMANCE
-                  </div>
-                  
-                  <h3 className="text-xl font-medium mb-8">Treasury bills · Q2</h3>
+  // Live preview: pure read, safe to re-run on every rule change (per the endpoint's own description).
+  useEffect(() => {
+    if (!cooperativeId) return;
+    if (previewTimer.current) clearTimeout(previewTimer.current);
+    previewTimer.current = setTimeout(() => {
+      preview.mutate({ cooperativeId, rules });
+    }, 400);
+    return () => {
+      if (previewTimer.current) clearTimeout(previewTimer.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cooperativeId, rules.minTenureMonths, rules.excludeMembersWithActiveLoan]);
 
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center border-b border-white/10 pb-3">
-                      <span className="text-[13px] text-white/60">Capital raised</span>
-                      <span className="font-medium text-[15px]">$5.20M</span>
-                    </div>
-                    <div className="flex justify-between items-center border-b border-white/10 pb-3">
-                      <span className="text-[13px] text-white/60">Investors</span>
-                      <span className="font-medium text-[15px]">42</span>
-                    </div>
-                    <div className="flex justify-between items-center border-b border-white/10 pb-3">
-                      <span className="text-[13px] text-white/60">Realised yield</span>
-                      <span className="font-medium text-[15px]">11.8%</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-[13px] text-white/60">Maturity</span>
-                      <span className="font-medium text-[15px]">Jul 31 - 2026</span>
-                    </div>
-                  </div>
-                </div>
+  const errors = {
+    name: name.trim() ? undefined : "Name the pool.",
+    assetClass: assetClass.trim() ? undefined : "Describe the asset class.",
+    custodian: custodian.trim() ? undefined : "Name the custodian.",
+    targetCapital: Number(targetCapital) > 0 ? undefined : "Enter a target capital above zero.",
+    cycleLengthValue:
+      isContinuous || (Number.isInteger(Number(cycleLengthValue)) && Number(cycleLengthValue) >= 1)
+        ? undefined
+        : "Enter a term of at least 1.",
+    contributionPercent:
+      contributionPercent.trim() && Number(contributionPercent) >= 0 && Number(contributionPercent) <= 100
+        ? undefined
+        : "Enter a percentage between 0 and 100.",
+    overrides:
+      participationMode === PARTICIPATION_MODES.selectedMembers && overrides.length === 0
+        ? "Add at least one member override, or switch to all eligible members."
+        : overrides.some((row) => !UUID.test(row.userId))
+          ? "Every override needs a valid member ID (UUID)."
+          : undefined,
+  };
+  const show = (field: keyof typeof errors) => (submitted ? errors[field] : undefined);
+  const hasErrors = Object.values(errors).some(Boolean);
 
-                <div className="bg-white rounded-3xl p-6 border border-black/5 shadow-sm">
-                  <div className="text-xs font-semibold tracking-widest text-black/40 uppercase mb-3">
-                    EDITS AFFECT FUTURE TICKS
-                  </div>
-                  <p className="text-[13px] text-black/60 leading-relaxed">
-                    Existing investors keep current terms. New tickets follow your edits.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+  function addOverride() {
+    setOverrides((rows) => [...rows, { userId: "", include: true, reason: "" }]);
+  }
+  function updateOverride(index: number, patch: Partial<ParticipantOverride>) {
+    setOverrides((rows) => rows.map((row, i) => (i === index ? { ...row, ...patch } : row)));
+  }
+  function removeOverride(index: number) {
+    setOverrides((rows) => rows.filter((_, i) => i !== index));
+  }
+
+  function requestSubmit(event: FormEvent) {
+    event.preventDefault();
+    setSubmitted(true);
+    if (!cooperativeId || hasErrors) return;
+    setConfirmOpen(true);
+  }
+
+  function submit() {
+    if (!cooperativeId) return;
+    const payload: CreateInvestmentPoolPayload = {
+      name: name.trim(),
+      assetClass: assetClass.trim(),
+      custodian: custodian.trim(),
+      targetCapital: Number(targetCapital),
+      indicativeYieldPercent: indicativeYield.trim() ? Number(indicativeYield) : null,
+      cycleLengthValue: isContinuous ? 0 : Number(cycleLengthValue),
+      cycleLengthUnit,
+      isContinuous,
+      dividendPayoutIntervalValue: payoutValue.trim() ? Number(payoutValue) : null,
+      dividendPayoutIntervalUnit: payoutUnit,
+      defaultContributionPercentage: Number(contributionPercent),
+      participationMode,
+      eligibilityRules: rules,
+      overrides: participationMode === PARTICIPATION_MODES.selectedMembers ? overrides : undefined,
+    };
+
+    create.mutate(
+      { cooperativeId, payload },
+      {
+        onSuccess: (result) => {
+          setConfirmOpen(false);
+          if (result.poolId) {
+            toast.success("Submitted for approval");
+            onCreated(result.poolId, payload.name);
+          } else {
+            toast.success(result.message ?? "Submitted for approval, but the response had no pool id to open — look it up once you have it.");
+          }
+        },
+        onError: (error) => {
+          setConfirmOpen(false);
+          toast.error(getApiErrorMessage(error));
+        },
+      },
     );
   }
 
-  // Dashboard View
+  const busy = create.isPending;
+
   return (
-    <div className="text-[#111110]">
-      {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
-          <div>
-            <div className="text-xs font-semibold tracking-widest text-black/40 uppercase mb-2">
-              MODULES / INVESTMENTS
+    <form onSubmit={requestSubmit} noValidate className="space-y-8">
+      {!cooperativeId && <p className="text-sm admin-text-muted">Choose a cooperative above to create a pool.</p>}
+      <fieldset disabled={!cooperativeId || busy} className="space-y-8 disabled:opacity-60">
+        <div className="card-admin rounded-3xl p-5 md:p-7">
+          <h2 className="mb-5 text-sm font-bold uppercase tracking-widest admin-text-muted">Identity</h2>
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+            <div className="md:col-span-2">
+              <label htmlFor="pool-name" className={LABEL}>Pool name</label>
+              <input id="pool-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Treasury bills · Q3" className={`${FIELD} ${show("name") ? FIELD_INVALID : ""}`} />
+              {show("name") && <p role="alert" className="mt-2 text-xs text-red-600">{show("name")}</p>}
             </div>
-            <h1 className="text-5xl font-medium tracking-tight">Investment pools</h1>
+            <div>
+              <label htmlFor="pool-asset-class" className={LABEL}>Asset class</label>
+              <input id="pool-asset-class" value={assetClass} onChange={(e) => setAssetClass(e.target.value)} placeholder="e.g. Sovereign · short-term" className={`${FIELD} ${show("assetClass") ? FIELD_INVALID : ""}`} />
+              {show("assetClass") && <p role="alert" className="mt-2 text-xs text-red-600">{show("assetClass")}</p>}
+            </div>
+            <div>
+              <label htmlFor="pool-custodian" className={LABEL}>Custodian</label>
+              <input id="pool-custodian" value={custodian} onChange={(e) => setCustodian(e.target.value)} placeholder="e.g. UBA Treasury" className={`${FIELD} ${show("custodian") ? FIELD_INVALID : ""}`} />
+              {show("custodian") && <p role="alert" className="mt-2 text-xs text-red-600">{show("custodian")}</p>}
+            </div>
           </div>
-          <div className="flex items-center gap-3 relative">
-            <button className="px-4 py-2.5 rounded-full bg-white flex items-center gap-2 font-medium text-sm border border-black/5 hover:bg-black/5 transition shadow-sm">
-              <Calendar className="w-4 h-4 text-black/50" /> FY 2026
-            </button>
-            <div className="relative">
-              <button 
-                onClick={() => setIsFilterOpen(!isFilterOpen)}
-                className={`px-6 py-2.5 rounded-full flex items-center gap-2 font-medium text-sm border transition shadow-sm ${
-                  isFilterOpen ? 'bg-black text-white border-black' : 'bg-white border-black/5 hover:bg-black/5'
-                }`}
-              >
-                Filter
-              </button>
-              
-              {/* Filter Popover */}
-              {isFilterOpen && (
-                <div className="absolute top-full right-0 mt-2 w-[320px] bg-white rounded-3xl shadow-xl border border-black/5 p-6 z-50 animate-in fade-in slide-in-from-top-2">
-                  <div className="text-[10px] font-semibold tracking-widest text-black/40 uppercase mb-4">
-                    FILTER POOLS
-                  </div>
-                  
-                  <div className="mb-6">
-                    <label className="block text-sm font-medium mb-3">Status</label>
-                    <div className="flex flex-wrap gap-2">
-                      {['Open', 'Funding', 'Closed'].map(status => (
-                        <button 
-                          key={status}
-                          onClick={() => setActiveFilterStatus(status)}
-                          className={`px-4 py-1.5 rounded-full text-sm font-medium transition ${
-                            activeFilterStatus === status 
-                              ? 'bg-black text-white' 
-                              : 'bg-white border border-black/10 text-black/60 hover:border-black/20'
-                          }`}
-                        >
-                          {status}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+        </div>
 
-                  <div className="mb-8">
-                    <label className="block text-sm font-medium mb-3">Lock-in period</label>
-                    <div className="flex flex-wrap gap-2">
-                      {['≤ 90 days', '91-500 days', '5 yr+'].map(period => (
-                        <button 
-                          key={period}
-                          onClick={() => setActiveFilterLockin(period)}
-                          className={`px-4 py-1.5 rounded-full text-sm font-medium transition ${
-                            activeFilterLockin === period 
-                              ? 'bg-black text-white' 
-                              : 'bg-white border border-black/10 text-black/60 hover:border-black/20'
-                          }`}
-                        >
-                          {period}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+        <div className="card-admin rounded-3xl p-5 md:p-7">
+          <h2 className="mb-5 text-sm font-bold uppercase tracking-widest admin-text-muted">Terms</h2>
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+            <div>
+              <label htmlFor="pool-target-capital" className={LABEL}>Target capital</label>
+              <input id="pool-target-capital" type="number" min={0} step="0.01" value={targetCapital} onChange={(e) => setTargetCapital(e.target.value)} className={`${FIELD} ${show("targetCapital") ? FIELD_INVALID : ""}`} />
+              {show("targetCapital") && <p role="alert" className="mt-2 text-xs text-red-600">{show("targetCapital")}</p>}
+            </div>
+            <div>
+              <label htmlFor="pool-yield" className={LABEL}>Indicative yield (%)</label>
+              <input id="pool-yield" type="number" min={0} step="0.01" value={indicativeYield} onChange={(e) => setIndicativeYield(e.target.value)} placeholder="Optional" className={FIELD} />
+            </div>
+            <div>
+              <label htmlFor="pool-contribution" className={LABEL}>Default contribution (%)</label>
+              <input id="pool-contribution" type="number" min={0} max={100} step="0.01" value={contributionPercent} onChange={(e) => setContributionPercent(e.target.value)} className={`${FIELD} ${show("contributionPercent") ? FIELD_INVALID : ""}`} />
+              {show("contributionPercent") && <p role="alert" className="mt-2 text-xs text-red-600">{show("contributionPercent")}</p>}
+            </div>
+          </div>
 
-                  <div className="flex items-center justify-between">
-                    <button className="text-sm font-medium text-black/50 hover:text-black transition">
-                      Reset
-                    </button>
-                    <button 
-                      onClick={() => setIsFilterOpen(false)}
-                      className="px-6 py-2 rounded-full bg-black text-white text-sm font-medium hover:bg-black/80 transition"
-                    >
-                      Apply filters
-                    </button>
+          <div className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2">
+            <div>
+              <span className={LABEL}>Term</span>
+              <label className="mb-3 flex items-center gap-3 text-sm font-medium">
+                <input type="checkbox" checked={isContinuous} onChange={(e) => setIsContinuous(e.target.checked)} className="h-5 w-5 accent-(--brand)" />
+                Continuous — no fixed term
+              </label>
+              {!isContinuous && (
+                <div className="flex gap-3">
+                  <input type="number" min={1} step={1} value={cycleLengthValue} onChange={(e) => setCycleLengthValue(e.target.value)} className={`${FIELD} w-24 ${show("cycleLengthValue") ? FIELD_INVALID : ""}`} />
+                  <div className="relative flex-1">
+                    <select value={cycleLengthUnit} onChange={(e) => setCycleLengthUnit(e.target.value as IntervalUnit)} className={`${FIELD} appearance-none pr-9`}>
+                      {Object.values(INTERVAL_UNITS).map((unit) => <option key={unit} value={unit}>{unit}</option>)}
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 admin-text-muted" />
                   </div>
                 </div>
               )}
+              {show("cycleLengthValue") && <p role="alert" className="mt-2 text-xs text-red-600">{show("cycleLengthValue")}</p>}
             </div>
-            <button className="px-6 py-2.5 rounded-full bg-black text-white font-medium text-sm hover:bg-black/80 transition shadow-sm flex items-center gap-2">
-              <Plus className="w-4 h-4" /> New pool
-            </button>
-          </div>
-        </div>
-
-        {/* Top Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8 mb-12 py-8 border-b border-t border-black/5">
-          <div>
-            <div className="text-[10px] font-semibold tracking-widest text-black/40 uppercase mb-2">CAPITAL UNDER MGMT</div>
-            <div className="text-3xl md:text-[40px] font-semibold tracking-tight">$12.4M</div>
-          </div>
-          <div>
-            <div className="text-[10px] font-semibold tracking-widest text-black/40 uppercase mb-2">YTD RETURN</div>
-            <div className="text-3xl md:text-[40px] font-semibold tracking-tight">+ 9.4%</div>
-          </div>
-          <div>
-            <div className="text-[10px] font-semibold tracking-widest text-black/40 uppercase mb-2">INVESTORS</div>
-            <div className="text-3xl md:text-[40px] font-semibold tracking-tight">94</div>
-          </div>
-          <div>
-            <div className="text-[10px] font-semibold tracking-widest text-black/40 uppercase mb-2">NEXT PAYOUT</div>
-            <div className="text-3xl md:text-[40px] font-semibold tracking-tight">Jul 31</div>
-          </div>
-        </div>
-
-        {/* Pools Table/List */}
-        <div className="bg-white/40 rounded-3xl p-2 md:p-6 border border-black/5 shadow-sm">
-          {/* Table Header */}
-          <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-4 text-[10px] font-semibold tracking-widest text-black/40 uppercase">
-            <div className="col-span-4">POOL</div>
-            <div className="col-span-2 text-center">LOCK-IN</div>
-            <div className="col-span-2 text-center">CAPITAL</div>
-            <div className="col-span-2 text-center">INVESTORS</div>
-            <div className="col-span-1 text-center">YIELD</div>
-            <div className="col-span-1 text-right pr-2">STATUS</div>
-          </div>
-
-          {/* Table Rows */}
-          <div className="space-y-2">
-            {mockPools.map((pool) => (
-              <div 
-                key={pool.id}
-                onClick={() => setActiveView("edit-pool")}
-                className="grid grid-cols-1 md:grid-cols-12 gap-4 p-6 bg-white rounded-2xl items-center cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all border border-black/5"
-              >
-                <div className="col-span-4">
-                  <div className="font-semibold text-[15px] mb-0.5">{pool.name}</div>
-                  <div className="text-xs text-black/50">{pool.desc}</div>
-                </div>
-                
-                <div className="col-span-2 flex justify-between md:block md:text-center mt-4 md:mt-0">
-                  <span className="md:hidden text-xs text-black/40 uppercase tracking-wider font-semibold">Lock-in</span>
-                  <span className="text-[15px] font-medium text-black/80">{pool.lockIn}</span>
-                </div>
-                
-                <div className="col-span-2 flex justify-between md:block md:text-center mt-2 md:mt-0">
-                  <span className="md:hidden text-xs text-black/40 uppercase tracking-wider font-semibold">Capital</span>
-                  <span className="text-[15px] font-semibold">{pool.capital}</span>
-                </div>
-                
-                <div className="col-span-2 flex justify-between md:block md:text-center mt-2 md:mt-0">
-                  <span className="md:hidden text-xs text-black/40 uppercase tracking-wider font-semibold">Investors</span>
-                  <span className="text-[15px] font-medium text-black/80">{pool.investors}</span>
-                </div>
-                
-                <div className="col-span-1 flex justify-between md:block md:text-center mt-2 md:mt-0">
-                  <span className="md:hidden text-xs text-black/40 uppercase tracking-wider font-semibold">Yield</span>
-                  <span className="text-[15px] font-medium text-black/80">{pool.yield}</span>
-                </div>
-                
-                <div className="col-span-1 flex justify-between md:justify-end items-center mt-4 md:mt-0">
-                  <span className="md:hidden text-xs text-black/40 uppercase tracking-wider font-semibold">Status</span>
-                  <span className={`px-2.5 py-1 rounded text-[10px] font-bold tracking-widest uppercase ${pool.statusColor}`}>
-                    {pool.status}
-                  </span>
+            <div>
+              <span className={LABEL}>Dividend payout interval (optional)</span>
+              <div className="flex gap-3">
+                <input type="number" min={1} step={1} value={payoutValue} onChange={(e) => setPayoutValue(e.target.value)} placeholder="At maturity" className={`${FIELD} w-24`} />
+                <div className="relative flex-1">
+                  <select value={payoutUnit} onChange={(e) => setPayoutUnit(e.target.value as IntervalUnit)} className={`${FIELD} appearance-none pr-9`}>
+                    {Object.values(INTERVAL_UNITS).map((unit) => <option key={unit} value={unit}>{unit}</option>)}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 admin-text-muted" />
                 </div>
               </div>
-            ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="card-admin rounded-3xl p-5 md:p-7">
+          <h2 className="mb-1 text-sm font-bold uppercase tracking-widest admin-text-muted">Member eligibility</h2>
+          <p className="mb-5 text-xs admin-text-muted">This only submits the pool for approval — it does not open it or move any money yet.</p>
+          <EligibilityRulesFields minTenureMonths={minTenureMonths} setMinTenureMonths={setMinTenureMonths} excludeActiveLoan={excludeActiveLoan} setExcludeActiveLoan={setExcludeActiveLoan} />
+
+          <div className="mt-5 rounded-2xl border p-4 text-sm" style={{ borderColor: "var(--admin-border)" }}>
+            {!cooperativeId ? (
+              <span className="admin-text-muted">Choose a cooperative to preview matching members.</span>
+            ) : preview.isPending ? (
+              <span className="inline-flex items-center gap-2 admin-text-muted"><Loader2 className="h-4 w-4 animate-spin" /> Checking who matches…</span>
+            ) : preview.isError ? (
+              <span className="text-red-600">{getApiErrorMessage(preview.error)}</span>
+            ) : preview.data ? (
+              <span className="font-semibold">
+                {preview.data.eligibleCount ?? "?"} of {preview.data.totalMembers ?? "?"} members match these rules
+              </span>
+            ) : (
+              <span className="admin-text-muted">Preview appears here once a cooperative is selected.</span>
+            )}
           </div>
 
-          <div className="flex items-center justify-between mt-8 px-4">
-            <div className="text-[10px] font-semibold tracking-widest text-black/40 uppercase">
-              SHOWING 1-4 OF 12
+          <div className="mt-6">
+            <span className={LABEL}>Who can join</span>
+            <div className="flex flex-wrap gap-2">
+              {(
+                [
+                  [PARTICIPATION_MODES.allEligibleMembers, "All eligible members"],
+                  [PARTICIPATION_MODES.selectedMembers, "Selected members"],
+                ] as const
+              ).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setParticipationMode(value)}
+                  className={participationMode === value ? "btn-primary rounded-full px-4 py-1.5 text-sm font-medium" : "rounded-full border px-4 py-1.5 text-sm font-medium admin-text-muted hover:bg-black/5"}
+                  style={participationMode === value ? undefined : { borderColor: "var(--admin-border)" }}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
-            <div className="flex items-center gap-1">
-              <button className="px-3 py-1.5 text-sm font-medium text-black/40 hover:text-black transition">
-                &lt; Prev
+          </div>
+
+          {participationMode === PARTICIPATION_MODES.selectedMembers && (
+            <div className="mt-5 space-y-3">
+              <p className="text-xs admin-text-muted">
+                There&apos;s no member picker for this yet — enter each member&apos;s ID directly. Included members join
+                regardless of the rules above; excluded members are kept out even if they&apos;d otherwise match.
+              </p>
+              {overrides.map((row, index) => (
+                <div key={index} className="flex flex-col gap-2 rounded-xl border p-3 sm:flex-row sm:items-center" style={{ borderColor: "var(--admin-border)" }}>
+                  <input
+                    value={row.userId}
+                    onChange={(e) => updateOverride(index, { userId: e.target.value })}
+                    placeholder="Member ID (UUID)"
+                    aria-invalid={Boolean(row.userId) && !UUID.test(row.userId)}
+                    className={`${FIELD} flex-1 font-mono text-xs ${row.userId && !UUID.test(row.userId) ? FIELD_INVALID : ""}`}
+                  />
+                  <select value={row.include ? "include" : "exclude"} onChange={(e) => updateOverride(index, { include: e.target.value === "include" })} className={`${FIELD} sm:w-32`}>
+                    <option value="include">Include</option>
+                    <option value="exclude">Exclude</option>
+                  </select>
+                  <input value={row.reason ?? ""} onChange={(e) => updateOverride(index, { reason: e.target.value })} placeholder="Reason (optional)" className={`${FIELD} sm:w-48`} />
+                  <button type="button" onClick={() => removeOverride(index)} aria-label="Remove override" className="shrink-0 self-start rounded-full p-2 text-red-600 hover:bg-red-50 sm:self-center">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+              <button type="button" onClick={addOverride} className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-semibold hover:bg-black/5" style={{ borderColor: "var(--admin-border)" }}>
+                <Plus className="h-3.5 w-3.5" /> Add member override
               </button>
-              <button className="w-8 h-8 rounded-lg bg-black text-white text-sm font-medium flex items-center justify-center">
-                1
-              </button>
-              <button className="w-8 h-8 rounded-lg text-sm font-medium hover:bg-black/5 flex items-center justify-center transition bg-white border border-black/5">
-                2
-              </button>
-              <button className="w-8 h-8 rounded-lg text-sm font-medium hover:bg-black/5 flex items-center justify-center transition bg-white border border-black/5">
-                3
-              </button>
-              <button className="px-3 py-1.5 text-sm font-medium hover:bg-black/5 transition rounded-lg text-black">
-                Next &gt;
+              {show("overrides") && <p role="alert" className="text-xs text-red-600">{show("overrides")}</p>}
+            </div>
+          )}
+        </div>
+
+        <button type="submit" className="btn-primary inline-flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-semibold shadow-sm disabled:cursor-not-allowed disabled:opacity-50">
+          <Plus className="h-4 w-4" /> Submit for approval
+        </button>
+      </fieldset>
+
+      {confirmOpen && (
+        <div
+          className="fixed inset-0 z-70 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="pool-confirm-title"
+          onMouseDown={(e) => { if (e.target === e.currentTarget && !busy) setConfirmOpen(false); }}
+        >
+          <div className="card-admin w-full max-w-md rounded-3xl p-6 shadow-2xl" style={{ color: "var(--admin-text)" }}>
+            <h2 id="pool-confirm-title" className="text-xl font-semibold">Submit this pool for approval?</h2>
+            <p className="mt-2 text-sm admin-text-muted">
+              This computes the participant list and creates a pending approval request. It does not open the pool
+              or move any money — that only happens once enough reviewers approve.
+            </p>
+            <dl className="mt-5 space-y-2 text-sm">
+              <div className="flex justify-between gap-4"><dt className="admin-text-muted">Name</dt><dd className="text-right font-medium">{name.trim()}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="admin-text-muted">Target capital</dt><dd className="text-right font-medium">{money(Number(targetCapital) || null)}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="admin-text-muted">Audience</dt><dd className="text-right font-medium">{participationMode === PARTICIPATION_MODES.allEligibleMembers ? "All eligible members" : `${overrides.length} selected member(s)`}</dd></div>
+            </dl>
+            <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button type="button" onClick={() => setConfirmOpen(false)} disabled={busy} className="rounded-full border px-5 py-2.5 text-sm font-semibold hover:bg-black/5 disabled:opacity-50" style={{ borderColor: "var(--admin-border)" }}>Go back</button>
+              <button type="button" onClick={submit} disabled={busy} className="btn-primary inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-70">
+                {busy && <Loader2 className="h-4 w-4 animate-spin" />} {busy ? "Submitting…" : "Submit"}
               </button>
             </div>
           </div>
         </div>
+      )}
+    </form>
+  );
+}
+
+// ─── Look up a pool ────────────────────────────────────────────────────────────
+
+function PoolDetail({ poolId }: { poolId: string }) {
+  const pool = useInvestmentPool(poolId);
+  const permissions = useInvestmentPoolPermissions();
+  const approve = useApproveInvestmentPool();
+  const reject = useRejectInvestmentPool();
+  const [confirmAction, setConfirmAction] = useState<"approve" | "reject" | null>(null);
+  const [note, setNote] = useState("");
+
+  function runReview() {
+    if (!confirmAction) return;
+    const mutation = confirmAction === "approve" ? approve : reject;
+    mutation.mutate(
+      { poolId, note },
+      {
+        onSuccess: () => {
+          toast.success(confirmAction === "approve" ? "Approval recorded" : "Pool rejected");
+          setConfirmAction(null);
+          setNote("");
+        },
+        onError: (error) => toast.error(getApiErrorMessage(error)),
+      },
+    );
+  }
+
+  if (pool.isPending) {
+    return <div className="card-admin flex items-center gap-3 rounded-3xl p-8 text-sm admin-text-muted"><Loader2 className="h-4 w-4 animate-spin" /> Loading pool…</div>;
+  }
+  if (pool.isError) {
+    return (
+      <div role="alert" className="rounded-3xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">
+        <p>{getApiErrorMessage(pool.error)}</p>
+        <button type="button" onClick={() => pool.refetch()} className="mt-3 font-semibold underline">Try again</button>
+      </div>
+    );
+  }
+  const data = pool.data!;
+  const status = data.status ?? "Unknown";
+  const canReview = status === "PendingApproval" && permissions.canReview;
+  const busy = approve.isPending || reject.isPending;
+
+  return (
+    <div className="card-admin space-y-5 rounded-3xl p-5 md:p-7">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-semibold">{data.name ?? "Untitled pool"}</h2>
+          <p className="mt-1 font-mono text-xs admin-text-muted">{data.id ?? poolId}</p>
+        </div>
+        <span className={`rounded px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest ${STATUS_STYLE[status] ?? "bg-gray-100 text-gray-700"}`}>{status}</span>
+      </div>
+
+      <dl className="grid grid-cols-2 gap-4 border-t pt-5 text-sm sm:grid-cols-3" style={{ borderColor: "var(--admin-border)" }}>
+        <div><dt className="text-[10px] font-bold uppercase tracking-widest admin-text-muted">Asset class</dt><dd className="mt-1 font-medium">{data.assetClass ?? "—"}</dd></div>
+        <div><dt className="text-[10px] font-bold uppercase tracking-widest admin-text-muted">Custodian</dt><dd className="mt-1 font-medium">{data.custodian ?? "—"}</dd></div>
+        <div><dt className="text-[10px] font-bold uppercase tracking-widest admin-text-muted">Target capital</dt><dd className="mt-1 font-medium">{money(data.targetCapital)}</dd></div>
+        <div><dt className="text-[10px] font-bold uppercase tracking-widest admin-text-muted">Contributed so far</dt><dd className="mt-1 font-medium">{money(data.totalContributed)}</dd></div>
+        <div><dt className="text-[10px] font-bold uppercase tracking-widest admin-text-muted">Participants</dt><dd className="mt-1 font-medium">{data.participantCount ?? "—"}</dd></div>
+        <div><dt className="text-[10px] font-bold uppercase tracking-widest admin-text-muted">Indicative yield</dt><dd className="mt-1 font-medium">{data.indicativeYieldPercent === null ? "—" : `${data.indicativeYieldPercent}%`}</dd></div>
+      </dl>
+
+      {status === "PendingApproval" && !permissions.canReview && !permissions.isLoading && (
+        <p className="flex items-center gap-2 text-xs admin-text-muted"><ShieldAlert className="h-4 w-4" /> You don&apos;t have permission to approve or reject pools.</p>
+      )}
+
+      {canReview && (
+        <div className="flex flex-wrap gap-3 border-t pt-5" style={{ borderColor: "var(--admin-border)" }}>
+          <button type="button" onClick={() => setConfirmAction("approve")} disabled={busy} className="btn-primary inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold disabled:opacity-50">
+            <CheckCircle2 className="h-4 w-4" /> Approve
+          </button>
+          <button type="button" onClick={() => setConfirmAction("reject")} disabled={busy} className="inline-flex items-center gap-2 rounded-full bg-red-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-red-800 disabled:opacity-50">
+            <X className="h-4 w-4" /> Reject
+          </button>
+        </div>
+      )}
+
+      {confirmAction && (
+        <div
+          className="fixed inset-0 z-70 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="review-confirm-title"
+          onMouseDown={(e) => { if (e.target === e.currentTarget && !busy) setConfirmAction(null); }}
+        >
+          <div className="card-admin w-full max-w-md rounded-3xl p-6 shadow-2xl" style={{ color: "var(--admin-text)" }}>
+            <h2 id="review-confirm-title" className="text-xl font-semibold">
+              {confirmAction === "approve" ? "Record your approval?" : "Reject this pool?"}
+            </h2>
+            <p className="mt-2 text-sm admin-text-muted">
+              {confirmAction === "approve"
+                ? "Funding only happens once enough reviewers approve — this may just record one of several needed approvals."
+                : "A rejection is final. It moves the pool straight to Rejected regardless of any approvals already collected, and can't be undone."}
+            </p>
+            {confirmAction === "reject" && (
+              <div role="alert" className="mt-3 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" /> This cannot be undone.
+              </div>
+            )}
+            <label htmlFor="review-note" className="mb-2 mt-4 block text-xs font-semibold admin-text-muted">Note (optional)</label>
+            <textarea id="review-note" rows={3} value={note} onChange={(e) => setNote(e.target.value)} className={`${FIELD} resize-y`} />
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button type="button" onClick={() => setConfirmAction(null)} disabled={busy} className="rounded-full border px-5 py-2.5 text-sm font-semibold hover:bg-black/5 disabled:opacity-50" style={{ borderColor: "var(--admin-border)" }}>Go back</button>
+              <button
+                type="button"
+                onClick={runReview}
+                disabled={busy}
+                className={confirmAction === "approve" ? "btn-primary inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold disabled:opacity-70" : "inline-flex items-center justify-center gap-2 rounded-full bg-red-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-red-800 disabled:opacity-70"}
+              >
+                {busy && <Loader2 className="h-4 w-4 animate-spin" />}
+                {busy ? "Saving…" : confirmAction === "approve" ? "Approve" : "Reject pool"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LookupPool({ cooperativeId }: { cooperativeId: string | undefined }) {
+  const [input, setInput] = useState("");
+  const [activeId, setActiveId] = useState("");
+  const recent = useRecentInvestmentPools(cooperativeId ?? "");
+  const pool = useInvestmentPool(activeId, Boolean(activeId));
+
+  useEffect(() => {
+    if (activeId && pool.data && cooperativeId) {
+      recent.remember({ id: activeId, name: pool.data.name, cooperativeId });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeId, pool.data, cooperativeId]);
+
+  function load(id: string) {
+    const trimmed = id.trim();
+    if (!UUID.test(trimmed)) {
+      toast.error("Enter a valid pool ID (UUID).");
+      return;
+    }
+    setActiveId(trimmed);
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="card-admin rounded-3xl p-5 md:p-7">
+        <label htmlFor="pool-lookup" className={LABEL}>Pool ID</label>
+        <div className="flex gap-3">
+          <input id="pool-lookup" value={input} onChange={(e) => setInput(e.target.value)} placeholder="00000000-0000-0000-0000-000000000000" className={`${FIELD} font-mono text-xs`} />
+          <button type="button" onClick={() => load(input)} className="btn-primary inline-flex shrink-0 items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold">
+            <Search className="h-4 w-4" /> Load
+          </button>
+        </div>
+
+        {recent.pools.length > 0 && (
+          <div className="mt-5">
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-widest admin-text-muted">Recently opened on this device</p>
+            <div className="flex flex-wrap gap-2">
+              {recent.pools.map((entry) => (
+                <button key={entry.id} type="button" onClick={() => { setInput(entry.id); load(entry.id); }} className="rounded-full border px-3 py-1.5 text-xs font-medium hover:bg-black/5" style={{ borderColor: "var(--admin-border)" }}>
+                  {entry.name ?? entry.id.slice(0, 8)}
+                </button>
+              ))}
+            </div>
+            <p className="mt-2 text-[11px] admin-text-muted">This list only lives in your browser — the backend has no way to list pools, only look one up by id.</p>
+          </div>
+        )}
+      </div>
+
+      {activeId && <PoolDetail key={activeId} poolId={activeId} />}
+    </div>
+  );
+}
+
+// ─── Page ──────────────────────────────────────────────────────────────────────
+
+export default function InvestmentsPage() {
+  const cooperative = useCooperativeId();
+  const cooperativeId = cooperative.cooperativeId;
+  const [tab, setTab] = useState<"new" | "lookup">("new");
+  const [justCreated, setJustCreated] = useState<{ id: string; name: string } | null>(null);
+  const recent = useRecentInvestmentPools(cooperativeId ?? "");
+
+  function handleCreated(poolId: string, name: string) {
+    if (cooperativeId) recent.remember({ id: poolId, name, cooperativeId });
+    setJustCreated({ id: poolId, name });
+    setTab("lookup");
+  }
+
+  return (
+    <div className="mx-auto max-w-5xl space-y-8 pb-10">
+      <header>
+        <p className="mb-1 text-[10px] font-bold uppercase tracking-widest admin-text-muted">Investments</p>
+        <h1 className="text-4xl font-bold tracking-tight">Investment pools</h1>
+        <p className="mt-2 text-sm admin-text-muted">
+          There is no pool list from the backend yet — only an ID lookup. Pools you create or open here are
+          remembered on this device for convenience, under &quot;Recently opened.&quot;
+        </p>
+      </header>
+
+      <CooperativeIdStatus selection={cooperative} />
+
+      {justCreated && (
+        <div className="flex items-start justify-between gap-4 rounded-2xl border border-green-200 bg-green-50 p-4 text-sm text-green-800">
+          <p><span className="font-semibold">{justCreated.name}</span> was submitted for approval. Pool ID: <span className="font-mono text-xs">{justCreated.id}</span></p>
+          <button type="button" onClick={() => setJustCreated(null)} aria-label="Dismiss" className="shrink-0 rounded-full p-1 hover:bg-green-100"><X className="h-4 w-4" /></button>
+        </div>
+      )}
+
+      <div role="tablist" aria-label="Investment pool actions" className="flex w-fit gap-1 rounded-full border p-1" style={{ borderColor: "var(--admin-border)" }}>
+        {(
+          [
+            ["new", "New pool"],
+            ["lookup", "Look up a pool"],
+          ] as const
+        ).map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            role="tab"
+            aria-selected={tab === value}
+            onClick={() => setTab(value)}
+            className={tab === value ? "btn-primary rounded-full px-5 py-2 text-sm font-semibold" : "rounded-full px-5 py-2 text-sm font-semibold admin-text-muted hover:bg-black/5"}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "new" ? (
+        <NewPoolForm cooperativeId={cooperativeId} onCreated={handleCreated} />
+      ) : (
+        <LookupPool cooperativeId={cooperativeId} />
+      )}
     </div>
   );
 }

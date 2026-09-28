@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { ThemeToggle } from "@/app/components/ThemeToggle";
+import { useUnreadAnnouncements } from "@/app/lib/useAnnouncements";
 import { UserAuthProvider, useUserAuth } from "@/app/providers/UserAuthProvider";
 import { useRequireUserAuth } from "./useUserGuard";
 
@@ -382,6 +383,7 @@ function Topbar({
 }) {
   const pathname = usePathname();
   const { user } = useUserAuth();
+  const { unread } = useUnreadAnnouncements();
   const avatarInitials = initialsFor(user?.name || user?.email || "Member");
 
   /* Derive page title and category from pathname */
@@ -470,6 +472,7 @@ function Topbar({
         <Link
           href="/dashboard/notifications"
           id="user-topbar-notifications"
+          aria-label={unread > 0 ? `Notifications, ${unread} unread` : "Notifications"}
           className="hover-dash-text relative w-10 h-10 rounded-full border shadow-sm flex items-center justify-center transition-colors"
           style={{ background: "var(--dash-surface)", borderColor: "var(--dash-border)", color: "var(--dash-muted)" }}
         >
@@ -485,10 +488,15 @@ function Topbar({
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
             <path d="M13.73 21a2 2 0 0 1-3.46 0" />
           </svg>
-          <span
-            className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full border-2 border-white"
-            style={{ background: "#ef4444" }}
-          />
+          {unread > 0 && (
+            <span
+              aria-hidden="true"
+              className="absolute -top-1 -right-1 flex h-4.5 min-w-4.5 items-center justify-center rounded-full border-2 border-white px-1 text-[9px] font-bold leading-none text-white"
+              style={{ background: "#ef4444" }}
+            >
+              {unread > 9 ? "9+" : unread}
+            </span>
+          )}
         </Link>
 
         {/* Avatar - hide on profile page since it has its own large avatar */}

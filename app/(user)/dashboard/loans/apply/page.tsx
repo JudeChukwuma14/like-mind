@@ -21,10 +21,11 @@ type ApplySearchParams = Promise<{ amount?: string | string[]; tenure?: string |
 const { amount: amountLimits, tenureMonths: tenureLimits } = LOAN_CALCULATOR_LIMITS;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function validPrefill(value: string | string[] | undefined, min: number, max: number, integer = false): string {
+/** No upper bound — the calculator that produces these query values has none either; see LOAN_CALCULATOR_LIMITS. */
+function validPrefill(value: string | string[] | undefined, min: number, integer = false): string {
   if (typeof value !== "string") return "";
   const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed < min || parsed > max || (integer && !Number.isInteger(parsed))) return "";
+  if (!Number.isFinite(parsed) || parsed < min || (integer && !Number.isInteger(parsed))) return "";
   return value;
 }
 
@@ -32,8 +33,8 @@ export default function ApplyForLoanPage({ searchParams }: { searchParams: Apply
   const initial = use(searchParams);
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [principal, setPrincipal] = useState(() => validPrefill(initial.amount, amountLimits.min, amountLimits.max));
-  const [tenure, setTenure] = useState(() => validPrefill(initial.tenure, tenureLimits.min, tenureLimits.max, true));
+  const [principal, setPrincipal] = useState(() => validPrefill(initial.amount, amountLimits.min));
+  const [tenure, setTenure] = useState(() => validPrefill(initial.tenure, tenureLimits.min, true));
   const [purpose, setPurpose] = useState("");
   const [contacts, setContacts] = useState<string[]>([""]);
   const [file, setFile] = useState<File | null>(null);
@@ -102,8 +103,8 @@ export default function ApplyForLoanPage({ searchParams }: { searchParams: Apply
         <ArrowLeft className="h-4 w-4" /> Back to loans
       </Link>
       <header className="relative overflow-hidden rounded-3xl bg-[#181817] p-6 text-white md:p-8">
-        <div className="pointer-events-none absolute -right-12 -top-20 h-52 w-52 rounded-full bg-amber-400/15 blur-3xl" />
-        <p className="relative text-[10px] font-bold uppercase tracking-[0.2em] text-amber-300">Application</p>
+        <div className="pointer-events-none absolute -right-12 -top-20 h-52 w-52 rounded-full bg-cyan-400/15 blur-3xl" />
+        <p className="relative text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-300">Application</p>
         <h1 className="relative mt-2 text-3xl font-bold tracking-tight">Apply for a loan</h1>
         <p className="relative mt-2 max-w-xl text-sm leading-6 text-white/65">
           Your cooperative&apos;s policy is checked when you submit, so its allowed term may be shorter than the calculator range.
@@ -130,7 +131,7 @@ export default function ApplyForLoanPage({ searchParams }: { searchParams: Apply
               onChange={(event) => { setPrincipal(event.target.value); setPolicyTenureMax(undefined); clearField("amount"); }}
               aria-invalid={Boolean(error?.fieldErrors.amount)}
               aria-describedby="apply-amount-help apply-amount-error"
-              className={`input-dash rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-amber-400/30 ${error?.fieldErrors.amount ? "ring-2 ring-red-400" : ""}`}
+              className={`input-dash rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-400/30 ${error?.fieldErrors.amount ? "ring-2 ring-red-400" : ""}`}
             />
             <span id="apply-amount-help" className="text-xs font-normal dash-text-muted">
               The cooperative policy checks the amount when you submit.
@@ -150,7 +151,7 @@ export default function ApplyForLoanPage({ searchParams }: { searchParams: Apply
               onChange={(event) => { setTenure(event.target.value); clearField("tenure"); }}
               aria-invalid={Boolean(error?.fieldErrors.tenure)}
               aria-describedby="apply-tenure-help apply-tenure-error"
-              className={`input-dash rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-amber-400/30 ${error?.fieldErrors.tenure ? "ring-2 ring-red-400" : ""}`}
+              className={`input-dash rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-400/30 ${error?.fieldErrors.tenure ? "ring-2 ring-red-400" : ""}`}
             />
             <span id="apply-tenure-help" className="text-xs font-normal dash-text-muted">
               {policyTenureMax
@@ -162,7 +163,7 @@ export default function ApplyForLoanPage({ searchParams }: { searchParams: Apply
               <button
                 type="button"
                 onClick={() => { setTenure(String(error.suggestedTenure)); clearField("tenure"); }}
-                className="justify-self-start rounded-full bg-amber-100 px-3 py-1.5 text-xs font-bold text-amber-900"
+                className="justify-self-start rounded-full bg-cyan-100 px-3 py-1.5 text-xs font-bold text-cyan-900"
               >
                 Use {error.suggestedTenure} months
               </button>
@@ -178,7 +179,7 @@ export default function ApplyForLoanPage({ searchParams }: { searchParams: Apply
             value={purpose}
             onChange={(event) => { setPurpose(event.target.value); clearField("purpose"); }}
             aria-invalid={Boolean(error?.fieldErrors.purpose)}
-            className={`input-dash resize-y rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-amber-400/30 ${error?.fieldErrors.purpose ? "ring-2 ring-red-400" : ""}`}
+            className={`input-dash resize-y rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-400/30 ${error?.fieldErrors.purpose ? "ring-2 ring-red-400" : ""}`}
           />
           {error?.fieldErrors.purpose && <span className="text-xs font-medium text-red-600">{error.fieldErrors.purpose}</span>}
         </label>
@@ -217,7 +218,7 @@ export default function ApplyForLoanPage({ searchParams }: { searchParams: Apply
         </fieldset>
 
         <label className={`flex cursor-pointer items-center gap-4 rounded-2xl border border-dashed p-5 ${error?.fieldErrors.file ? "border-red-400" : ""}`} style={!error?.fieldErrors.file ? { borderColor: "var(--dash-border)" } : undefined}>
-          <Upload className="h-6 w-6 text-amber-500" />
+          <Upload className="h-6 w-6 text-cyan-500" />
           <span className="min-w-0"><span className="block text-sm font-semibold">Bank statement file</span><span className="block truncate text-xs dash-text-muted">{file?.name ?? "Choose a file"}</span></span>
           <input type="file" onChange={(event) => { setFile(event.target.files?.[0] ?? null); clearField("file"); }} className="sr-only" />
         </label>

@@ -15,8 +15,6 @@ import {
   CreditCard,
   AlertTriangle,
   PartyPopper,
-  Copy,
-  Check,
   Home,
   type LucideIcon,
 } from "lucide-react";
@@ -94,9 +92,16 @@ function SummarySection({ icon: Icon, title, lines, editHref, warning }: Summary
   );
 }
 
+/**
+ * Raw `data` from POST CompleteSetup. Calling it again on an already-complete setup
+ * returns only the provisioning fields, so every field may be absent.
+ */
+type CompleteSetupResponse = {
+  provisioningStatus?: string | null;
+  rootAdminUserId?: string | null;
+};
+
 type CompleteSetupData = {
-  cooperativeId: string;
-  provisioningStatus: string;
   rootAdminUserId: string | null;
 };
 
@@ -109,15 +114,7 @@ function LaunchResultModal({
   message: string;
   onContinue: () => void;
 }) {
-  const [copied, setCopied] = useState(false);
   const needsAttention = !result.rootAdminUserId;
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(result.cooperativeId).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    });
-  };
 
   return (
     <motion.div
@@ -145,33 +142,9 @@ function LaunchResultModal({
         </div>
 
         <h2 className="text-xl font-bold text-[#171717] mb-2">
-          {needsAttention ? "Cooperative created" : "Setup completed"}
+          {needsAttention ? "Setup needs attention" : "Setup completed"}
         </h2>
-        <p className="text-sm text-[#6b7280] leading-relaxed mb-4">{message}</p>
-
-        <div className="bg-[#faf9f6] border border-[#e0d9cc] rounded-xl px-4 py-3 mb-3 text-left">
-          <p className="text-[10px] font-mono uppercase tracking-widest text-[#a09880] mb-1">
-            Cooperative ID
-          </p>
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-xs font-mono text-[#171717] truncate">{result.cooperativeId}</p>
-            <button
-              type="button"
-              onClick={handleCopy}
-              aria-label="Copy cooperative ID"
-              className="text-[#a09880] hover:text-[#171717] transition-colors shrink-0"
-            >
-              {copied ? <Check className="w-3.5 h-3.5 text-[#22c55e]" /> : <Copy className="w-3.5 h-3.5" />}
-            </button>
-          </div>
-        </div>
-
-        {needsAttention && (
-          <p className="text-xs text-[#92400e] bg-[#fef3c7] border border-[#fde68a] rounded-xl px-3 py-2 mb-2 text-left">
-            Status: <span className="font-semibold">{result.provisioningStatus}</span> — the root admin
-            account needs setup before sign-in works. Contact support if this doesn&apos;t resolve itself.
-          </p>
-        )}
+        {message && <p className="text-sm text-[#6b7280] leading-relaxed mb-4">{message}</p>}
 
         <motion.button
           type="button"
@@ -189,7 +162,7 @@ function LaunchResultModal({
 
 export default function ReviewLaunchPage() {
   const router = useRouter();
-  const { data, clearData, isClient } = useSetupStore();
+  const { data, setData, clearData, isClient } = useSetupStore();
   const [confirmed, setConfirmed] = useState(false);
   const [launchResult, setLaunchResult] = useState<{ data: CompleteSetupData; message: string } | null>(
     null,
@@ -198,14 +171,24 @@ export default function ReviewLaunchPage() {
   const completeSetup = useMutation({
     mutationFn: async () => {
       const body = buildCompleteSetupRequest(data);
-      const res = ensureApiSuccess(await adminApiFetch<ApiEnvelope<CompleteSetupData | null>>(
+      const res = ensureApiSuccess(await adminApiFetch<ApiEnvelope<CompleteSetupResponse | null>>(
         `/api/CooperativeAccount/CompleteSetup/${data.cooperativeAccountId}`,
         { method: "POST", body },
       ));
-      if (!res.data?.cooperativeId) throw new Error("The backend reported setup success without a cooperative ID. Verify the cooperative status before submitting again.");
-      return { data: res.data, message: res.message };
+      const payload = res.data;
+      if (!payload) {
+        throw new Error("The backend reported success without any setup details. Verify the cooperative status before submitting again.");
+      }
+      // A repeat call returns only the provisioning fields, and a missing root admin is a
+      // result to show the user (the server's message), not an error to throw.
+      return {
+        data: { rootAdminUserId: payload.rootAdminUserId ?? null },
+        message: res.message,
+      };
     },
     onSuccess: (res) => {
+      // The admin password is only needed by the earlier CreateAccount step; don't leave it in localStorage.
+      setData({ password: "" });
       setLaunchResult({ data: res.data, message: res.message });
     },
     onError: (err) => {
@@ -214,7 +197,8 @@ export default function ReviewLaunchPage() {
   });
 
   const handleGoHome = () => {
-    clearData();
+    // Keep the setup details while provisioning still needs attention, so the launch can be run again from this page later.
+    if (launchResult?.data.rootAdminUserId) clearData();
     router.push("/login");
   };
 

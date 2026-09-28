@@ -3,7 +3,7 @@
 import { use, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, ArrowUpRight, CheckCircle2, FileUp, Loader2, RefreshCw, Wallet } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, Check, CheckCircle2, Copy, FileUp, Loader2, RefreshCw, Wallet } from "lucide-react";
 import toast from "react-hot-toast";
 import {
   getMemberDisbursementApprovals,
@@ -13,6 +13,7 @@ import {
   repayFromSavings,
   submitRepaymentProof,
   type LoanRecord,
+  type SubmitRepaymentProofResult,
 } from "@/app/lib/loan-api";
 import { loanKeys } from "@/app/lib/loan-keys";
 import { getLoanScreenError } from "@/app/components/loans/loan-errors";
@@ -35,8 +36,10 @@ function RepaymentDialog({ installment, loanId, onClose }: { installment: LoanRe
   const [proof, setProof] = useState<File | null>(null);
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [submittedClaimId, setSubmittedClaimId] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const mutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (): Promise<SubmitRepaymentProofResult | unknown> => {
       if (!installmentId) throw new Error("The installment ID was not returned by the service.");
       const numericAmount = Number(amount);
       if (!Number.isFinite(numericAmount) || numericAmount <= 0) throw new Error("Enter an amount greater than zero.");
@@ -46,14 +49,23 @@ function RepaymentDialog({ installment, loanId, onClose }: { installment: LoanRe
       }
       return repayFromSavings(installmentId, numericAmount);
     },
-    onSuccess: async () => {
-      toast.success(method === "proof" ? "Proof submitted for review. Your balance has not changed yet." : "Repayment from savings recorded.");
+    onSuccess: async (result) => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: loanKeys.memberDetail(loanId) }),
         queryClient.invalidateQueries({ queryKey: loanKeys.memberInstallments(loanId) }),
         queryClient.invalidateQueries({ queryKey: loanKeys.memberLists }),
         queryClient.invalidateQueries({ queryKey: ["my-savings"] }),
       ]);
+      if (method === "proof") {
+        // The backend gives admins no way to discover a pending claim on their own (see
+        // reviewRepaymentClaim's doc comment) — if we got an id back, keep the dialog open
+        // so the member can copy it, since it's the only way it can reach an admin at all.
+        const claimId = (result as SubmitRepaymentProofResult).claimId;
+        if (claimId) { setSubmittedClaimId(claimId); return; }
+        toast.success("Proof submitted for review. Your balance has not changed yet.");
+      } else {
+        toast.success("Repayment from savings recorded.");
+      }
       onClose();
     },
     onError: (reason) => setError(getLoanScreenError(reason)),
@@ -66,20 +78,53 @@ function RepaymentDialog({ installment, loanId, onClose }: { installment: LoanRe
     mutation.mutate();
   }
 
+  function copyClaimId() {
+    if (!submittedClaimId) return;
+    navigator.clipboard.writeText(submittedClaimId).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  }
+
+  if (submittedClaimId) {
+    return (
+      <div role="dialog" aria-modal="true" aria-labelledby="claim-submitted-title" className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+        <div className="w-full max-w-md rounded-3xl border p-6 text-center shadow-2xl md:p-8" style={{ background: "var(--dash-surface)", color: "var(--dash-text)", borderColor: "var(--dash-border)" }}>
+          <CheckCircle2 className="mx-auto h-10 w-10 text-cyan-500" />
+          <h2 id="claim-submitted-title" className="mt-4 text-xl font-bold">Proof submitted for review</h2>
+          <p className="mt-2 text-sm" style={{ color: "var(--dash-muted)" }}>
+            Your balance has not changed yet. Your cooperative has no automatic way to see this claim — copy the ID
+            below and share it with your admin so they can review it.
+          </p>
+          <div className="mt-5 rounded-xl border px-4 py-3 text-left" style={{ borderColor: "var(--dash-border)" }}>
+            <p className="text-[10px] font-mono uppercase tracking-widest" style={{ color: "var(--dash-muted)" }}>Claim ID</p>
+            <div className="mt-1 flex items-center justify-between gap-2">
+              <p className="break-all font-mono text-xs">{submittedClaimId}</p>
+              <button type="button" onClick={copyClaimId} aria-label="Copy claim ID" className="shrink-0" style={{ color: "var(--dash-muted)" }}>
+                {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+          <button type="button" onClick={onClose} className="mt-6 w-full rounded-full bg-[#171717] px-4 py-3 text-sm font-semibold text-white">Done</button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div role="dialog" aria-modal="true" aria-labelledby="repayment-title" className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
       <form onSubmit={submit} className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl border p-6 shadow-2xl md:p-8" style={{ background: "var(--dash-surface)", color: "var(--dash-text)", borderColor: "var(--dash-border)" }}>
-        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-600">Installment repayment</p>
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-600">Installment repayment</p>
         <h2 id="repayment-title" className="mt-1 text-2xl font-bold">Choose how to pay</h2>
         <p className="mt-2 text-sm" style={{ color: "var(--dash-muted)" }}>Savings payments are recorded by the service. Uploaded proof is reviewed before it changes your balance.</p>
 
         <div className="mt-6 grid gap-3 sm:grid-cols-2">
-          <button type="button" onClick={() => { setMethod("savings"); setError(null); }} className={`flex items-center gap-2 rounded-2xl border p-4 text-left text-sm font-semibold ${method === "savings" ? "border-amber-400 ring-2 ring-amber-400/20" : ""}`} style={{ borderColor: method === "savings" ? undefined : "var(--dash-border)" }}><Wallet className="h-5 w-5 text-amber-600" /> Pay from savings</button>
-          <button type="button" onClick={() => { setMethod("proof"); setError(null); }} className={`flex items-center gap-2 rounded-2xl border p-4 text-left text-sm font-semibold ${method === "proof" ? "border-amber-400 ring-2 ring-amber-400/20" : ""}`} style={{ borderColor: method === "proof" ? undefined : "var(--dash-border)" }}><FileUp className="h-5 w-5 text-amber-600" /> Submit proof</button>
+          <button type="button" onClick={() => { setMethod("savings"); setError(null); }} className={`flex items-center gap-2 rounded-2xl border p-4 text-left text-sm font-semibold ${method === "savings" ? "border-cyan-400 ring-2 ring-cyan-400/20" : ""}`} style={{ borderColor: method === "savings" ? undefined : "var(--dash-border)" }}><Wallet className="h-5 w-5 text-cyan-600" /> Pay from savings</button>
+          <button type="button" onClick={() => { setMethod("proof"); setError(null); }} className={`flex items-center gap-2 rounded-2xl border p-4 text-left text-sm font-semibold ${method === "proof" ? "border-cyan-400 ring-2 ring-cyan-400/20" : ""}`} style={{ borderColor: method === "proof" ? undefined : "var(--dash-border)" }}><FileUp className="h-5 w-5 text-cyan-600" /> Submit proof</button>
         </div>
 
         <label className="mt-5 grid gap-2 text-sm font-semibold">Amount paid
-          <input type="number" min="0.01" step="any" value={amount} onChange={(event) => setAmount(event.target.value)} required className="input-dash rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-amber-400/30" />
+          <input type="number" min="0.01" step="any" value={amount} onChange={(event) => setAmount(event.target.value)} required className="input-dash rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-400/30" />
         </label>
         {method === "proof" && <div className="mt-5 space-y-4"><label className="grid gap-2 text-sm font-semibold">Proof file<input type="file" required onChange={(event) => setProof(event.target.files?.[0] ?? null)} className="input-dash min-w-0 rounded-xl px-4 py-3 text-sm" /></label><label className="grid gap-2 text-sm font-semibold">Note <span className="font-normal" style={{ color: "var(--dash-muted)" }}>(optional)</span><textarea rows={3} value={note} onChange={(event) => setNote(event.target.value)} className="input-dash rounded-xl px-4 py-3 outline-none" /></label></div>}
         {error && <p role="alert" className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
@@ -102,7 +147,7 @@ function Schedule({ loanId, canPay }: { loanId: string; canPay: boolean }) {
     const amount = readNumber(installment, "amount") ?? readNumber(installment, "amountDue");
     const balance = readNumber(installment, "balance");
     const payable = canPay && Boolean(id) && status?.toLowerCase() !== "paid";
-    return <article key={id ?? index} className="card-dash rounded-2xl p-5"><div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-[10px] font-bold uppercase tracking-widest text-amber-600">Installment {readNumber(installment, "installmentNumber") ?? index + 1}</p><p className="mt-1 text-lg font-bold">{formatMoney(balance ?? amount)}</p><p className="mt-1 text-xs dash-text-muted">{due ? `Due ${formatValue(due)}` : "Due date unavailable"} · {status ?? "Status unavailable"}</p></div>{payable && <button onClick={() => setSelected(installment)} className="inline-flex items-center justify-center gap-2 rounded-full bg-[#171717] px-5 py-2.5 text-sm font-semibold text-white"><ArrowUpRight className="h-4 w-4" /> Repay</button>}</div><details className="mt-4 border-t pt-3 text-sm" style={{ borderColor: "var(--dash-border)" }}><summary className="cursor-pointer text-xs font-semibold dash-text-muted">View installment details</summary><div className="mt-4"><ResponseDetails value={installment} /></div></details></article>;
+    return <article key={id ?? index} className="card-dash rounded-2xl p-5"><div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-[10px] font-bold uppercase tracking-widest text-cyan-600">Installment {readNumber(installment, "installmentNumber") ?? index + 1}</p><p className="mt-1 text-lg font-bold">{formatMoney(balance ?? amount)}</p><p className="mt-1 text-xs dash-text-muted">{due ? `Due ${formatValue(due)}` : "Due date unavailable"} · {status ?? "Status unavailable"}</p></div>{payable && <button onClick={() => setSelected(installment)} className="inline-flex items-center justify-center gap-2 rounded-full bg-[#171717] px-5 py-2.5 text-sm font-semibold text-white"><ArrowUpRight className="h-4 w-4" /> Repay</button>}</div><details className="mt-4 border-t pt-3 text-sm" style={{ borderColor: "var(--dash-border)" }}><summary className="cursor-pointer text-xs font-semibold dash-text-muted">View installment details</summary><div className="mt-4"><ResponseDetails value={installment} /></div></details></article>;
   })}{selected && <RepaymentDialog installment={selected} loanId={loanId} onClose={() => setSelected(null)} />}</div>;
 }
 
@@ -126,8 +171,8 @@ export default function MemberLoanDetailsPage({ params }: { params: Promise<{ id
       <div className="flex items-center justify-between gap-3"><Link href="/dashboard/loans" className="inline-flex items-center gap-2 text-sm font-semibold dash-text-muted"><ArrowLeft className="h-4 w-4" /> Back to loans</Link><button onClick={() => query.refetch()} disabled={query.isFetching} className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold disabled:opacity-50" style={{ borderColor: "var(--dash-border)" }}><RefreshCw className={`h-4 w-4 ${query.isFetching ? "animate-spin" : ""}`} /> Refresh</button></div>
       {query.isLoading ? <div className="flex justify-center py-24"><Loader2 className="h-7 w-7 animate-spin" /></div> : query.isError ? <QueryError error={query.error} retry={() => { void query.refetch(); }} /> : query.data ? <>
         <LoanOverview loan={query.data} />
-        <nav aria-label="Loan details" className="flex gap-2 overflow-x-auto border-b pb-3" style={{ borderColor: "var(--dash-border)" }}>{(["overview", "installments", "activity"] as Tab[]).map((item) => <button key={item} onClick={() => setTab(item)} className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold capitalize ${tab === item ? "bg-amber-400 text-black" : "dash-text-muted"}`}>{item}</button>)}</nav>
-        {tab === "overview" && <div className="grid gap-4 lg:grid-cols-[1.3fr_0.7fr]"><section className="card-dash rounded-3xl p-6"><h2 className="text-xl font-bold">Application details</h2><div className="mt-5 grid gap-4 sm:grid-cols-2"><div><p className="text-[10px] font-bold uppercase tracking-widest dash-text-muted">Purpose</p><p className="mt-1 text-sm font-semibold">{readString(query.data, "purpose") ?? "—"}</p></div><div><p className="text-[10px] font-bold uppercase tracking-widest dash-text-muted">Loan ID</p><p className="mt-1 break-all text-sm font-semibold">{id}</p></div><div><p className="text-[10px] font-bold uppercase tracking-widest dash-text-muted">Principal</p><p className="mt-1 text-sm font-semibold">{formatMoney(readNumber(query.data, "principalAmount"))}</p></div><div><p className="text-[10px] font-bold uppercase tracking-widest dash-text-muted">Tenure</p><p className="mt-1 text-sm font-semibold">{readNumber(query.data, "tenureMonths") ?? "—"} months</p></div></div><details className="mt-6 border-t pt-4" style={{ borderColor: "var(--dash-border)" }}><summary className="cursor-pointer text-sm font-semibold dash-text-muted">View all information supplied by the service</summary><div className="mt-5"><ResponseDetails value={query.data} /></div></details></section><aside className="card-dash rounded-3xl p-6"><CheckCircle2 className="h-7 w-7 text-amber-500" /><h2 className="mt-4 text-lg font-bold">What happens next?</h2><p className="mt-2 text-sm leading-6 dash-text-muted">{status === "Disbursed" ? "Your repayment schedule is ready. Open Installments to pay from savings or submit payment proof." : status === "Closed" ? "Your loan has been completed." : status === "Rejected" ? "This application was rejected. You can review the returned details for the reason." : "The service will update your loan status as the review and approval steps progress."}</p>{status === "Disbursed" && <button onClick={() => setTab("installments")} className="mt-5 rounded-full bg-[#171717] px-5 py-2.5 text-sm font-semibold text-white">View installments</button>}</aside></div>}
+        <nav aria-label="Loan details" className="flex gap-2 overflow-x-auto border-b pb-3" style={{ borderColor: "var(--dash-border)" }}>{(["overview", "installments", "activity"] as Tab[]).map((item) => <button key={item} onClick={() => setTab(item)} className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold capitalize ${tab === item ? "bg-cyan-400 text-black" : "dash-text-muted"}`}>{item}</button>)}</nav>
+        {tab === "overview" && <div className="grid gap-4 lg:grid-cols-[1.3fr_0.7fr]"><section className="card-dash rounded-3xl p-6"><h2 className="text-xl font-bold">Application details</h2><div className="mt-5 grid gap-4 sm:grid-cols-2"><div><p className="text-[10px] font-bold uppercase tracking-widest dash-text-muted">Purpose</p><p className="mt-1 text-sm font-semibold">{readString(query.data, "purpose") ?? "—"}</p></div><div><p className="text-[10px] font-bold uppercase tracking-widest dash-text-muted">Loan ID</p><p className="mt-1 break-all text-sm font-semibold">{id}</p></div><div><p className="text-[10px] font-bold uppercase tracking-widest dash-text-muted">Principal</p><p className="mt-1 text-sm font-semibold">{formatMoney(readNumber(query.data, "principalAmount"))}</p></div><div><p className="text-[10px] font-bold uppercase tracking-widest dash-text-muted">Tenure</p><p className="mt-1 text-sm font-semibold">{readNumber(query.data, "tenureMonths") ?? "—"} months</p></div></div><details className="mt-6 border-t pt-4" style={{ borderColor: "var(--dash-border)" }}><summary className="cursor-pointer text-sm font-semibold dash-text-muted">View all information supplied by the service</summary><div className="mt-5"><ResponseDetails value={query.data} /></div></details></section><aside className="card-dash rounded-3xl p-6"><CheckCircle2 className="h-7 w-7 text-cyan-500" /><h2 className="mt-4 text-lg font-bold">What happens next?</h2><p className="mt-2 text-sm leading-6 dash-text-muted">{status === "Disbursed" ? "Your repayment schedule is ready. Open Installments to pay from savings or submit payment proof." : status === "Closed" ? "Your loan has been completed." : status === "Rejected" ? "This application was rejected. You can review the returned details for the reason." : "The service will update your loan status as the review and approval steps progress."}</p>{status === "Disbursed" && <button onClick={() => setTab("installments")} className="mt-5 rounded-full bg-[#171717] px-5 py-2.5 text-sm font-semibold text-white">View installments</button>}</aside></div>}
         {tab === "installments" && <Schedule loanId={id} canPay={status === "Disbursed"} />}
         {tab === "activity" && <Activity loanId={id} />}
       </> : <div className="card-dash rounded-3xl p-10 text-center text-sm dash-text-muted">No loan information was returned.</div>}
