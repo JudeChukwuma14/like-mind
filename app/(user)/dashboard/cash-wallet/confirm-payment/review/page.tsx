@@ -44,12 +44,16 @@ export default function ReviewPaymentPage() {
 
   const { mutate: submit, isPending } = useMutation({
     mutationFn: () => submitPayment(draftId),
-    onSuccess: () => {
+    onSuccess: (submitted) => {
       toast.success("Payment submitted for confirmation!");
       queryClient.invalidateQueries({ queryKey: ["my-drafts"] });
       queryClient.invalidateQueries({ queryKey: ["my-draft"] });
       queryClient.invalidateQueries({ queryKey: ["my-payments"] });
-      router.push("/dashboard/cash-wallet/confirm-payment/success");
+      const q = new URLSearchParams({ id: submitted.id });
+      if (submitted.amountPaid != null) q.set("amount", String(submitted.amountPaid));
+      if (submitted.currency) q.set("currency", submitted.currency);
+      if (submitted.contributionMonth) q.set("month", submitted.contributionMonth);
+      router.push(`/dashboard/cash-wallet/confirm-payment/success?${q.toString()}`);
     },
     onError: (err) => {
       toast.error(getApiErrorMessage(err));

@@ -162,9 +162,9 @@ function AdminSidebar({
           <Image
             src="/Likemind.png"
             alt="Logo"
-            width={50}
+            width={64}
             height={50}
-            style={{ width: "auto", height: "auto" }}
+            className="h-12.5 w-12.5 object-contain"
           />
         </Link>
 

@@ -154,12 +154,14 @@ export async function createPaymentDraft(
  * The backend must also enforce this — the frontend hiding the edit
  * button is for UX only.
  */
-export async function submitPayment(paymentId: string): Promise<unknown> {
-  const response = await memberProfileApiFetch<ApiEnvelope<unknown>>(
+export async function submitPayment(paymentId: string): Promise<PaymentDraft> {
+  const response = await memberProfileApiFetch<ApiEnvelope<PaymentDraft>>(
     `/api/Payments/${encodeURIComponent(paymentId)}/Submit`,
     { method: "POST" },
   );
-  return ensureApiSuccess(response);
+  const data = ensureApiSuccess(response).data;
+  if (!data) throw new Error("The payment submission response was empty.");
+  return data;
 }
 
 function paymentStatusPath(params: GetAllPaymentStatusParams): string {

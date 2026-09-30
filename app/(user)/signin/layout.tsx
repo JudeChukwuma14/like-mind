@@ -30,7 +30,7 @@ export default function SignInLayout({ children }: { children: React.ReactNode }
       {/* Left panel */}
       <div className="lg:w-[38%] shrink-0 bg-[#0a0a0a] text-white flex flex-col justify-between p-8 lg:p-12 lg:min-h-screen">
         <Link href="/" className="flex items-center gap-2.5 w-fit">
-          <Image src="/Likemind.png" alt="LikeMind" width={120} height={40} style={{ width: "auto", height: "auto" }} className="h-8 w-auto object-contain" />
+          <Image src="/Likemind.png" alt="LikeMind" width={41} height={32} className="h-8 w-auto object-contain" />
         </Link>
 
         <div className="mt-16 lg:mt-0">

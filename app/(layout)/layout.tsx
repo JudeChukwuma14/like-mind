@@ -43,10 +43,9 @@ function Navbar() {
           <Image
             src="/Likemind.png"
             alt="LikeMinds Cooperative Logo"
-            width={50}
+            width={64}
             height={50}
-            className="object-contain transition-transform duration-300 group-hover:scale-105"
-            style={{ width: "auto", height: "auto" }}
+            className="h-12.5 w-12.5 object-contain transition-transform duration-300 group-hover:scale-105"
           />
         </Link>
 
@@ -174,10 +173,9 @@ function Footer() {
               <Image
                 src="/Likemind.png"
                 alt="LikeMinds Cooperative Logo"
-                width={70}
+                width={90}
                 height={70}
-                className="object-contain transition-transform duration-300 group-hover:scale-105"
-                style={{ width: "auto", height: "auto" }}
+                className="h-17.5 w-17.5 object-contain transition-transform duration-300 group-hover:scale-105"
               />
             </Link>
             <p

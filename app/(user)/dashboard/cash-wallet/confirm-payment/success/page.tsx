@@ -1,33 +1,64 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { ArrowRight, Check } from "lucide-react";
 
+function fmt(amount: number | null, currency: string | null): string {
+  if (amount == null || !Number.isFinite(amount)) return "—";
+  try {
+    return new Intl.NumberFormat("en-NG", currency ? { style: "currency", currency, maximumFractionDigits: 0 } : { maximumFractionDigits: 0 }).format(amount);
+  } catch {
+    return new Intl.NumberFormat("en-NG", { maximumFractionDigits: 0 }).format(amount);
+  }
+}
+
+/** contributionMonth arrives as an ISO date ("2026-09-01"); format it as "September 2026". */
+function formatMonth(iso: string | null): string | null {
+  if (!iso) return null;
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric", timeZone: "UTC" }).format(date);
+}
+
 export default function SuccessPaymentPage() {
+  const searchParams = useSearchParams();
+  const id = searchParams?.get("id") || "";
+  const amountParam = searchParams?.get("amount");
+  const amount = amountParam != null && amountParam !== "" ? Number(amountParam) : null;
+  const currency = searchParams?.get("currency") || null;
+  const month = formatMonth(searchParams?.get("month") || null);
+
   return (
     <div className="flex items-center justify-center min-h-[60vh] py-12">
       <div className="bg-white rounded-3xl p-8 md:p-12 shadow-sm border border-gray-100 max-w-2xl w-full text-center relative overflow-hidden">
-        
+
         {/* Soft green glow at the top */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[80%] h-32 bg-emerald-500/10 rounded-[100%] blur-3xl"></div>
 
         {/* Content */}
         <div className="relative z-10 flex flex-col items-center">
-          
+
           <div className="w-16 h-16 bg-emerald-600 rounded-full flex items-center justify-center text-white mb-6 shadow-md">
             <Check size={32} strokeWidth={3} />
           </div>
 
-          <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-2">
-            Ref #SAV-2684-118
-          </p>
+          {id && (
+            <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-2 break-all px-4">
+              Ref #{id}
+            </p>
+          )}
 
           <h1 className="text-3xl md:text-4xl font-bold text-[#111] mb-4">
             Submitted for review
           </h1>
 
           <p className="text-gray-500 mb-8 max-w-md mx-auto">
-            Your April payment of <strong className="text-[#111]">$ 25,000</strong> is with admin. 
+            {amount != null ? (
+              <>Your {month ? `${month} ` : ""}payment of <strong className="text-[#111]">{fmt(amount, currency)}</strong> is with admin. </>
+            ) : (
+              "Your payment is with admin. "
+            )}
             Confirmation usually arrives within 1-2 working days.
           </p>
 
@@ -36,7 +67,7 @@ export default function SuccessPaymentPage() {
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
                 Amount
               </p>
-              <p className="font-bold text-[#111]">$ 25,000</p>
+              <p className="font-bold text-[#111]">{fmt(amount, currency)}</p>
             </div>
             {/* Divider (desktop) */}
             <div className="hidden sm:block w-[1px] h-8 bg-gray-200"></div>
@@ -44,7 +75,7 @@ export default function SuccessPaymentPage() {
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
                 Month
               </p>
-              <p className="font-bold text-[#111]">April 2026</p>
+              <p className="font-bold text-[#111]">{month || "—"}</p>
             </div>
             {/* Divider (desktop) */}
             <div className="hidden sm:block w-[1px] h-8 bg-gray-200"></div>
@@ -60,14 +91,14 @@ export default function SuccessPaymentPage() {
           </div>
 
           <div className="flex flex-col-reverse sm:flex-row items-center justify-center gap-4 w-full">
-            <Link 
+            <Link
               href="/dashboard/cash-wallet"
               className="w-full sm:w-auto px-6 py-3 bg-white border border-gray-200 rounded-full text-sm font-medium text-[#111] hover:bg-gray-50 transition-colors"
             >
               Back to savings
             </Link>
-            <Link 
-              href="#"
+            <Link
+              href="/dashboard/cash-wallet"
               className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-[#111] text-white rounded-full text-sm font-medium hover:bg-black transition-colors shadow-sm"
             >
               Track this payment

@@ -42,7 +42,7 @@ export default function AdminResetPasswordPage() {
       <header className="w-full bg-[#f4efe6]">
         <div className="flex items-center px-5 py-3 md:px-8">
           <div className="flex items-center gap-3">
-            <Image src="/Likemind.png" alt="LikeMind" width={120} height={40} style={{ width: "auto", height: "auto" }} className="h-8 w-auto object-contain" />
+            <Image src="/Likemind.png" alt="LikeMind" width={41} height={32} className="h-8 w-auto object-contain" />
           </div>
         </div>
       </header>
