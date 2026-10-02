@@ -20,8 +20,8 @@ import { adminApiFetch, type ApiEnvelope } from "@/app/lib/api-client";
  */
 export const CONTACT_SUBJECTS = [
   { value: "MembershipApplication", label: "Membership application" },
-  { value: "GeneralInquiry",        label: "General inquiries"      },
-  { value: "Partnership",           label: "Partnerships"           },
+  { value: "GeneralInquiry", label: "General inquiries" },
+  { value: "Partnership", label: "Partnerships" },
 ] as const;
 
 export type ContactSubject = (typeof CONTACT_SUBJECTS)[number]["value"];
@@ -65,8 +65,13 @@ export type SubmitContactPayload = {
  * Different endpoints may return the page wrapper directly in `data` or
  * one level deeper; this handles both shapes and logs unexpected ones.
  */
-function pluckContactPage(raw: unknown, pageNumber: number, pageSize: number): ContactPage {
-  const obj = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+function pluckContactPage(
+  raw: unknown,
+  pageNumber: number,
+  pageSize: number,
+): ContactPage {
+  const obj =
+    raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
   // Try data.items first (standard envelope), then data directly.
   const data =
     obj.data && typeof obj.data === "object"
@@ -76,9 +81,13 @@ function pluckContactPage(raw: unknown, pageNumber: number, pageSize: number): C
   if (Array.isArray(data.items)) {
     return {
       items: data.items as ContactMessage[],
-      pageNumber: typeof data.pageNumber === "number" ? data.pageNumber : pageNumber,
-      pageSize:   typeof data.pageSize   === "number" ? data.pageSize   : pageSize,
-      totalCount: typeof data.totalCount === "number" ? data.totalCount : (data.items as unknown[]).length,
+      pageNumber:
+        typeof data.pageNumber === "number" ? data.pageNumber : pageNumber,
+      pageSize: typeof data.pageSize === "number" ? data.pageSize : pageSize,
+      totalCount:
+        typeof data.totalCount === "number"
+          ? data.totalCount
+          : (data.items as unknown[]).length,
       totalPages: typeof data.totalPages === "number" ? data.totalPages : 1,
     };
   }
@@ -117,7 +126,7 @@ export async function getContactMessages(
 ): Promise<ContactPage> {
   const params = new URLSearchParams({
     pageNumber: String(pageNumber),
-    pageSize:   String(pageSize),
+    pageSize: String(pageSize),
   });
   const raw = await adminApiFetch<unknown>(`/api/Contact?${params.toString()}`);
   return pluckContactPage(raw, pageNumber, pageSize);
@@ -143,8 +152,8 @@ export async function getVerifiedContactMessages(
 ): Promise<ContactPage> {
   const params = new URLSearchParams({
     IsVerified: String(isVerified),
-    pageNumber:  String(pageNumber),
-    pageSize:    String(pageSize),
+    pageNumber: String(pageNumber),
+    pageSize: String(pageSize),
   });
   const raw = await adminApiFetch<unknown>(
     `/api/Contact/Verified?${params.toString()}`,
@@ -154,15 +163,24 @@ export async function getVerifiedContactMessages(
 
 /** PATCH /api/Contact/{id}/verify — mark a contact message as verified */
 export async function verifyContactMessage(id: string): Promise<unknown> {
-  return adminApiFetch<unknown>(`/api/Contact/${encodeURIComponent(id)}/verify`, {
-    method: "PATCH",
-  });
+  return adminApiFetch<unknown>(
+    `/api/Contact/${encodeURIComponent(id)}/verify`,
+    {
+      method: "PATCH",
+    },
+  );
 }
 
 /** POST /api/Contact/{id}/Reply — reply to a contact message */
-export async function replyContactMessage(id: string, replyMessage: string): Promise<unknown> {
-  return adminApiFetch<unknown>(`/api/Contact/${encodeURIComponent(id)}/Reply`, {
-    method: "POST",
-    body: { replyMessage },
-  });
+export async function replyContactMessage(
+  id: string,
+  replyMessage: string,
+): Promise<unknown> {
+  return adminApiFetch<unknown>(
+    `/api/Contact/${encodeURIComponent(id)}/Reply`,
+    {
+      method: "POST",
+      body: { replyMessage },
+    },
+  );
 }

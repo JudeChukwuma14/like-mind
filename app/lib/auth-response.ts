@@ -2,7 +2,6 @@ function looksLikeJwt(value: string): boolean {
   return value.split(".").length === 3;
 }
 
-
 export function extractAuthToken(raw: unknown): string | null {
   if (!raw || typeof raw !== "object") return null;
   const obj = raw as Record<string, unknown>;

@@ -82,11 +82,24 @@ export async function getApprovals(
   const res = await adminApiFetch<ApiEnvelope<ApprovalPage>>(url);
   // Defensively handle both paginated and bare-array shapes
   const data = res.data;
-  if (!data) return { items: [], pageNumber: 1, pageSize: 20, totalCount: 0, totalPages: 1 };
+  if (!data)
+    return {
+      items: [],
+      pageNumber: 1,
+      pageSize: 20,
+      totalCount: 0,
+      totalPages: 1,
+    };
   // If the backend returns items directly (not nested) handle that case too
   if (Array.isArray(data)) {
     const arr = data as ApprovalRequest[];
-    return { items: arr, pageNumber: 1, pageSize: arr.length, totalCount: arr.length, totalPages: 1 };
+    return {
+      items: arr,
+      pageNumber: 1,
+      pageSize: arr.length,
+      totalCount: arr.length,
+      totalPages: 1,
+    };
   }
   return data as ApprovalPage;
 }

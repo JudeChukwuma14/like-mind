@@ -26,7 +26,6 @@ export function clearApiToken() {
   }
 }
 
-
 const ADMIN_API_TOKEN_KEY = "kajola_admin_api_token";
 
 export function getAdminApiToken(): string | null {

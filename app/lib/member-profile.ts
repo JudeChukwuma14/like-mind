@@ -1,5 +1,3 @@
-
-
 export type BasicInfo = {
   firstName: string | null;
   middleName: string | null;
@@ -97,7 +95,9 @@ function n(obj: Record<string, unknown>, key: string): number | null {
   return typeof obj[key] === "number" ? (obj[key] as number) : null;
 }
 function asObj(v: unknown): Record<string, unknown> | null {
-  return v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
+  return v && typeof v === "object" && !Array.isArray(v)
+    ? (v as Record<string, unknown>)
+    : null;
 }
 function asArr<T>(v: unknown): T[] {
   return Array.isArray(v) ? (v as T[]) : [];
@@ -165,12 +165,16 @@ export function pluckMember(raw: unknown): MemberDetail {
           email: s(nk, "email"),
           phoneNumber: s(nk, "phoneNumber"),
           sharePercentage: n(nk, "sharePercentage"),
-          isPrimaryBeneficiary: typeof nk.isPrimaryBeneficiary === "boolean" ? nk.isPrimaryBeneficiary : null,
+          isPrimaryBeneficiary:
+            typeof nk.isPrimaryBeneficiary === "boolean"
+              ? nk.isPrimaryBeneficiary
+              : null,
         }
       : null,
     referee: rf
       ? {
-          skipReferee: typeof rf.skipReferee === "boolean" ? rf.skipReferee : null,
+          skipReferee:
+            typeof rf.skipReferee === "boolean" ? rf.skipReferee : null,
           refereeFullName: s(rf, "refereeFullName"),
           memberId: s(rf, "memberId"),
           refereeEmail: s(rf, "refereeEmail"),
@@ -182,10 +186,16 @@ export function pluckMember(raw: unknown): MemberDetail {
       ? {
           signatureKind: s(kc, "signatureKind"),
           signatureName: s(kc, "signatureName"),
-          informationAccurate: typeof kc.informationAccurate === "boolean" ? kc.informationAccurate : null,
-          agreedToBylaws: typeof kc.agreedToBylaws === "boolean" ? kc.agreedToBylaws : null,
+          informationAccurate:
+            typeof kc.informationAccurate === "boolean"
+              ? kc.informationAccurate
+              : null,
+          agreedToBylaws:
+            typeof kc.agreedToBylaws === "boolean" ? kc.agreedToBylaws : null,
           consentToDataProcessing:
-            typeof kc.consentToDataProcessing === "boolean" ? kc.consentToDataProcessing : null,
+            typeof kc.consentToDataProcessing === "boolean"
+              ? kc.consentToDataProcessing
+              : null,
           bylawsVersion: s(kc, "bylawsVersion"),
           signedAtUtc: s(kc, "signedAtUtc"),
           signedFromIp: s(kc, "signedFromIp"),
@@ -206,7 +216,11 @@ export function formatDate(iso: string | null | undefined): string {
   if (!iso) return "—";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+  return d.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 }
 
 export function formatDateTime(iso: string | null | undefined): string {
@@ -222,15 +236,30 @@ export function formatDateTime(iso: string | null | undefined): string {
   });
 }
 
-
-
-export const GENDERS = ["Female", "Male", "NonBinary", "PreferNotToSay"] as const;
+export const GENDERS = [
+  "Female",
+  "Male",
+  "NonBinary",
+  "PreferNotToSay",
+] as const;
 export type Gender = (typeof GENDERS)[number];
 
-export const EMPLOYMENT_STATUSES = ["Employed", "SelfEmployed", "BusinessOwner", "Student", "Retired"] as const;
+export const EMPLOYMENT_STATUSES = [
+  "Employed",
+  "SelfEmployed",
+  "BusinessOwner",
+  "Student",
+  "Retired",
+] as const;
 export type EmploymentStatus = (typeof EMPLOYMENT_STATUSES)[number];
 
-export const KIN_RELATIONSHIPS = ["Spouse", "Parent", "Child", "Sibling", "Other"] as const;
+export const KIN_RELATIONSHIPS = [
+  "Spouse",
+  "Parent",
+  "Child",
+  "Sibling",
+  "Other",
+] as const;
 export type KinRelationship = (typeof KIN_RELATIONSHIPS)[number];
 
 export type BasicInfoDto = {
@@ -298,7 +327,6 @@ export type EditUserDto = {
   refereeDto: RefereeDto;
   title: string;
 };
-
 
 export function buildEditUserDto(
   current: MemberDetail,

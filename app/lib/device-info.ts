@@ -37,16 +37,22 @@ export async function computeFingerprint(): Promise<string> {
     navigator.hardwareConcurrency,
   ].join("|");
 
-  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(raw));
-  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
+  const buf = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(raw),
+  );
+  return [...new Uint8Array(buf)]
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 }
-
 
 async function fetchClientIp(): Promise<string> {
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000);
-    const res = await fetch("https://api.ipify.org?format=json", { signal: controller.signal });
+    const res = await fetch("https://api.ipify.org?format=json", {
+      signal: controller.signal,
+    });
     clearTimeout(timeout);
     if (!res.ok) return "";
     const data = (await res.json()) as { ip?: string };
@@ -64,7 +70,10 @@ export type DeviceInfo = {
 };
 
 export async function collectDeviceInfo(): Promise<DeviceInfo> {
-  const [fingerprint, lastIp] = await Promise.all([computeFingerprint(), fetchClientIp()]);
+  const [fingerprint, lastIp] = await Promise.all([
+    computeFingerprint(),
+    fetchClientIp(),
+  ]);
   return {
     deviceID: getDeviceId(),
     deviceOS: detectOS(),

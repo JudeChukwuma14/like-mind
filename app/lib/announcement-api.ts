@@ -75,7 +75,8 @@ export async function createAnnouncement(
     title: payload.title.trim(),
     message: payload.message.trim(),
   };
-  if (body.scheduleType !== SCHEDULE_TYPES.scheduleForLater) delete body.scheduledAtUtc;
+  if (body.scheduleType !== SCHEDULE_TYPES.scheduleForLater)
+    delete body.scheduledAtUtc;
   if (body.audienceType === AUDIENCE_TYPES.byRole) {
     if (!body.audienceRoleId || !UUID.test(body.audienceRoleId)) {
       throw new Error("Choose a role to target before publishing.");
@@ -85,10 +86,13 @@ export async function createAnnouncement(
   }
 
   return assertAccepted(
-    await adminApiFetch<unknown>(`/api/Announcement/${encodeURIComponent(cooperativeId)}`, {
-      method: "POST",
-      body,
-    }),
+    await adminApiFetch<unknown>(
+      `/api/Announcement/${encodeURIComponent(cooperativeId)}`,
+      {
+        method: "POST",
+        body,
+      },
+    ),
     "The announcement was not accepted.",
   );
 }
@@ -128,26 +132,51 @@ function toInboxAnnouncement(row: unknown): InboxAnnouncement | null {
 
   const readAtUtc = pickString([row], ["readAtUtc", "readAt"]) ?? null;
   return {
-    id: pickString([row], ["announcementId"]) ?? pickString([nested], ["id"]) ?? pickString([row], ["id"]) ?? "",
+    id:
+      pickString([row], ["announcementId"]) ??
+      pickString([nested], ["id"]) ??
+      pickString([row], ["id"]) ??
+      "",
     title: pickString(sources, ["title", "subject"]) ?? "Announcement",
     message: pickString(sources, ["message", "body", "content"]) ?? "",
     isRead: pickBoolean([row], ["isRead", "read"]) ?? readAtUtc !== null,
     readAtUtc,
-    receivedAtUtc: pickString(sources, ["sentAtUtc", "dispatchedAtUtc", "createdAtUtc", "createdAt"]) ?? null,
+    receivedAtUtc:
+      pickString(sources, [
+        "sentAtUtc",
+        "dispatchedAtUtc",
+        "createdAtUtc",
+        "createdAt",
+      ]) ?? null,
   };
 }
 
 /** GET /api/Announcement/inbox?page=&pageSize= — the caller's own announcements, newest first. */
-export async function getAnnouncementInbox(page = 1, pageSize = INBOX_PAGE_SIZE): Promise<InboxPage> {
+export async function getAnnouncementInbox(
+  page = 1,
+  pageSize = INBOX_PAGE_SIZE,
+): Promise<InboxPage> {
   const safePage = Math.max(1, Math.floor(page));
   const safeSize = Math.min(100, Math.max(1, Math.floor(pageSize)));
-  const params = new URLSearchParams({ page: String(safePage), pageSize: String(safeSize) });
+  const params = new URLSearchParams({
+    page: String(safePage),
+    pageSize: String(safeSize),
+  });
 
-  const raw = await memberProfileApiFetch<unknown>(`/api/Announcement/inbox?${params.toString()}`);
-  const paged = pluckPage(assertAccepted(raw, "Could not load your announcements."), safePage, safeSize, "The announcement inbox");
+  const raw = await memberProfileApiFetch<unknown>(
+    `/api/Announcement/inbox?${params.toString()}`,
+  );
+  const paged = pluckPage(
+    assertAccepted(raw, "Could not load your announcements."),
+    safePage,
+    safeSize,
+    "The announcement inbox",
+  );
 
   return {
-    items: paged.rows.map(toInboxAnnouncement).filter((item): item is InboxAnnouncement => item !== null),
+    items: paged.rows
+      .map(toInboxAnnouncement)
+      .filter((item): item is InboxAnnouncement => item !== null),
     page: paged.page,
     pageSize: paged.pageSize,
     totalCount: paged.totalCount,
@@ -156,12 +185,20 @@ export async function getAnnouncementInbox(page = 1, pageSize = INBOX_PAGE_SIZE)
 }
 
 /** POST /api/Announcement/{announcementId}/mark-read — idempotent; already-read is a no-op, not an error. */
-export async function markAnnouncementRead(announcementId: string): Promise<unknown> {
-  if (!announcementId.trim()) throw new Error("This announcement has no id, so it can't be marked as read.");
+export async function markAnnouncementRead(
+  announcementId: string,
+): Promise<unknown> {
+  if (!announcementId.trim())
+    throw new Error(
+      "This announcement has no id, so it can't be marked as read.",
+    );
   return assertAccepted(
-    await memberProfileApiFetch<unknown>(`/api/Announcement/${encodeURIComponent(announcementId)}/mark-read`, {
-      method: "POST",
-    }),
+    await memberProfileApiFetch<unknown>(
+      `/api/Announcement/${encodeURIComponent(announcementId)}/mark-read`,
+      {
+        method: "POST",
+      },
+    ),
     "Could not mark the announcement as read.",
   );
 }

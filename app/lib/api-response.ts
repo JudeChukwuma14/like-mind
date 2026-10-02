@@ -16,19 +16,26 @@ export function isRecord(value: unknown): value is UnknownRecord {
 }
 
 /** First non-empty string (numbers are stringified) for any of `keys`, checking each source in order. */
-export function pickString(sources: Array<UnknownRecord | null | undefined>, keys: string[]): string | undefined {
+export function pickString(
+  sources: Array<UnknownRecord | null | undefined>,
+  keys: string[],
+): string | undefined {
   for (const source of sources) {
     if (!source) continue;
     for (const key of keys) {
       const value = source[key];
       if (typeof value === "string" && value.trim()) return value;
-      if (typeof value === "number" && Number.isFinite(value)) return String(value);
+      if (typeof value === "number" && Number.isFinite(value))
+        return String(value);
     }
   }
   return undefined;
 }
 
-export function pickBoolean(sources: Array<UnknownRecord | null | undefined>, keys: string[]): boolean | undefined {
+export function pickBoolean(
+  sources: Array<UnknownRecord | null | undefined>,
+  keys: string[],
+): boolean | undefined {
   for (const source of sources) {
     if (!source) continue;
     for (const key of keys) {
@@ -73,7 +80,12 @@ export type PagedRows = {
  * unrecognised body throws, so the UI shows a retryable error instead of a
  * misleading empty state.
  */
-export function pluckPage(raw: unknown, page: number, pageSize: number, label: string): PagedRows {
+export function pluckPage(
+  raw: unknown,
+  page: number,
+  pageSize: number,
+  label: string,
+): PagedRows {
   const outer = isRecord(raw) ? raw : undefined;
   const inner = outer && isRecord(outer.data) ? outer.data : outer;
   const rows: unknown[] | undefined = Array.isArray(raw)
@@ -85,18 +97,24 @@ export function pluckPage(raw: unknown, page: number, pageSize: number, label: s
         : undefined;
 
   if (!rows) {
-    if (outer && outer.success === true && (outer.data === null || outer.data === undefined)) {
+    if (
+      outer &&
+      outer.success === true &&
+      (outer.data === null || outer.data === undefined)
+    ) {
       return { rows: [], page, pageSize, totalCount: 0, hasMore: false };
     }
     throw new Error(`${label} returned an unexpected response.`);
   }
 
-  const meta: UnknownRecord = outer && (Array.isArray(outer.data) || !inner) ? outer : (inner ?? {});
+  const meta: UnknownRecord =
+    outer && (Array.isArray(outer.data) || !inner) ? outer : (inner ?? {});
   const currentPage = pickNumber(meta, ["pageNumber", "page"]) ?? page;
   const size = pickNumber(meta, ["pageSize"]) ?? pageSize;
   const totalCount = pickNumber(meta, ["totalCount", "total"]) ?? null;
   const totalPages = pickNumber(meta, ["totalPages"]);
-  const explicitHasNext = typeof meta.hasNextPage === "boolean" ? meta.hasNextPage : undefined;
+  const explicitHasNext =
+    typeof meta.hasNextPage === "boolean" ? meta.hasNextPage : undefined;
 
   const hasMore =
     explicitHasNext ??

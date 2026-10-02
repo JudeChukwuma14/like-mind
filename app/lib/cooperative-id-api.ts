@@ -10,7 +10,9 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  * cooperative-scoped screen should use.
  */
 export async function getCooperativeId(): Promise<string> {
-  const response = await adminApiFetch<unknown>("/api/CooperativeAccount/GetCooperativeId");
+  const response = await adminApiFetch<unknown>(
+    "/api/CooperativeAccount/GetCooperativeId",
+  );
   if (!response || typeof response !== "object" || Array.isArray(response)) {
     throw new Error("GetCooperativeId returned an invalid response.");
   }
@@ -25,7 +27,10 @@ export async function getCooperativeId(): Promise<string> {
     );
   }
   const data = envelope.data;
-  const id = data && typeof data === "object" ? (data as Record<string, unknown>).cooperativeId : undefined;
+  const id =
+    data && typeof data === "object"
+      ? (data as Record<string, unknown>).cooperativeId
+      : undefined;
   if (typeof id !== "string" || !UUID.test(id)) {
     throw new Error("GetCooperativeId did not return a valid cooperative ID.");
   }

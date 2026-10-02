@@ -59,7 +59,10 @@ export type ChangeEntry = {
  */
 export function parseChanges(raw: string): ChangeEntry[] {
   try {
-    const obj = JSON.parse(raw) as Record<string, { Old: unknown; New: unknown }>;
+    const obj = JSON.parse(raw) as Record<
+      string,
+      { Old: unknown; New: unknown }
+    >;
     return Object.entries(obj).map(([field, { Old, New }]) => ({
       field,
       old: Old,
@@ -95,10 +98,23 @@ export async function getAuditLogs(
   const res = await adminApiFetch<ApiEnvelope<AuditLogPage>>(url);
 
   const data = res.data;
-  if (!data) return { items: [], pageNumber: 1, pageSize: 50, totalCount: 0, totalPages: 1 };
+  if (!data)
+    return {
+      items: [],
+      pageNumber: 1,
+      pageSize: 50,
+      totalCount: 0,
+      totalPages: 1,
+    };
   if (Array.isArray(data)) {
     const arr = data as AuditLog[];
-    return { items: arr, pageNumber: 1, pageSize: arr.length, totalCount: arr.length, totalPages: 1 };
+    return {
+      items: arr,
+      pageNumber: 1,
+      pageSize: arr.length,
+      totalCount: arr.length,
+      totalPages: 1,
+    };
   }
   return data as AuditLogPage;
 }
@@ -110,6 +126,8 @@ export async function getAuditLogs(
  * Requires admin authentication.
  */
 export async function getAuditLogById(id: number): Promise<AuditLog> {
-  const res = await adminApiFetch<ApiEnvelope<AuditLog>>(`/api/AuditLogs/${id}`);
+  const res = await adminApiFetch<ApiEnvelope<AuditLog>>(
+    `/api/AuditLogs/${id}`,
+  );
   return res.data;
 }

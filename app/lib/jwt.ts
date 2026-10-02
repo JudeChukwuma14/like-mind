@@ -3,11 +3,16 @@
  * flow). This does NOT verify the signature — never use it for anything
  * security-sensitive; the server is the source of truth for that.
  */
-export function decodeJwtPayload<T = Record<string, unknown>>(token: string): T | null {
+export function decodeJwtPayload<T = Record<string, unknown>>(
+  token: string,
+): T | null {
   try {
     const payload = token.split(".")[1];
     const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
-    const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), "=");
+    const padded = base64.padEnd(
+      base64.length + ((4 - (base64.length % 4)) % 4),
+      "=",
+    );
     const json = decodeURIComponent(
       atob(padded)
         .split("")
@@ -30,7 +35,8 @@ export function isJwtExpired(claims: Record<string, unknown>): boolean {
 // (confirmed on both the admin AdminLogin token and the Google id-token
 // exchange's claims in apply/welcome/page.tsx).
 const CLAIM_NAME = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name";
-const CLAIM_ROLE = "http://schemas.microsoft.com/ws/2008/06/identity/claims/role";
+const CLAIM_ROLE =
+  "http://schemas.microsoft.com/ws/2008/06/identity/claims/role";
 
 export type JwtUser = {
   id?: string;
@@ -42,17 +48,25 @@ export type JwtUser = {
   claims: Record<string, unknown>;
 };
 
-function claimString(claims: Record<string, unknown>, key: string): string | undefined {
+function claimString(
+  claims: Record<string, unknown>,
+  key: string,
+): string | undefined {
   const value = claims[key];
   return typeof value === "string" ? value : undefined;
 }
 
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Read the cooperative ID, not `sub` (user ID) or cooperativeAccountId (setup account ID). */
-export function cooperativeIdFromJwtClaims(claims: Record<string, unknown>): string | undefined {
+export function cooperativeIdFromJwtClaims(
+  claims: Record<string, unknown>,
+): string | undefined {
   for (const [key, rawValue] of Object.entries(claims)) {
-    const claimName = (key.split(/[/:]/).pop() ?? key).replace(/[^a-z0-9]/gi, "").toLowerCase();
+    const claimName = (key.split(/[/:]/).pop() ?? key)
+      .replace(/[^a-z0-9]/gi, "")
+      .toLowerCase();
     if (claimName !== "cooperativeid") continue;
     if (typeof rawValue !== "string") continue;
     const value = rawValue.trim();

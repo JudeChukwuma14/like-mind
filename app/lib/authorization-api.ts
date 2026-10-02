@@ -40,7 +40,6 @@ export type UserAccess = {
 
 // ─── Payload types ────────────────────────────────────────────────────────────
 
-
 /** Payload for the maker step of role assignment. */
 export type InitiateRoleAssignmentPayload = {
   userId: string;
@@ -114,7 +113,6 @@ export async function getUserAccess(userId: string): Promise<UserAccess> {
   );
   return res.data;
 }
-
 
 // ─── Maker-checker: Role assignment ──────────────────────────────────────────
 

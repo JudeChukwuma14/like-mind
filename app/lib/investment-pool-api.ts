@@ -1,31 +1,3 @@
-/**
- * investment-pool-api.ts
- *
- * Typed wrappers for the five InvestmentPool endpoints:
- *
- *  - previewInvestmentPoolEligibility  POST /api/InvestmentPool/eligibility-preview/{cooperativeId}
- *  - createInvestmentPool              POST /api/InvestmentPool/{cooperativeId}
- *  - getInvestmentPool                 GET  /api/InvestmentPool/{poolId}
- *  - approveInvestmentPool             POST /api/InvestmentPool/{poolId}/approve
- *  - rejectInvestmentPool              POST /api/InvestmentPool/{poolId}/reject
- *
- * All five are called with `adminApiFetch`: the eligibility preview and create
- * calls are scoped by `cooperativeId` (an admin managing one cooperative's
- * pools), and approve/reject require the `approveinvestmentpool` permission,
- * which only exists in the admin authorization system. The backend's OpenAPI
- * spec documents every request body but gives NO response schema for any of
- * these five endpoints (just "200: OK" / "200: description" with no content) —
- * every response is read defensively here, the same way announcement-api.ts
- * and notification-api.ts read undocumented shapes, and every field name below
- * is a best guess that should be checked against a real response.
- *
- * IMPORTANT — there is no list endpoint. The backend gives no way to ask "what
- * pools exist for this cooperative" or "what pools are pending my approval" —
- * only GET-by-id. A pool can only be found by an id the admin already has
- * (from creating it, or from someone else telling them). `useInvestmentPools.ts`
- * keeps a local (this-browser-only) list of pool ids seen, purely as a
- * convenience — it is not, and cannot be, an authoritative list of pools.
- */
 
 import { adminApiFetch } from "@/app/lib/api-client";
 import {
@@ -37,21 +9,32 @@ import {
 
 // ─── Wire values (confirmed from the OpenAPI spec) ────────────────────────────
 
-export const INTERVAL_UNITS = { days: "Days", months: "Months", years: "Years" } as const;
+export const INTERVAL_UNITS = {
+  days: "Days",
+  months: "Months",
+  years: "Years",
+} as const;
 export type IntervalUnit = (typeof INTERVAL_UNITS)[keyof typeof INTERVAL_UNITS];
 
 export const PARTICIPATION_MODES = {
   allEligibleMembers: "AllEligibleMembers",
   selectedMembers: "SelectedMembers",
 } as const;
-export type ParticipationMode = (typeof PARTICIPATION_MODES)[keyof typeof PARTICIPATION_MODES];
+export type ParticipationMode =
+  (typeof PARTICIPATION_MODES)[keyof typeof PARTICIPATION_MODES];
 
 /**
  * From the GET /{poolId} endpoint description ("Works regardless of the pool's
  * current status (Draft, PendingApproval, Open, Closed, Rejected)"). Not a named
  * enum in the spec, so this list is the description's wording, not a schema.
  */
-export const POOL_STATUSES = ["Draft", "PendingApproval", "Open", "Closed", "Rejected"] as const;
+export const POOL_STATUSES = [
+  "Draft",
+  "PendingApproval",
+  "Open",
+  "Closed",
+  "Rejected",
+] as const;
 export type PoolStatus = (typeof POOL_STATUSES)[number];
 
 // ─── Request types (from CreateInvestmentPoolRequest / eligibility-preview body) ──
@@ -116,7 +99,10 @@ export type InvestmentPoolRecord = {
   raw: UnknownRecord;
 };
 
-function pickNumber(sources: Array<UnknownRecord | null | undefined>, keys: string[]): number | null {
+function pickNumber(
+  sources: Array<UnknownRecord | null | undefined>,
+  keys: string[],
+): number | null {
   for (const source of sources) {
     if (!source) continue;
     for (const key of keys) {
@@ -128,7 +114,11 @@ function pickNumber(sources: Array<UnknownRecord | null | undefined>, keys: stri
 }
 
 function dataOf(response: unknown): UnknownRecord | undefined {
-  return isRecord(response) && isRecord(response.data) ? response.data : isRecord(response) ? response : undefined;
+  return isRecord(response) && isRecord(response.data)
+    ? response.data
+    : isRecord(response)
+      ? response
+      : undefined;
 }
 
 /** Keep all response-field knowledge for a pool row in this function. */
@@ -141,10 +131,17 @@ function toInvestmentPool(row: unknown): InvestmentPoolRecord | null {
     custodian: pickString([row], ["custodian"]) ?? null,
     status: pickString([row], ["status"]) ?? null,
     targetCapital: pickNumber([row], ["targetCapital"]),
-    totalContributed: pickNumber([row], ["totalContributed", "capitalRaised", "raisedAmount"]),
-    participantCount: pickNumber([row], ["participantCount", "investorCount", "memberCount"]),
+    totalContributed: pickNumber(
+      [row],
+      ["totalContributed", "capitalRaised", "raisedAmount"],
+    ),
+    participantCount: pickNumber(
+      [row],
+      ["participantCount", "investorCount", "memberCount"],
+    ),
     indicativeYieldPercent: pickNumber([row], ["indicativeYieldPercent"]),
-    maturityDateUtc: pickString([row], ["maturityDateUtc", "maturityDate"]) ?? null,
+    maturityDateUtc:
+      pickString([row], ["maturityDateUtc", "maturityDate"]) ?? null,
     createdAtUtc: pickString([row], ["createdAtUtc", "createdAt"]) ?? null,
     raw: row,
   };
@@ -166,16 +163,25 @@ export async function previewInvestmentPoolEligibility(
   rules: EligibilityRules,
 ): Promise<EligibilityPreviewResult> {
   const raw = assertAccepted(
-    await adminApiFetch<unknown>(`/api/InvestmentPool/eligibility-preview/${safeId(cooperativeId, "cooperative")}`, {
-      method: "POST",
-      body: rules,
-    }),
+    await adminApiFetch<unknown>(
+      `/api/InvestmentPool/eligibility-preview/${safeId(cooperativeId, "cooperative")}`,
+      {
+        method: "POST",
+        body: rules,
+      },
+    ),
     "Could not preview eligibility.",
   );
   const data = dataOf(raw) ?? {};
   return {
-    eligibleCount: pickNumber([data], ["eligibleCount", "matchingCount", "qualifyingCount"]),
-    totalMembers: pickNumber([data], ["totalMembers", "totalCount", "memberCount"]),
+    eligibleCount: pickNumber(
+      [data],
+      ["eligibleCount", "matchingCount", "qualifyingCount"],
+    ),
+    totalMembers: pickNumber(
+      [data],
+      ["totalMembers", "totalCount", "memberCount"],
+    ),
     raw: data,
   };
 }
@@ -191,30 +197,46 @@ export async function createInvestmentPool(
   cooperativeId: string,
   payload: CreateInvestmentPoolPayload,
 ): Promise<{ poolId: string | null; message: string | null; raw: unknown }> {
-  const body: CreateInvestmentPoolPayload = { ...payload, name: payload.name.trim() };
-  if (body.participationMode !== PARTICIPATION_MODES.selectedMembers) delete body.overrides;
+  const body: CreateInvestmentPoolPayload = {
+    ...payload,
+    name: payload.name.trim(),
+  };
+  if (body.participationMode !== PARTICIPATION_MODES.selectedMembers)
+    delete body.overrides;
 
   const raw = assertAccepted(
-    await adminApiFetch<unknown>(`/api/InvestmentPool/${safeId(cooperativeId, "cooperative")}`, {
-      method: "POST",
-      body,
-    }),
+    await adminApiFetch<unknown>(
+      `/api/InvestmentPool/${safeId(cooperativeId, "cooperative")}`,
+      {
+        method: "POST",
+        body,
+      },
+    ),
     "The investment pool was not accepted.",
   );
   const data = dataOf(raw);
-  const poolId = data ? (pickString([data], ["id", "poolId", "investmentPoolId"]) ?? null) : null;
-  const message = isRecord(raw) ? (pickString([raw], ["message"]) ?? null) : null;
+  const poolId = data
+    ? (pickString([data], ["id", "poolId", "investmentPoolId"]) ?? null)
+    : null;
+  const message = isRecord(raw)
+    ? (pickString([raw], ["message"]) ?? null)
+    : null;
   return { poolId, message, raw };
 }
 
 /** GET /api/InvestmentPool/{poolId} — works regardless of the pool's status. */
-export async function getInvestmentPool(poolId: string): Promise<InvestmentPoolRecord> {
+export async function getInvestmentPool(
+  poolId: string,
+): Promise<InvestmentPoolRecord> {
   const raw = assertAccepted(
-    await adminApiFetch<unknown>(`/api/InvestmentPool/${safeId(poolId, "pool")}`),
+    await adminApiFetch<unknown>(
+      `/api/InvestmentPool/${safeId(poolId, "pool")}`,
+    ),
     "Could not load the investment pool.",
   );
   const record = toInvestmentPool(dataOf(raw));
-  if (!record) throw new Error("The investment pool response was not recognised.");
+  if (!record)
+    throw new Error("The investment pool response was not recognised.");
   return record;
 }
 
@@ -225,23 +247,35 @@ export async function getInvestmentPool(poolId: string): Promise<InvestmentPoolR
  * shape doesn't confirm a "createdBy" field), so both surface as a normal
  * ApiError from the server.
  */
-export async function approveInvestmentPool(poolId: string, note?: string): Promise<unknown> {
+export async function approveInvestmentPool(
+  poolId: string,
+  note?: string,
+): Promise<unknown> {
   return assertAccepted(
-    await adminApiFetch<unknown>(`/api/InvestmentPool/${safeId(poolId, "pool")}/approve`, {
-      method: "POST",
-      body: note?.trim() ? { note: note.trim() } : {},
-    }),
+    await adminApiFetch<unknown>(
+      `/api/InvestmentPool/${safeId(poolId, "pool")}/approve`,
+      {
+        method: "POST",
+        body: note?.trim() ? { note: note.trim() } : {},
+      },
+    ),
     "Could not record the approval.",
   );
 }
 
 /** POST /api/InvestmentPool/{poolId}/reject — final; cannot be undone once accepted. */
-export async function rejectInvestmentPool(poolId: string, note?: string): Promise<unknown> {
+export async function rejectInvestmentPool(
+  poolId: string,
+  note?: string,
+): Promise<unknown> {
   return assertAccepted(
-    await adminApiFetch<unknown>(`/api/InvestmentPool/${safeId(poolId, "pool")}/reject`, {
-      method: "POST",
-      body: note?.trim() ? { note: note.trim() } : {},
-    }),
+    await adminApiFetch<unknown>(
+      `/api/InvestmentPool/${safeId(poolId, "pool")}/reject`,
+      {
+        method: "POST",
+        body: note?.trim() ? { note: note.trim() } : {},
+      },
+    ),
     "Could not record the rejection.",
   );
 }

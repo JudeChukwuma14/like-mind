@@ -2,7 +2,11 @@
  * Loan API wrappers. Request shapes are limited to the published contract.
  * Response objects remain open-ended because their schema was not supplied.
  */
-import { ApiError, adminApiFetch, memberProfileApiFetch } from "@/app/lib/api-client";
+import {
+  ApiError,
+  adminApiFetch,
+  memberProfileApiFetch,
+} from "@/app/lib/api-client";
 
 /**
  * Structural floors only — NOT a policy ceiling. The real maximum loan amount
@@ -79,7 +83,9 @@ function isRecord(value: unknown): value is LoanRecord {
 }
 
 function getCaseInsensitive(record: LoanRecord, key: string): unknown {
-  const actualKey = Object.keys(record).find((candidate) => candidate.toLowerCase() === key.toLowerCase());
+  const actualKey = Object.keys(record).find(
+    (candidate) => candidate.toLowerCase() === key.toLowerCase(),
+  );
   return actualKey ? record[actualKey] : undefined;
 }
 
@@ -101,7 +107,9 @@ export function ensureSuccessfulResponse<T>(response: T): T {
   const rawStatus = getCaseInsensitive(response, "statusCode");
   const status = typeof rawStatus === "number" ? rawStatus : Number(rawStatus);
   throw new ApiError(
-    typeof rawMessage === "string" && rawMessage.trim() ? rawMessage : "The loan request was not accepted.",
+    typeof rawMessage === "string" && rawMessage.trim()
+      ? rawMessage
+      : "The loan request was not accepted.",
     Number.isFinite(status) ? status : 0,
     response,
   );
@@ -112,39 +120,88 @@ function asFiniteNumber(value: unknown, fallback: number): number {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-function normalisePage(response: unknown, requestedPage = 1, requestedPageSize = 20): LoanPage {
+function normalisePage(
+  response: unknown,
+  requestedPage = 1,
+  requestedPageSize = 20,
+): LoanPage {
   const data = unwrapLoanResponse(response);
   if (Array.isArray(data)) {
     const items = data.filter(isRecord);
-    return { items, pageNumber: requestedPage, pageSize: requestedPageSize, totalCount: items.length, totalPages: items.length ? 1 : 0 };
+    return {
+      items,
+      pageNumber: requestedPage,
+      pageSize: requestedPageSize,
+      totalCount: items.length,
+      totalPages: items.length ? 1 : 0,
+    };
   }
   if (!isRecord(data)) {
-    return { items: [], pageNumber: requestedPage, pageSize: requestedPageSize, totalCount: 0, totalPages: 0 };
+    return {
+      items: [],
+      pageNumber: requestedPage,
+      pageSize: requestedPageSize,
+      totalCount: 0,
+      totalPages: 0,
+    };
   }
   const rawItems = getCaseInsensitive(data, "items");
   const items = Array.isArray(rawItems) ? rawItems.filter(isRecord) : [];
-  const totalCount = asFiniteNumber(getCaseInsensitive(data, "totalCount"), items.length);
-  const pageSize = asFiniteNumber(getCaseInsensitive(data, "pageSize"), requestedPageSize);
-  const pageNumber = asFiniteNumber(getCaseInsensitive(data, "pageNumber") ?? getCaseInsensitive(data, "page"), requestedPage);
-  const totalPages = asFiniteNumber(getCaseInsensitive(data, "totalPages"), pageSize > 0 ? Math.ceil(totalCount / pageSize) : 0);
+  const totalCount = asFiniteNumber(
+    getCaseInsensitive(data, "totalCount"),
+    items.length,
+  );
+  const pageSize = asFiniteNumber(
+    getCaseInsensitive(data, "pageSize"),
+    requestedPageSize,
+  );
+  const pageNumber = asFiniteNumber(
+    getCaseInsensitive(data, "pageNumber") ?? getCaseInsensitive(data, "page"),
+    requestedPage,
+  );
+  const totalPages = asFiniteNumber(
+    getCaseInsensitive(data, "totalPages"),
+    pageSize > 0 ? Math.ceil(totalCount / pageSize) : 0,
+  );
   return { items, pageNumber, pageSize, totalCount, totalPages };
 }
 
-async function fetchLoans(fetcher: Fetcher, params: GetLoansParams = {}): Promise<LoanPage> {
+async function fetchLoans(
+  fetcher: Fetcher,
+  params: GetLoansParams = {},
+): Promise<LoanPage> {
   const page = params.page ?? 1;
   const pageSize = params.pageSize ?? 20;
-  const query = new URLSearchParams({ page: String(page), pageSize: String(pageSize), onlyMine: String(params.onlyMine ?? false) });
+  const query = new URLSearchParams({
+    page: String(page),
+    pageSize: String(pageSize),
+    onlyMine: String(params.onlyMine ?? false),
+  });
   if (params.status) query.set("status", params.status);
-  return normalisePage(ensureSuccessfulResponse(await fetcher<unknown>(`/api/Loan?${query.toString()}`)), page, pageSize);
+  return normalisePage(
+    ensureSuccessfulResponse(
+      await fetcher<unknown>(`/api/Loan?${query.toString()}`),
+    ),
+    page,
+    pageSize,
+  );
 }
 
 async function fetchLoan(fetcher: Fetcher, id: string): Promise<LoanRecord> {
-  const data = unwrapSuccessfulResponse(await fetcher<unknown>(`/api/Loan/GetLoanByLoanId/${encodeURIComponent(id)}`));
-  if (!isRecord(data)) throw new Error("The loan response was empty or invalid.");
+  const data = unwrapSuccessfulResponse(
+    await fetcher<unknown>(
+      `/api/Loan/GetLoanByLoanId/${encodeURIComponent(id)}`,
+    ),
+  );
+  if (!isRecord(data))
+    throw new Error("The loan response was empty or invalid.");
   return data;
 }
 
-async function fetchLoanCollection(fetcher: Fetcher, path: string): Promise<LoanRecord[]> {
+async function fetchLoanCollection(
+  fetcher: Fetcher,
+  path: string,
+): Promise<LoanRecord[]> {
   const data = unwrapSuccessfulResponse(await fetcher<unknown>(path));
   if (Array.isArray(data)) return data.filter(isRecord);
   if (isRecord(data)) {
@@ -157,77 +214,173 @@ async function fetchLoanCollection(fetcher: Fetcher, path: string): Promise<Loan
   throw new Error("The loan service returned an unexpected list format.");
 }
 
-export async function calculateLoan(amount: number, tenureMonths: number): Promise<LoanCalculationResult> {
-  const query = new URLSearchParams({ Amount: String(amount), TenureMonths: String(tenureMonths) });
-  const response = ensureSuccessfulResponse(await memberProfileApiFetch<unknown>(`/api/Loan/Calculate?${query.toString()}`));
+export async function calculateLoan(
+  amount: number,
+  tenureMonths: number,
+): Promise<LoanCalculationResult> {
+  const query = new URLSearchParams({
+    Amount: String(amount),
+    TenureMonths: String(tenureMonths),
+  });
+  const response = ensureSuccessfulResponse(
+    await memberProfileApiFetch<unknown>(
+      `/api/Loan/Calculate?${query.toString()}`,
+    ),
+  );
   const data = unwrapLoanResponse(response);
-  if (!isRecord(data) || Object.keys(data).length === 0) throw new Error("The calculator returned an empty response.");
+  if (!isRecord(data) || Object.keys(data).length === 0)
+    throw new Error("The calculator returned an empty response.");
   return data;
 }
 
-export async function applyForLoan(payload: ApplyForLoanPayload): Promise<unknown> {
+export async function applyForLoan(
+  payload: ApplyForLoanPayload,
+): Promise<unknown> {
   const formData = new FormData();
   formData.append("PrincipalAmount", String(payload.PrincipalAmount));
   formData.append("TenureMonths", String(payload.TenureMonths));
   formData.append("Purpose", payload.Purpose);
-  for (const contact of payload.GuarantorContacts ?? []) formData.append("GuarantorContacts", contact);
-  if (payload.BankStatementFile) formData.append("BankStatementFile", payload.BankStatementFile);
+  for (const contact of payload.GuarantorContacts ?? [])
+    formData.append("GuarantorContacts", contact);
+  if (payload.BankStatementFile)
+    formData.append("BankStatementFile", payload.BankStatementFile);
   // Loan/Apply lives on the cooperative/admin host but authenticates the
   // ordinary member, matching the member-profile client configuration.
-  const response = await memberProfileApiFetch<unknown>("/api/Loan/Apply", { method: "POST", body: formData });
+  const response = await memberProfileApiFetch<unknown>("/api/Loan/Apply", {
+    method: "POST",
+    body: formData,
+  });
   return ensureSuccessfulResponse(response);
 }
 
-export function getMemberLoans(params: GetLoansParams = {}): Promise<LoanPage> { return fetchLoans(memberProfileApiFetch as Fetcher, params); }
-export function getAdminLoans(params: GetLoansParams = {}): Promise<LoanPage> { return fetchLoans(adminApiFetch as Fetcher, params); }
-export function getMemberLoan(id: string): Promise<LoanRecord> { return fetchLoan(memberProfileApiFetch as Fetcher, id); }
-export function getAdminLoan(id: string): Promise<LoanRecord> { return fetchLoan(adminApiFetch as Fetcher, id); }
+export function getMemberLoans(params: GetLoansParams = {}): Promise<LoanPage> {
+  return fetchLoans(memberProfileApiFetch as Fetcher, params);
+}
+export function getAdminLoans(params: GetLoansParams = {}): Promise<LoanPage> {
+  return fetchLoans(adminApiFetch as Fetcher, params);
+}
+export function getMemberLoan(id: string): Promise<LoanRecord> {
+  return fetchLoan(memberProfileApiFetch as Fetcher, id);
+}
+export function getAdminLoan(id: string): Promise<LoanRecord> {
+  return fetchLoan(adminApiFetch as Fetcher, id);
+}
 
 export function getMemberLoanApprovals(id: string): Promise<LoanRecord[]> {
-  return fetchLoanCollection(memberProfileApiFetch as Fetcher, `/api/Loan/${encodeURIComponent(id)}/Approvals`);
+  return fetchLoanCollection(
+    memberProfileApiFetch as Fetcher,
+    `/api/Loan/${encodeURIComponent(id)}/Approvals`,
+  );
 }
 
 export function getAdminLoanApprovals(id: string): Promise<LoanRecord[]> {
-  return fetchLoanCollection(adminApiFetch as Fetcher, `/api/Loan/${encodeURIComponent(id)}/Approvals`);
+  return fetchLoanCollection(
+    adminApiFetch as Fetcher,
+    `/api/Loan/${encodeURIComponent(id)}/Approvals`,
+  );
 }
 
-export function getMemberDisbursementApprovals(id: string): Promise<LoanRecord[]> {
-  return fetchLoanCollection(memberProfileApiFetch as Fetcher, `/api/Loan/${encodeURIComponent(id)}/Disbursement/Approvals`);
+export function getMemberDisbursementApprovals(
+  id: string,
+): Promise<LoanRecord[]> {
+  return fetchLoanCollection(
+    memberProfileApiFetch as Fetcher,
+    `/api/Loan/${encodeURIComponent(id)}/Disbursement/Approvals`,
+  );
 }
 
-export function getAdminDisbursementApprovals(id: string): Promise<LoanRecord[]> {
-  return fetchLoanCollection(adminApiFetch as Fetcher, `/api/Loan/${encodeURIComponent(id)}/Disbursement/Approvals`);
+export function getAdminDisbursementApprovals(
+  id: string,
+): Promise<LoanRecord[]> {
+  return fetchLoanCollection(
+    adminApiFetch as Fetcher,
+    `/api/Loan/${encodeURIComponent(id)}/Disbursement/Approvals`,
+  );
 }
 
 export function getMemberInstallments(id: string): Promise<LoanRecord[]> {
-  return fetchLoanCollection(memberProfileApiFetch as Fetcher, `/api/Loan/${encodeURIComponent(id)}/Installments`);
+  return fetchLoanCollection(
+    memberProfileApiFetch as Fetcher,
+    `/api/Loan/${encodeURIComponent(id)}/Installments`,
+  );
 }
 
 export function getAdminInstallments(id: string): Promise<LoanRecord[]> {
-  return fetchLoanCollection(adminApiFetch as Fetcher, `/api/Loan/${encodeURIComponent(id)}/Installments`);
+  return fetchLoanCollection(
+    adminApiFetch as Fetcher,
+    `/api/Loan/${encodeURIComponent(id)}/Installments`,
+  );
 }
 
 function postAdmin(path: string, body: unknown): Promise<unknown> {
-  return adminApiFetch<unknown>(path, { method: "POST", body }).then(ensureSuccessfulResponse);
+  return adminApiFetch<unknown>(path, { method: "POST", body }).then(
+    ensureSuccessfulResponse,
+  );
 }
 
-export function initiateLoan(id: string, note: string): Promise<unknown> { return postAdmin(`/api/Loan/${encodeURIComponent(id)}/Initiate`, { note }); }
-export function rejectAtTriage(id: string, note: string): Promise<unknown> { return postAdmin(`/api/Loan/${encodeURIComponent(id)}/RejectAtTriage`, { note }); }
-export function approveLoan(id: string, note: string): Promise<unknown> { return postAdmin(`/api/Loan/${encodeURIComponent(id)}/Approve`, { note }); }
-export function rejectLoan(id: string, note: string): Promise<unknown> { return postAdmin(`/api/Loan/${encodeURIComponent(id)}/Reject`, { note }); }
-export function initiateDisbursement(id: string, disbursementReference: string): Promise<unknown> { return postAdmin(`/api/Loan/${encodeURIComponent(id)}/Disbursement/Initiate`, { disbursementReference }); }
-export function approveDisbursement(disbursementId: string, note: string): Promise<unknown> { return postAdmin(`/api/Loan/Disbursement/${encodeURIComponent(disbursementId)}/Approve`, { note }); }
-export function rejectDisbursement(disbursementId: string, note: string): Promise<unknown> { return postAdmin(`/api/Loan/Disbursement/${encodeURIComponent(disbursementId)}/Reject`, { note }); }
-
-export function repayInstallment(installmentId: string, amountPaid: number): Promise<unknown> {
-  return adminApiFetch<unknown>(`/api/Loan/Installments/${encodeURIComponent(installmentId)}/Repay`, { method: "POST", body: { amountPaid } }).then(ensureSuccessfulResponse);
+export function initiateLoan(id: string, note: string): Promise<unknown> {
+  return postAdmin(`/api/Loan/${encodeURIComponent(id)}/Initiate`, { note });
+}
+export function rejectAtTriage(id: string, note: string): Promise<unknown> {
+  return postAdmin(`/api/Loan/${encodeURIComponent(id)}/RejectAtTriage`, {
+    note,
+  });
+}
+export function approveLoan(id: string, note: string): Promise<unknown> {
+  return postAdmin(`/api/Loan/${encodeURIComponent(id)}/Approve`, { note });
+}
+export function rejectLoan(id: string, note: string): Promise<unknown> {
+  return postAdmin(`/api/Loan/${encodeURIComponent(id)}/Reject`, { note });
+}
+export function initiateDisbursement(
+  id: string,
+  disbursementReference: string,
+): Promise<unknown> {
+  return postAdmin(
+    `/api/Loan/${encodeURIComponent(id)}/Disbursement/Initiate`,
+    { disbursementReference },
+  );
+}
+export function approveDisbursement(
+  disbursementId: string,
+  note: string,
+): Promise<unknown> {
+  return postAdmin(
+    `/api/Loan/Disbursement/${encodeURIComponent(disbursementId)}/Approve`,
+    { note },
+  );
+}
+export function rejectDisbursement(
+  disbursementId: string,
+  note: string,
+): Promise<unknown> {
+  return postAdmin(
+    `/api/Loan/Disbursement/${encodeURIComponent(disbursementId)}/Reject`,
+    { note },
+  );
 }
 
-export function repayFromSavings(installmentId: string, amountPaid: number): Promise<unknown> {
-  return memberProfileApiFetch<unknown>(`/api/Loan/Installments/${encodeURIComponent(installmentId)}/RepayFromSavings`, {
-    method: "POST",
-    body: { amountPaid },
-  }).then(ensureSuccessfulResponse);
+export function repayInstallment(
+  installmentId: string,
+  amountPaid: number,
+): Promise<unknown> {
+  return adminApiFetch<unknown>(
+    `/api/Loan/Installments/${encodeURIComponent(installmentId)}/Repay`,
+    { method: "POST", body: { amountPaid } },
+  ).then(ensureSuccessfulResponse);
+}
+
+export function repayFromSavings(
+  installmentId: string,
+  amountPaid: number,
+): Promise<unknown> {
+  return memberProfileApiFetch<unknown>(
+    `/api/Loan/Installments/${encodeURIComponent(installmentId)}/RepayFromSavings`,
+    {
+      method: "POST",
+      body: { amountPaid },
+    },
+  ).then(ensureSuccessfulResponse);
 }
 
 export type SubmitRepaymentProofResult = {
@@ -242,21 +395,33 @@ export type SubmitRepaymentProofResult = {
   raw: unknown;
 };
 
-export async function submitRepaymentProof(installmentId: string, payload: RepaymentProofPayload): Promise<SubmitRepaymentProofResult> {
+export async function submitRepaymentProof(
+  installmentId: string,
+  payload: RepaymentProofPayload,
+): Promise<SubmitRepaymentProofResult> {
   const formData = new FormData();
   formData.append("AmountPaid", String(payload.AmountPaid));
   formData.append("ProofFile", payload.ProofFile);
   if (payload.Note?.trim()) formData.append("Note", payload.Note.trim());
   const response = ensureSuccessfulResponse(
-    await memberProfileApiFetch<unknown>(`/api/Loan/Installments/${encodeURIComponent(installmentId)}/SubmitRepaymentProof`, {
-      method: "POST",
-      body: formData,
-    }),
+    await memberProfileApiFetch<unknown>(
+      `/api/Loan/Installments/${encodeURIComponent(installmentId)}/SubmitRepaymentProof`,
+      {
+        method: "POST",
+        body: formData,
+      },
+    ),
   );
   const data = unwrapLoanResponse(response);
   const claimId = isRecord(data)
-    ? ([getCaseInsensitive(data, "id"), getCaseInsensitive(data, "claimId"), getCaseInsensitive(data, "repaymentClaimId")]
-        .find((value): value is string => typeof value === "string" && value.trim() !== ""))
+    ? [
+        getCaseInsensitive(data, "id"),
+        getCaseInsensitive(data, "claimId"),
+        getCaseInsensitive(data, "repaymentClaimId"),
+      ].find(
+        (value): value is string =>
+          typeof value === "string" && value.trim() !== "",
+      )
     : undefined;
   return { claimId, raw: response };
 }
@@ -268,18 +433,28 @@ export async function submitRepaymentProof(installmentId: string, payload: Repay
  * SubmitRepaymentProofResult above) and, per the endpoint's own description, on
  * approval the underlying installment is credited immediately.
  */
-export function reviewRepaymentClaim(claimId: string, approve: boolean, reviewNote: string): Promise<unknown> {
-  return postAdmin(`/api/Loan/RepaymentClaims/${encodeURIComponent(claimId)}/Review`, {
-    approve,
-    ...(reviewNote.trim() ? { reviewNote: reviewNote.trim() } : {}),
-  });
+export function reviewRepaymentClaim(
+  claimId: string,
+  approve: boolean,
+  reviewNote: string,
+): Promise<unknown> {
+  return postAdmin(
+    `/api/Loan/RepaymentClaims/${encodeURIComponent(claimId)}/Review`,
+    {
+      approve,
+      ...(reviewNote.trim() ? { reviewNote: reviewNote.trim() } : {}),
+    },
+  );
 }
 
 function parseTierResponse(response: unknown): LoanApprovalTier[] {
   let value = unwrapLoanResponse(response);
   if (typeof value === "string") {
-    try { value = unwrapLoanResponse(JSON.parse(value)); }
-    catch { throw new Error("The approval tiers response was not valid JSON."); }
+    try {
+      value = unwrapLoanResponse(JSON.parse(value));
+    } catch {
+      throw new Error("The approval tiers response was not valid JSON.");
+    }
   }
   if (isRecord(value)) value = getCaseInsensitive(value, "tiers");
   if (!Array.isArray(value)) return [];
@@ -291,16 +466,34 @@ function parseTierResponse(response: unknown): LoanApprovalTier[] {
     // wouldn't get caught by the finite-check below since 0 is finite. Preserve null explicitly.
     const rawMax = getCaseInsensitive(item, "maxAmount");
     const maxAmount = rawMax == null || rawMax === "" ? null : Number(rawMax);
-    const requiredApprovals = Number(getCaseInsensitive(item, "requiredApprovals"));
-    if (!Number.isFinite(minAmount) || (maxAmount !== null && !Number.isFinite(maxAmount)) || !Number.isFinite(requiredApprovals)) return [];
+    const requiredApprovals = Number(
+      getCaseInsensitive(item, "requiredApprovals"),
+    );
+    if (
+      !Number.isFinite(minAmount) ||
+      (maxAmount !== null && !Number.isFinite(maxAmount)) ||
+      !Number.isFinite(requiredApprovals)
+    )
+      return [];
     return [{ minAmount, maxAmount, requiredApprovals }];
   });
 }
 
 export async function getLoanDisbursementTiers(): Promise<LoanApprovalTier[]> {
-  return parseTierResponse(ensureSuccessfulResponse(await adminApiFetch<unknown>("/api/LoanDisbursement/Loans/Disbursement/ApprovalTiers")));
+  return parseTierResponse(
+    ensureSuccessfulResponse(
+      await adminApiFetch<unknown>(
+        "/api/LoanDisbursement/Loans/Disbursement/ApprovalTiers",
+      ),
+    ),
+  );
 }
 
-export function updateLoanDisbursementTiers(tiers: LoanApprovalTier[]): Promise<unknown> {
-  return adminApiFetch<unknown>("/api/LoanDisbursement/Loans/Disbursement/ApprovalTiers", { method: "PUT", body: { tiers } }).then(ensureSuccessfulResponse);
+export function updateLoanDisbursementTiers(
+  tiers: LoanApprovalTier[],
+): Promise<unknown> {
+  return adminApiFetch<unknown>(
+    "/api/LoanDisbursement/Loans/Disbursement/ApprovalTiers",
+    { method: "PUT", body: { tiers } },
+  ).then(ensureSuccessfulResponse);
 }
