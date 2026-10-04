@@ -9,6 +9,7 @@ import {
   type LoanCalculationResult,
 } from "@/app/lib/loan-api";
 import { ResponseDetails } from "@/app/components/loans/ResponseDetails";
+import { LoanPolicySummary } from "@/app/components/loans/LoanPolicySummary";
 import {
   getLoanErrorDetails,
   type LoanErrorDetails,
@@ -76,6 +77,8 @@ export default function LoanCalculatorPage() {
           Get an estimate, then continue directly to a pre-filled application.
         </p>
       </header>
+
+      <LoanPolicySummary />
 
       <form onSubmit={submit} className="card-dash grid gap-5 rounded-3xl p-6 shadow-sm sm:grid-cols-2 md:p-8">
         <label className="grid gap-2 text-sm font-semibold">

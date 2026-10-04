@@ -1,266 +1,240 @@
-import type { Metadata } from "next";
-import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+"use client";
 
-export const metadata: Metadata = {
-  title: "Investments",
-  description: "Manage your Kajola investments.",
-};
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Loader2, RefreshCw, TrendingUp } from "lucide-react";
+import {
+  getMyInvestments,
+  increaseInvestmentContribution,
+  type MyInvestmentRecord,
+} from "@/app/lib/investment-pool-api";
+import { getApiErrorMessage } from "@/app/lib/api-client";
+
+const PAGE_SIZE = 20;
+
+function formatAmount(value: number | null): string {
+  if (value == null || !Number.isFinite(value)) return "—";
+  return new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(value);
+}
+
+function formatDate(value: string | null): string {
+  if (!value) return "—";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "—" : new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric" }).format(date);
+}
+
+function StatusBadge({ value }: { value: string | null }) {
+  const normalized = (value ?? "").toLowerCase();
+  const classes =
+    normalized === "active" || normalized === "open"
+      ? "bg-emerald-50 text-emerald-700 border-emerald-100"
+      : normalized === "rejected" || normalized === "closed" || normalized === "withdrawn"
+        ? "bg-red-50 text-red-700 border-red-100"
+        : "bg-(--accent-50) text-(--accent-700) border-(--accent-100)";
+  return (
+    <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold ${classes}`}>
+      {value || "Unknown"}
+    </span>
+  );
+}
+
+function IncreaseContributionForm({ investment, onDone }: { investment: MyInvestmentRecord; onDone: () => void }) {
+  const [value, setValue] = useState(investment.contributionPercentage != null ? String(investment.contributionPercentage) : "");
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: (newContributionPercentage: number) =>
+      increaseInvestmentContribution(investment.poolId!, newContributionPercentage),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["my-investments"] });
+      onDone();
+    },
+  });
+
+  function submit(event: React.FormEvent) {
+    event.preventDefault();
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed) || parsed <= 0) return;
+    mutation.mutate(parsed);
+  }
+
+  return (
+    <form onSubmit={submit} className="mt-4 flex flex-wrap items-end gap-3 border-t pt-4" style={{ borderColor: "var(--dash-border)" }}>
+      <label className="grid gap-1.5 text-xs font-semibold dash-text-muted">
+        New contribution %
+        <input
+          type="number"
+          min={investment.contributionPercentage ?? 0}
+          step="any"
+          inputMode="decimal"
+          value={value}
+          onChange={(event) => setValue(event.target.value)}
+          required
+          className="input-dash w-32 rounded-xl px-3 py-2 text-sm outline-none"
+        />
+      </label>
+      <button
+        type="submit"
+        disabled={mutation.isPending}
+        className="inline-flex items-center gap-2 rounded-full bg-[#171717] px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+      >
+        {mutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+        {mutation.isPending ? "Submitting…" : "Confirm increase"}
+      </button>
+      <button type="button" onClick={onDone} className="rounded-full border px-5 py-2.5 text-sm font-semibold dash-text-muted" style={{ borderColor: "var(--dash-border)" }}>
+        Cancel
+      </button>
+      {mutation.isError && (
+        <p role="alert" className="w-full text-sm text-red-700">{getApiErrorMessage(mutation.error)}</p>
+      )}
+    </form>
+  );
+}
+
+function InvestmentCard({ investment }: { investment: MyInvestmentRecord }) {
+  const [increasing, setIncreasing] = useState(false);
+  const canIncrease =
+    investment.poolId &&
+    (investment.poolStatus ?? "").toLowerCase() === "open" &&
+    (investment.participationStatus ?? "").toLowerCase() === "active";
+
+  return (
+    <div className="card-dash rounded-3xl p-6 shadow-sm">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-lg font-bold dash-text">{investment.poolName || "Investment pool"}</h3>
+            <StatusBadge value={investment.poolStatus} />
+          </div>
+          {investment.assetClass && <p className="mt-1 text-xs dash-text-muted">{investment.assetClass}</p>}
+        </div>
+        {canIncrease && !increasing && (
+          <button
+            type="button"
+            onClick={() => setIncreasing(true)}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full border px-4 py-2 text-xs font-semibold dash-text hover:bg-black/5"
+            style={{ borderColor: "var(--dash-border)" }}
+          >
+            <TrendingUp className="h-3.5 w-3.5" /> Increase contribution
+          </button>
+        )}
+      </div>
+
+      <div className="mt-6 grid grid-cols-2 gap-y-5 gap-x-4 border-t pt-5 sm:grid-cols-4" style={{ borderColor: "var(--dash-border)" }}>
+        <div className="flex flex-col gap-1">
+          <p className="text-[10px] font-bold uppercase tracking-widest dash-text-muted">Your stake</p>
+          <p className="text-sm font-semibold dash-text">{formatAmount(investment.contributionAmount)}</p>
+        </div>
+        <div className="flex flex-col gap-1">
+          <p className="text-[10px] font-bold uppercase tracking-widest dash-text-muted">Contribution %</p>
+          <p className="text-sm font-semibold dash-text">{investment.contributionPercentage != null ? `${investment.contributionPercentage}%` : "—"}</p>
+        </div>
+        <div className="flex flex-col gap-1">
+          <p className="text-[10px] font-bold uppercase tracking-widest dash-text-muted">Your status</p>
+          <StatusBadge value={investment.participationStatus} />
+        </div>
+        <div className="flex flex-col gap-1">
+          <p className="text-[10px] font-bold uppercase tracking-widest dash-text-muted">Joined</p>
+          <p className="text-sm font-semibold dash-text">{formatDate(investment.joinedAtUtc)}</p>
+        </div>
+      </div>
+
+      {increasing && investment.poolId && (
+        <IncreaseContributionForm investment={investment} onDone={() => setIncreasing(false)} />
+      )}
+    </div>
+  );
+}
 
 export default function InvestmentsPage() {
+  const [page, setPage] = useState(1);
+
+  const investments = useQuery({
+    queryKey: ["my-investments", page],
+    queryFn: () => getMyInvestments({ pageNumber: page, pageSize: PAGE_SIZE }),
+  });
+
   return (
-    <div className="max-w-5xl mx-auto space-y-8 text-[#171717] pb-10">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
-          Investments
-        </h1>
-        <p className="mt-2 text-sm text-gray-500">
-          Investment plans set by admin. Pick one, pay to subscribe.
-        </p>
-      </div>
-
-      {/* Total Invested Summary */}
-      <div className="bg-white rounded-3xl p-6 md:p-8 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
-        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
-          TOTAL INVESTED
-        </p>
-        <p className="text-5xl md:text-6xl font-bold tracking-tighter mb-8">
-          $ 700
-        </p>
-
-        <div className="flex flex-wrap items-center gap-6 md:gap-10">
-          <div className="flex flex-col gap-1">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-              RETURNS
-            </p>
-            <p className="text-sm font-semibold text-green-600">+ $ 0</p>
-          </div>
-          <div className="w-px h-8 bg-gray-100 hidden sm:block"></div>
-          <div className="flex flex-col gap-1">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-              YOY
-            </p>
-            <p className="text-sm font-semibold text-[#111]">—</p>
-          </div>
-          <div className="w-px h-8 bg-gray-100 hidden sm:block"></div>
-          <div className="flex flex-col gap-1">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-              MONTHS ACTIVE
-            </p>
-            <p className="text-sm font-semibold text-[#111]">5</p>
-          </div>
+    <div className="mx-auto max-w-5xl space-y-8 pb-10 dash-text">
+      <header className="relative overflow-hidden rounded-3xl bg-[#181817] p-6 text-white md:p-8">
+        <div className="pointer-events-none absolute -right-16 -top-20 h-60 w-60 rounded-full bg-(--accent-400)/15 blur-3xl" />
+        <div className="relative">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-(--accent-300)">Investments</p>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">Your investment pools</h1>
+          <p className="mt-3 max-w-xl text-sm leading-6 text-white/70">
+            Pools you&apos;re participating in, your stake in each, and their current status.
+          </p>
         </div>
-      </div>
+      </header>
 
-      {/* Plans Section */}
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <p className="text-[10px] font-bold text-(--accent-600) uppercase tracking-widest mb-1">
-              PLANS
-            </p>
-            <h2 className="text-xl font-bold">Investment plans</h2>
-          </div>
-          <div className="flex p-1 bg-white rounded-full self-start shadow-sm border border-gray-100">
-            <button className="px-4 py-1.5 bg-[#111] text-white rounded-full text-xs font-semibold">
-              All
-            </button>
-            <button className="px-4 py-1.5 text-gray-500 rounded-full text-xs font-semibold hover:text-black transition-colors">
-              My plans
-            </button>
-            <button className="px-4 py-1.5 text-gray-500 rounded-full text-xs font-semibold hover:text-black transition-colors">
-              Open
-            </button>
-            <button className="px-4 py-1.5 text-gray-500 rounded-full text-xs font-semibold hover:text-black transition-colors">
-              Closed
-            </button>
-          </div>
+      <section className="card-dash rounded-3xl p-6 shadow-sm">
+        <p className="text-xs font-bold uppercase tracking-widest text-(--accent-600)">Total participations</p>
+        {investments.isLoading ? (
+          <p role="status" className="mt-4 flex items-center gap-2 text-sm dash-text-muted"><Loader2 className="h-4 w-4 animate-spin" /> Loading…</p>
+        ) : investments.isError ? (
+          <p role="alert" className="mt-4 text-sm text-red-700">{getApiErrorMessage(investments.error)}</p>
+        ) : (
+          <p className="mt-3 text-4xl font-bold tracking-tight">{investments.data?.totalCount ?? investments.data?.investments.length ?? 0}</p>
+        )}
+      </section>
+
+      <section className="space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-xl font-bold">Your pools</h2>
+          <button
+            type="button"
+            onClick={() => investments.refetch()}
+            disabled={investments.isFetching}
+            className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold disabled:opacity-50"
+            style={{ borderColor: "var(--dash-border)" }}
+          >
+            <RefreshCw className={`h-4 w-4 ${investments.isFetching ? "animate-spin" : ""}`} /> Refresh
+          </button>
         </div>
 
-        <div className="space-y-4 md:space-y-6">
-          {/* Plan 1 */}
-          <div className="bg-white rounded-3xl p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
-            <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6 mb-8">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1.5">
-                  <h3 className="text-lg font-bold">
-                    Calgary Apartments · LikeMinds Estate
-                  </h3>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-(--accent-50) text-(--accent-600) flex items-center gap-1 border border-(--accent-100)/50">
-                    <span className="w-1 h-1 rounded-full bg-(--accent-500)"></span>
-                    Subscribed
-                  </span>
-                </div>
-                <p className="text-xs text-gray-500">
-                  Admin-subscribed project - fixed $700 - paid 15 Jun 2025 -
-                  dividends expected Q2 2026.
-                </p>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <button className="px-4 py-2 rounded-full text-xs font-semibold bg-white border border-gray-200 text-[#111] hover:bg-gray-50 transition-colors">
-                  View plan
-                </button>
-                <button className="px-4 py-2 rounded-full text-xs font-semibold bg-white border border-gray-200 text-[#111] hover:bg-gray-50 transition-colors flex items-center gap-1.5">
-                  Track payout <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-y-6 gap-x-4 border-t border-gray-50 pt-6">
-              <div className="flex flex-col gap-1">
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                  YOUR STAKE
-                </p>
-                <p className="text-sm font-semibold text-[#111]">$ 700</p>
-              </div>
-              <div className="flex flex-col gap-1">
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                  TERM
-                </p>
-                <p className="text-sm font-semibold text-[#111]">12 months</p>
-              </div>
-              <div className="flex flex-col gap-1">
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                  EXPECTED RETURN
-                </p>
-                <p className="text-sm font-semibold text-green-600">
-                  12 % p.a.
-                </p>
-              </div>
-              <div className="flex flex-col gap-1">
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                  MATURES
-                </p>
-                <p className="text-sm font-semibold text-[#111]">30 Jun 2026</p>
-              </div>
-              <div className="flex flex-col gap-1">
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                  HOLDERS
-                </p>
-                <p className="text-sm font-semibold text-[#111]">86 members</p>
-              </div>
-            </div>
+        {investments.isLoading ? (
+          <div className="card-dash rounded-3xl p-10 text-center text-sm dash-text-muted">Loading your investments…</div>
+        ) : investments.isError ? (
+          <div role="alert" className="card-dash rounded-3xl p-10 text-center text-sm text-red-700">
+            <p>{getApiErrorMessage(investments.error)}</p>
+            <button type="button" onClick={() => investments.refetch()} className="mt-3 font-semibold underline">Retry</button>
           </div>
-
-          {/* Plan 2 */}
-          <div className="bg-white rounded-3xl p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
-            <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6 mb-8">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1.5">
-                  <h3 className="text-lg font-bold">Cooperative Growth Fund</h3>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-50 text-green-700 flex items-center gap-1 border border-green-100/50">
-                    <span className="w-1 h-1 rounded-full bg-green-500"></span>
-                    Starts Jan 2026
-                  </span>
-                </div>
-                <p className="text-xs text-gray-500">
-                  Default monthly investment every member joins - enter any
-                  amount $100 - $2,000 - pay by the 15th.
-                </p>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <button className="px-4 py-2 rounded-full text-xs font-semibold bg-white border border-gray-200 text-[#111] hover:bg-gray-50 transition-colors">
-                  View plan
-                </button>
-                <button className="px-4 py-2 rounded-full text-xs font-semibold bg-[#111] text-white hover:bg-black transition-colors flex items-center gap-1.5">
-                  Make payment <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-y-6 gap-x-4 border-t border-gray-50 pt-6">
-              <div className="flex flex-col gap-1">
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                  MONTHLY
-                </p>
-                <p className="text-sm font-semibold text-[#111]">
-                  $ 100 — $ 2,000
-                </p>
-              </div>
-              <div className="flex flex-col gap-1">
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                  TERM
-                </p>
-                <p className="text-sm font-semibold text-[#111]">12 months</p>
-              </div>
-              <div className="flex flex-col gap-1">
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                  EXPECTED RETURN
-                </p>
-                <p className="text-sm font-semibold text-green-600">
-                  10 % p.a.
-                </p>
-              </div>
-              <div className="flex flex-col gap-1">
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                  FIRST DUE
-                </p>
-                <p className="text-sm font-semibold text-[#111]">15 Jan 2026</p>
-              </div>
-              <div className="flex flex-col gap-1">
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                  PAID SO FAR
-                </p>
-                <p className="text-sm font-semibold text-[#111]">$ 0</p>
-              </div>
-            </div>
+        ) : !investments.data?.investments.length ? (
+          <div className="card-dash rounded-3xl p-10 text-center text-sm dash-text-muted">
+            You&apos;re not participating in any investment pool yet.
           </div>
-
-          {/* Plan 3 */}
-          <div className="bg-white rounded-3xl p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
-            <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6 mb-8">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1.5">
-                  <h3 className="text-lg font-bold">Treasury Bills 2026</h3>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-50 text-green-700 flex items-center gap-1 border border-green-100/50">
-                    <span className="w-1 h-1 rounded-full bg-green-500"></span>
-                    Open
-                  </span>
-                </div>
-                <p className="text-xs text-gray-500">
-                  Principal-protected ladder - monthly coupons.
-                </p>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <button className="px-4 py-2 rounded-full text-xs font-semibold bg-white border border-gray-200 text-[#111] hover:bg-gray-50 transition-colors">
-                  View plan
-                </button>
-                <button className="px-4 py-2 rounded-full text-xs font-semibold bg-[#111] text-white hover:bg-black transition-colors flex items-center gap-1.5">
-                  Join plan <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-y-6 gap-x-4 border-t border-gray-50 pt-6">
-              <div className="flex flex-col gap-1">
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                  MONTHLY
-                </p>
-                <p className="text-sm font-semibold text-[#111]">$ 500</p>
-              </div>
-              <div className="flex flex-col gap-1">
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                  TERM
-                </p>
-                <p className="text-sm font-semibold text-[#111]">6 months</p>
-              </div>
-              <div className="flex flex-col gap-1">
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                  NEXT DUE
-                </p>
-                <p className="text-sm font-semibold text-[#111]">¯</p>
-              </div>
-              <div className="flex flex-col gap-1">
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                  PAID SO FAR
-                </p>
-                <p className="text-sm font-semibold text-[#111]">$ 0</p>
-              </div>
-            </div>
+        ) : (
+          <div className="space-y-4">
+            {investments.data.investments.map((investment) => (
+              <InvestmentCard key={investment.poolId ?? `${investment.poolName}-${investment.joinedAtUtc}`} investment={investment} />
+            ))}
           </div>
-        </div>
-      </div>
+        )}
+
+        {investments.data && investments.data.hasMore !== undefined && (investments.data.hasMore || page > 1) && (
+          <nav aria-label="Investment pages" className="flex items-center justify-between border-t pt-5 text-sm" style={{ borderColor: "var(--dash-border)" }}>
+            <button
+              type="button"
+              disabled={page <= 1 || investments.isFetching}
+              onClick={() => setPage((p) => p - 1)}
+              className="rounded-full border px-4 py-2 disabled:opacity-40"
+              style={{ borderColor: "var(--dash-border)" }}
+            >
+              Previous
+            </button>
+            <span className="text-xs dash-text-muted">Page {page}</span>
+            <button
+              type="button"
+              disabled={!investments.data.hasMore || investments.isFetching}
+              onClick={() => setPage((p) => p + 1)}
+              className="rounded-full border px-4 py-2 disabled:opacity-40"
+              style={{ borderColor: "var(--dash-border)" }}
+            >
+              Next
+            </button>
+          </nav>
+        )}
+      </section>
     </div>
   );
 }

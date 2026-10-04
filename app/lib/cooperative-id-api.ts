@@ -1,18 +1,8 @@
-import { ApiError, adminApiFetch } from "@/app/lib/api-client";
+import { ApiError, adminApiFetch, memberProfileApiFetch } from "@/app/lib/api-client";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/**
- * GET /api/CooperativeAccount/GetCooperativeId — single-cooperative-per-deployment
- * model. Takes no parameters; returns this deployment's one cooperative id. Call
- * once and reuse the id for every cooperative-scoped endpoint instead of asking
- * the admin to pick one — see `useCooperativeId`, the shared hook every
- * cooperative-scoped screen should use.
- */
-export async function getCooperativeId(): Promise<string> {
-  const response = await adminApiFetch<unknown>(
-    "/api/CooperativeAccount/GetCooperativeId",
-  );
+function parseCooperativeIdResponse(response: unknown): string {
   if (!response || typeof response !== "object" || Array.isArray(response)) {
     throw new Error("GetCooperativeId returned an invalid response.");
   }
@@ -35,4 +25,24 @@ export async function getCooperativeId(): Promise<string> {
     throw new Error("GetCooperativeId did not return a valid cooperative ID.");
   }
   return id.toLowerCase();
+}
+
+/**
+ * GET /api/CooperativeAccount/GetCooperativeId — single-cooperative-per-deployment
+ * model. Takes no parameters; returns this deployment's one cooperative id. Call
+ * once and reuse the id for every cooperative-scoped endpoint instead of asking
+ * the admin to pick one — see `useCooperativeId`, the shared hook every
+ * cooperative-scoped screen should use.
+ */
+export async function getCooperativeId(): Promise<string> {
+  return parseCooperativeIdResponse(
+    await adminApiFetch<unknown>("/api/CooperativeAccount/GetCooperativeId"),
+  );
+}
+
+/** Same lookup as getCooperativeId, authenticated as the signed-in member instead of an admin. */
+export async function getMemberCooperativeId(): Promise<string> {
+  return parseCooperativeIdResponse(
+    await memberProfileApiFetch<unknown>("/api/CooperativeAccount/GetCooperativeId"),
+  );
 }

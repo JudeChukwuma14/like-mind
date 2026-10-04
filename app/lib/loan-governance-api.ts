@@ -1,4 +1,4 @@
-import { adminApiFetch } from "@/app/lib/api-client";
+import { adminApiFetch, memberProfileApiFetch } from "@/app/lib/api-client";
 import {
   ensureSuccessfulResponse,
   unwrapLoanResponse,
@@ -307,6 +307,25 @@ export async function getLoanPolicy(
 ): Promise<LoanPolicy> {
   return parseLoanPolicy(
     await adminApiFetch<unknown>(
+      `${LOAN_POLICY_PATH}/${encodeURIComponent(cooperativeId)}`,
+    ),
+  );
+}
+
+/**
+ * Member-readable view of the active loan policy — same endpoint as getLoanPolicy,
+ * but authenticated with the member's own token (like applyForLoan does on this
+ * same host) instead of an admin token. Lets a member see the real maximum amount,
+ * term and eligibility rules before applying, instead of discovering them only
+ * after a rejected application. If the backend does not allow a member token on
+ * this endpoint, callers should treat a failure here as "not available" and hide
+ * the policy summary rather than surface a scary error.
+ */
+export async function getMemberLoanPolicy(
+  cooperativeId: string,
+): Promise<LoanPolicy> {
+  return parseLoanPolicy(
+    await memberProfileApiFetch<unknown>(
       `${LOAN_POLICY_PATH}/${encodeURIComponent(cooperativeId)}`,
     ),
   );

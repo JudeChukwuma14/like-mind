@@ -4,6 +4,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import {
+  LayoutDashboard,
+  Wallet,
+  TrendingUp,
+  HandCoins,
+  ArrowUpFromLine,
+  Bell,
+  CircleUserRound,
+} from "lucide-react";
 import { ThemeToggle } from "@/app/components/ThemeToggle";
 import { AskAiPanel } from "@/app/components/AskAiPanel";
 import { useUnreadAnnouncements } from "@/app/lib/useAnnouncements";
@@ -26,22 +35,22 @@ function initialsFor(label: string): string {
 const navGroups = [
   {
     label: "OVERVIEW",
-    items: [{ href: "/dashboard", label: "Dashboard", icon: "⊞" }],
+    items: [{ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard }],
   },
   {
     label: "MONEY",
     items: [
-      { href: "/dashboard/cash-wallet", label: "Cash wallet", icon: "◈" },
-      { href: "/dashboard/investments", label: "Investments", icon: "↗" },
-      { href: "/dashboard/loans", label: "Loans", icon: "$" },
-      { href: "/dashboard/withdrawals", label: "Withdrawals", icon: "↑" },
+      { href: "/dashboard/cash-wallet", label: "Cash wallet", icon: Wallet },
+      { href: "/dashboard/investments", label: "Investments", icon: TrendingUp },
+      { href: "/dashboard/loans", label: "Loans", icon: HandCoins },
+      { href: "/dashboard/withdrawals", label: "Withdrawals", icon: ArrowUpFromLine },
     ],
   },
   {
     label: "ACCOUNT",
     items: [
-      { href: "/dashboard/notifications", label: "Notifications", icon: "◎" },
-      { href: "/dashboard/profile", label: "Profile", icon: "◉" },
+      { href: "/dashboard/notifications", label: "Notifications", icon: Bell },
+      { href: "/dashboard/profile", label: "Profile", icon: CircleUserRound },
     ],
   },
 ];
@@ -230,16 +239,16 @@ function Sidebar({
                       style={
                         active
                           ? {
-                              background: "rgba(245,158,11,0.15)",
-                              color: "#f59e0b",
+                              background: "color-mix(in srgb, var(--brand) 15%, transparent)",
+                              color: "var(--brand-hover)",
                             }
                           : {
                               color: "var(--dash-muted)",
                             }
                       }
                     >
-                      <span className="text-base shrink-0 w-5 text-center">
-                        {item.icon}
+                      <span className="shrink-0 w-5 flex items-center justify-center">
+                        <item.icon className="w-4.5 h-4.5" />
                       </span>
                       {!collapsed && (
                         <span className="truncate">{item.label}</span>

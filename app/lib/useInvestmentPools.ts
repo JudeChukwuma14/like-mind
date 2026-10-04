@@ -6,14 +6,17 @@ import {
   approveInvestmentPool,
   createInvestmentPool,
   getInvestmentPool,
+  getInvestmentPools,
   previewInvestmentPoolEligibility,
   rejectInvestmentPool,
   type CreateInvestmentPoolPayload,
   type EligibilityRules,
+  type GetInvestmentPoolsParams,
 } from "@/app/lib/investment-pool-api";
 
 export const investmentPoolKeys = {
   detail: (poolId: string) => ["investment-pool", poolId] as const,
+  list: (params: GetInvestmentPoolsParams) => ["investment-pools", params] as const,
 };
 
 // ─── Reads ─────────────────────────────────────────────────────────────────────
@@ -24,6 +27,14 @@ export function useInvestmentPool(poolId: string, enabled = true) {
     queryFn: () => getInvestmentPool(poolId),
     enabled: enabled && Boolean(poolId.trim()),
     retry: false,
+  });
+}
+
+/** GET /api/InvestmentPool — the real paginated list, added after this file's other hooks. */
+export function useInvestmentPoolsList(params: GetInvestmentPoolsParams) {
+  return useQuery({
+    queryKey: investmentPoolKeys.list(params),
+    queryFn: () => getInvestmentPools(params),
   });
 }
 

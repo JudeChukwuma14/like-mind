@@ -30,6 +30,7 @@ import {
   useCreateInvestmentPool,
   useEligibilityPreview,
   useInvestmentPool,
+  useInvestmentPoolsList,
   useRecentInvestmentPools,
   useRejectInvestmentPool,
 } from "@/app/lib/useInvestmentPools";
@@ -43,6 +44,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const STATUS_STYLE: Record<string, string> = {
   Draft: "bg-gray-100 text-gray-700",
   PendingApproval: "bg-amber-100 text-amber-700",
+  Approved: "bg-blue-100 text-blue-700",
   Open: "bg-green-100 text-green-700",
   Closed: "bg-gray-100 text-gray-500",
   Rejected: "bg-red-100 text-red-700",
@@ -580,7 +582,7 @@ function LookupPool({ cooperativeId }: { cooperativeId: string | undefined }) {
                 </button>
               ))}
             </div>
-            <p className="mt-2 text-[11px] admin-text-muted">This list only lives in your browser — the backend has no way to list pools, only look one up by id.</p>
+            <p className="mt-2 text-[11px] admin-text-muted">This device-only list predates the real pool list below — kept as a quick-access shortcut.</p>
           </div>
         )}
       </div>
@@ -590,12 +592,91 @@ function LookupPool({ cooperativeId }: { cooperativeId: string | undefined }) {
   );
 }
 
+// ─── All pools ─────────────────────────────────────────────────────────────────
+
+const POOL_STATUS_FILTERS = ["", "Draft", "PendingApproval", "Approved", "Open", "Closed", "Rejected"] as const;
+
+function AllPoolsTab() {
+  const [status, setStatus] = useState<(typeof POOL_STATUS_FILTERS)[number]>("");
+  const [page, setPage] = useState(1);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const pools = useInvestmentPoolsList({ pageNumber: page, pageSize: 20, status: status || undefined });
+
+  return (
+    <div className="space-y-6">
+      <div className="card-admin rounded-3xl p-5 md:p-7">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className={LABEL}>Filter by status</p>
+          <button type="button" onClick={() => pools.refetch()} disabled={pools.isFetching} className="text-xs font-semibold admin-text-muted hover:underline disabled:opacity-50">
+            {pools.isFetching ? "Refreshing…" : "Refresh"}
+          </button>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {POOL_STATUS_FILTERS.map((value) => (
+            <button
+              key={value || "all"}
+              type="button"
+              aria-pressed={status === value}
+              onClick={() => { setStatus(value); setPage(1); }}
+              className={status === value ? "btn-primary rounded-full px-4 py-2 text-xs font-semibold" : "rounded-full border px-4 py-2 text-xs font-semibold admin-text-muted hover:bg-black/5"}
+              style={status === value ? undefined : { borderColor: "var(--admin-border)" }}
+            >
+              {value || "All"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {pools.isPending ? (
+        <div className="card-admin flex items-center gap-3 rounded-3xl p-8 text-sm admin-text-muted"><Loader2 className="h-4 w-4 animate-spin" /> Loading pools…</div>
+      ) : pools.isError ? (
+        <div role="alert" className="rounded-3xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">
+          <p>{getApiErrorMessage(pools.error)}</p>
+          <button type="button" onClick={() => pools.refetch()} className="mt-3 font-semibold underline">Try again</button>
+        </div>
+      ) : pools.data.pools.length === 0 ? (
+        <div className="card-admin rounded-3xl p-8 text-center text-sm admin-text-muted">No pools match this filter.</div>
+      ) : (
+        <div className="space-y-3">
+          {pools.data.pools.map((pool) => (
+            <button
+              key={pool.id ?? pool.name}
+              type="button"
+              onClick={() => pool.id && setSelectedId(pool.id)}
+              className="card-admin flex w-full flex-wrap items-center justify-between gap-3 rounded-2xl p-5 text-left transition hover:bg-black/5"
+            >
+              <div>
+                <p className="font-semibold">{pool.name ?? "Untitled pool"}</p>
+                <p className="mt-1 text-xs admin-text-muted">{pool.assetClass ?? "—"} · {pool.participantCount ?? 0} participants</p>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-semibold">{money(pool.totalContributed)}</span>
+                <span className={`rounded px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest ${STATUS_STYLE[pool.status ?? ""] ?? "bg-gray-100 text-gray-700"}`}>{pool.status ?? "Unknown"}</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {pools.data && (pools.data.hasMore || page > 1) && (
+        <nav aria-label="Pool pages" className="flex items-center justify-between border-t pt-5 text-sm" style={{ borderColor: "var(--admin-border)" }}>
+          <button type="button" disabled={page <= 1 || pools.isFetching} onClick={() => setPage((p) => p - 1)} className="rounded-full border px-4 py-2 disabled:opacity-40" style={{ borderColor: "var(--admin-border)" }}>Previous</button>
+          <span className="text-xs admin-text-muted">Page {page}</span>
+          <button type="button" disabled={!pools.data.hasMore || pools.isFetching} onClick={() => setPage((p) => p + 1)} className="rounded-full border px-4 py-2 disabled:opacity-40" style={{ borderColor: "var(--admin-border)" }}>Next</button>
+        </nav>
+      )}
+
+      {selectedId && <PoolDetail key={selectedId} poolId={selectedId} />}
+    </div>
+  );
+}
+
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
 export default function InvestmentsPage() {
   const cooperative = useCooperativeId();
   const cooperativeId = cooperative.cooperativeId;
-  const [tab, setTab] = useState<"new" | "lookup">("new");
+  const [tab, setTab] = useState<"all" | "new" | "lookup">("all");
   const [justCreated, setJustCreated] = useState<{ id: string; name: string } | null>(null);
   const recent = useRecentInvestmentPools(cooperativeId ?? "");
 
@@ -611,8 +692,7 @@ export default function InvestmentsPage() {
         <p className="mb-1 text-[10px] font-bold uppercase tracking-widest admin-text-muted">Investments</p>
         <h1 className="text-4xl font-bold tracking-tight">Investment pools</h1>
         <p className="mt-2 text-sm admin-text-muted">
-          There is no pool list from the backend yet — only an ID lookup. Pools you create or open here are
-          remembered on this device for convenience, under &quot;Recently opened.&quot;
+          Create pools, review the full list across every status, or look one up directly by id.
         </p>
       </header>
 
@@ -628,6 +708,7 @@ export default function InvestmentsPage() {
       <div role="tablist" aria-label="Investment pool actions" className="flex w-fit gap-1 rounded-full border p-1" style={{ borderColor: "var(--admin-border)" }}>
         {(
           [
+            ["all", "All pools"],
             ["new", "New pool"],
             ["lookup", "Look up a pool"],
           ] as const
@@ -645,7 +726,9 @@ export default function InvestmentsPage() {
         ))}
       </div>
 
-      {tab === "new" ? (
+      {tab === "all" ? (
+        <AllPoolsTab />
+      ) : tab === "new" ? (
         <NewPoolForm cooperativeId={cooperativeId} onCreated={handleCreated} />
       ) : (
         <LookupPool cooperativeId={cooperativeId} />
