@@ -1,8 +1,16 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { Home, Wheat, Laptop, HeartHandshake, TrendingUp, Vote } from "lucide-react";
+import {
+  Home,
+  Wheat,
+  Laptop,
+  HeartHandshake,
+  TrendingUp,
+  Vote,
+} from "lucide-react";
 import { FaqAccordion } from "./FaqAccordion";
+import HomeContactForm from "./HomeContactForm";
 import {
   FadeUp,
   FadeIn,
@@ -43,12 +51,19 @@ const features = [
     desc: "Equity participation in vetted African-Canadian tech ventures.",
   },
   {
-    icon: <HeartHandshake className="w-6 h-6" style={{ color: "var(--mkt-accent)" }} />,
+    icon: (
+      <HeartHandshake
+        className="w-6 h-6"
+        style={{ color: "var(--mkt-accent)" }}
+      />
+    ),
     title: "Welfare Schemes",
     desc: "Emergency funds, health support, and education grants for members.",
   },
   {
-    icon: <TrendingUp className="w-6 h-6" style={{ color: "var(--mkt-accent)" }} />,
+    icon: (
+      <TrendingUp className="w-6 h-6" style={{ color: "var(--mkt-accent)" }} />
+    ),
     title: "Transparent Returns",
     desc: "Quarterly statements. Open books. No hidden management fees.",
   },
@@ -140,9 +155,21 @@ const partners = [
 ];
 
 const values = [
-  { num: "01", title: "Transparency", desc: "Open books. Quarterly disclosures." },
-  { num: "02", title: "Inclusivity", desc: "Newcomers and veterans share the floor." },
-  { num: "03", title: "Sustainability", desc: "Investments built to last decades." },
+  {
+    num: "01",
+    title: "Transparency",
+    desc: "Open books. Quarterly disclosures.",
+  },
+  {
+    num: "02",
+    title: "Inclusivity",
+    desc: "Newcomers and veterans share the floor.",
+  },
+  {
+    num: "03",
+    title: "Sustainability",
+    desc: "Investments built to last decades.",
+  },
   { num: "04", title: "Ethics", desc: "No interest-bearing instruments." },
   { num: "05", title: "One member, one vote", desc: "No silos in council." },
 ];
@@ -151,9 +178,6 @@ const values = [
 export default function HomePage() {
   return (
     <>
-      {/* ══════════════════════════════════════════════════════════
-          1. HERO
-          ══════════════════════════════════════════════════════════ */}
       <section className="relative flex flex-col items-center justify-center text-center min-h-[92vh] px-6 py-24 overflow-hidden">
         {/* Background image */}
         <div className="absolute inset-0 z-0">
@@ -183,14 +207,17 @@ export default function HomePage() {
 
           {/* Headline */}
           <h1 className="animate-fade-up delay-100 text-2xl sm:text-4xl md:text-5xl font-extrabold text-white leading-[1.05] tracking-tight max-w-4xl">
-            Let&apos;s Build{" "} Wealth Together
+            Let&apos;s Build Wealth Together
             <br />
-            <span className="shimmer-text">With LikeMinds Multipurpose <br /> Cooperative Society </span>
+            <span className="shimmer-text">
+              With LikeMinds Multipurpose <br /> Cooperative Society{" "}
+            </span>
           </h1>
 
           <p className="animate-fade-up delay-300 mt-8 text-lg sm:text-xl text-white/65 max-w-2xl mx-auto leading-relaxed font-light">
-            A member owned co-op pooling capital across real estate, agriculture,
-            tech and welfare. Honest returns, no hidden fees, one member one vote.
+            A member owned co-op pooling capital across real estate,
+            agriculture, tech and welfare. Honest returns, no hidden fees, one
+            member one vote.
           </p>
 
           {/* CTAs */}
@@ -201,7 +228,9 @@ export default function HomePage() {
               className="group relative px-8 py-4 rounded-full font-semibold bg-[#facc15] text-[#0a0a0a] text-base transition-all duration-300 hover:bg-[#fde68a] hover:scale-105 shadow-[0_0_30px_rgba(250,204,21,0.3)] hover:shadow-[0_0_50px_rgba(250,204,21,0.5)]"
             >
               Become a member
-              <span className="ml-2 inline-block transition-transform duration-300 group-hover:translate-x-1">→</span>
+              <span className="ml-2 inline-block transition-transform duration-300 group-hover:translate-x-1">
+                →
+              </span>
             </Link>
             <Link
               id="hero-cta-secondary"
@@ -214,14 +243,24 @@ export default function HomePage() {
 
           {/* Trust signals */}
           <div className="animate-fade-up delay-500 mt-6 flex flex-wrap items-center justify-center gap-6 text-xs text-white/40 font-medium">
-            {["No hidden fees", "Federally registered", "Member-governed"].map((t) => (
-              <span key={t} className="flex items-center gap-1.5">
-                <svg className="w-3.5 h-3.5 text-[#facc15]" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
-                </svg>
-                {t}
-              </span>
-            ))}
+            {["No hidden fees", "Federally registered", "Member-governed"].map(
+              (t) => (
+                <span key={t} className="flex items-center gap-1.5">
+                  <svg
+                    className="w-3.5 h-3.5 text-[#facc15]"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  {t}
+                </span>
+              ),
+            )}
           </div>
         </div>
 
@@ -233,8 +272,12 @@ export default function HomePage() {
                 key={stat.label}
                 className="flex flex-col items-center py-6 px-4 bg-[#0a0a0a]/60 hover:bg-[#facc15]/5 transition-colors duration-300"
               >
-                <span className="text-3xl md:text-4xl font-bold text-[#facc15]">{stat.value}</span>
-                <span className="text-xs text-white/50 mt-1 font-medium tracking-wide">{stat.label}</span>
+                <span className="text-3xl md:text-4xl font-bold text-[#facc15]">
+                  {stat.value}
+                </span>
+                <span className="text-xs text-white/50 mt-1 font-medium tracking-wide">
+                  {stat.label}
+                </span>
               </div>
             ))}
           </div>
@@ -243,21 +286,26 @@ export default function HomePage() {
         {/* Scroll indicator */}
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 animate-float">
           <div className="flex flex-col items-center gap-2">
-            <span className="text-xs text-white/30 tracking-widest uppercase font-medium">Scroll</span>
+            <span className="text-xs text-white/30 tracking-widest uppercase font-medium">
+              Scroll
+            </span>
             <div className="w-px h-8 bg-gradient-to-b from-white/30 to-transparent" />
           </div>
         </div>
       </section>
 
-      {/* ══════════════════════════════════════════════════════════
-          2. TRUSTED BY / PARTNERS
-          ══════════════════════════════════════════════════════════ */}
       <section
         className="py-12 border-y overflow-hidden"
-        style={{ borderColor: "var(--mkt-border)", background: "var(--mkt-card)" }}
+        style={{
+          borderColor: "var(--mkt-border)",
+          background: "var(--mkt-card)",
+        }}
       >
         <FadeIn>
-          <p className="text-center text-xs font-semibold tracking-widest uppercase mb-8" style={{ color: "var(--mkt-accent)" }}>
+          <p
+            className="text-center text-xs font-semibold tracking-widest uppercase mb-8"
+            style={{ color: "var(--mkt-accent)" }}
+          >
             Trusted & Recognised By
           </p>
         </FadeIn>
@@ -280,24 +328,35 @@ export default function HomePage() {
       {/* ══════════════════════════════════════════════════════════
           3. ABOUT
           ══════════════════════════════════════════════════════════ */}
-      <section
-        className="py-24 px-6 max-w-7xl mx-auto"
-      >
+      <section className="py-24 px-6 max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row gap-8 md:gap-24 items-start">
           <FadeUp className="md:w-1/3">
-            <p className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: "var(--mkt-accent)" }}>
+            <p
+              className="text-xs font-semibold tracking-widest uppercase mb-4"
+              style={{ color: "var(--mkt-accent)" }}
+            >
               — Background
             </p>
-            <h2 className="text-3xl font-bold" style={{ color: "var(--mkt-text)" }}>About Us</h2>
+            <h2
+              className="text-3xl font-bold"
+              style={{ color: "var(--mkt-text)" }}
+            >
+              About Us
+            </h2>
           </FadeUp>
           <FadeUp delay={0.15} className="md:w-2/3">
-            <p className="text-lg leading-relaxed" style={{ color: "var(--mkt-muted)" }}>
+            <p
+              className="text-lg leading-relaxed"
+              style={{ color: "var(--mkt-muted)" }}
+            >
               LikeMinds Cooperative was founded in Toronto, 2014 by twelve
               members of the Canadan-Canadian diaspora — engineers, nurses,
               teachers, small business owners — who pooled their first $50,000
               to buy a duplex together. By 2017, we had 200 members and a
               federally registered cooperative charter. By 2026, we manage{" "}
-              <strong style={{ color: "var(--mkt-text)" }}>$84M of pooled capital</strong>{" "}
+              <strong style={{ color: "var(--mkt-text)" }}>
+                $84M of pooled capital
+              </strong>{" "}
               across six sectors and seven provinces.
             </p>
           </FadeUp>
@@ -310,11 +369,18 @@ export default function HomePage() {
       <section className="py-24 px-6" style={{ background: "var(--mkt-card)" }}>
         <div className="max-w-7xl mx-auto">
           <FadeUp className="text-center mb-16">
-            <p className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: "var(--mkt-accent)" }}>
+            <p
+              className="text-xs font-semibold tracking-widest uppercase mb-4"
+              style={{ color: "var(--mkt-accent)" }}
+            >
               Programs & Services
             </p>
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tight" style={{ color: "var(--mkt-text)" }}>
-              Six ways we build<br />
+            <h2
+              className="text-4xl md:text-5xl font-bold tracking-tight"
+              style={{ color: "var(--mkt-text)" }}
+            >
+              Six ways we build
+              <br />
               <span className="shimmer-text">wealth together</span>
             </h2>
           </FadeUp>
@@ -332,14 +398,23 @@ export default function HomePage() {
                   >
                     <div
                       className="w-12 h-12 rounded-2xl flex items-center justify-center mb-5 border"
-                      style={{ background: "var(--mkt-card)", borderColor: "var(--mkt-border)" }}
+                      style={{
+                        background: "var(--mkt-card)",
+                        borderColor: "var(--mkt-border)",
+                      }}
                     >
                       {f.icon}
                     </div>
-                    <h3 className="text-lg font-bold mb-3 group-hover:text-[#facc15] transition-colors" style={{ color: "var(--mkt-text)" }}>
+                    <h3
+                      className="text-lg font-bold mb-3 group-hover:text-[#facc15] transition-colors"
+                      style={{ color: "var(--mkt-text)" }}
+                    >
                       {f.title}
                     </h3>
-                    <p className="text-sm leading-relaxed" style={{ color: "var(--mkt-muted)" }}>
+                    <p
+                      className="text-sm leading-relaxed"
+                      style={{ color: "var(--mkt-muted)" }}
+                    >
                       {f.desc}
                     </p>
                   </div>
@@ -356,10 +431,16 @@ export default function HomePage() {
       <section className="py-24 px-6">
         <div className="max-w-5xl mx-auto">
           <FadeUp className="text-center mb-16">
-            <p className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: "var(--mkt-accent)" }}>
+            <p
+              className="text-xs font-semibold tracking-widest uppercase mb-4"
+              style={{ color: "var(--mkt-accent)" }}
+            >
               How It Works
             </p>
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tight" style={{ color: "var(--mkt-text)" }}>
+            <h2
+              className="text-4xl md:text-5xl font-bold tracking-tight"
+              style={{ color: "var(--mkt-text)" }}
+            >
               Join in six steps
             </h2>
           </FadeUp>
@@ -370,10 +451,22 @@ export default function HomePage() {
                 <div className="flex flex-col items-center text-center relative">
                   {/* Step number circle */}
                   <div className="w-20 h-20 rounded-full border-2 border-[#facc15] bg-[#facc15]/10 flex items-center justify-center mb-6 relative z-10">
-                    <span className="text-xl font-bold text-[#facc15]">{step.num}</span>
+                    <span className="text-xl font-bold text-[#facc15]">
+                      {step.num}
+                    </span>
                   </div>
-                  <h3 className="text-xl font-bold mb-3" style={{ color: "var(--mkt-text)" }}>{step.title}</h3>
-                  <p className="text-sm leading-relaxed max-w-xs" style={{ color: "var(--mkt-muted)" }}>{step.desc}</p>
+                  <h3
+                    className="text-xl font-bold mb-3"
+                    style={{ color: "var(--mkt-text)" }}
+                  >
+                    {step.title}
+                  </h3>
+                  <p
+                    className="text-sm leading-relaxed max-w-xs"
+                    style={{ color: "var(--mkt-muted)" }}
+                  >
+                    {step.desc}
+                  </p>
                   {step.cta && step.href && (
                     <Link
                       href={step.href}
@@ -413,15 +506,35 @@ export default function HomePage() {
 
           <StaggerChildren className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {[
-              { value: "$84M", label: "Pooled capital under management", sub: "↑ 23% YoY" },
-              { value: "1,200+", label: "Active members nationally", sub: "7 provinces" },
-              { value: "6", label: "Investment sectors", sub: "Real estate · Agri · Tech · Welfare · …" },
-              { value: "12", label: "Years of operation", sub: "Est. 2014, Toronto" },
+              {
+                value: "$84M",
+                label: "Pooled capital under management",
+                sub: "↑ 23% YoY",
+              },
+              {
+                value: "1,200+",
+                label: "Active members nationally",
+                sub: "7 provinces",
+              },
+              {
+                value: "6",
+                label: "Investment sectors",
+                sub: "Real estate · Agri · Tech · Welfare · …",
+              },
+              {
+                value: "12",
+                label: "Years of operation",
+                sub: "Est. 2014, Toronto",
+              },
             ].map((stat, i) => (
               <StaggerItem key={stat.label}>
                 <div className="p-8 rounded-3xl border border-white/10 bg-white/3 flex flex-col">
-                  <span className="text-4xl md:text-5xl font-extrabold text-[#facc15] mb-2">{stat.value}</span>
-                  <span className="text-sm font-medium text-white/80 mb-1">{stat.label}</span>
+                  <span className="text-4xl md:text-5xl font-extrabold text-[#facc15] mb-2">
+                    {stat.value}
+                  </span>
+                  <span className="text-sm font-medium text-white/80 mb-1">
+                    {stat.label}
+                  </span>
                   <span className="text-xs text-white/35">{stat.sub}</span>
                 </div>
               </StaggerItem>
@@ -436,10 +549,16 @@ export default function HomePage() {
       <section className="py-24 px-6" style={{ background: "var(--mkt-card)" }}>
         <div className="max-w-7xl mx-auto">
           <FadeUp className="text-center mb-16">
-            <p className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: "var(--mkt-accent)" }}>
+            <p
+              className="text-xs font-semibold tracking-widest uppercase mb-4"
+              style={{ color: "var(--mkt-accent)" }}
+            >
               Testimonials
             </p>
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tight" style={{ color: "var(--mkt-text)" }}>
+            <h2
+              className="text-4xl md:text-5xl font-bold tracking-tight"
+              style={{ color: "var(--mkt-text)" }}
+            >
               What members say
             </h2>
           </FadeUp>
@@ -458,13 +577,21 @@ export default function HomePage() {
                     {/* Stars */}
                     <div className="flex gap-1 mb-6">
                       {Array.from({ length: 5 }).map((_, i) => (
-                        <svg key={i} className="w-4 h-4 text-[#facc15]" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                        <svg
+                          key={i}
+                          className="w-4 h-4 text-[#facc15]"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                         </svg>
                       ))}
                     </div>
                     {/* Quote */}
-                    <p className="flex-1 text-sm leading-relaxed mb-6" style={{ color: "var(--mkt-muted)" }}>
+                    <p
+                      className="flex-1 text-sm leading-relaxed mb-6"
+                      style={{ color: "var(--mkt-muted)" }}
+                    >
                       &ldquo;{t.quote}&rdquo;
                     </p>
                     {/* Author */}
@@ -476,8 +603,18 @@ export default function HomePage() {
                         {t.initials}
                       </div>
                       <div>
-                        <p className="text-sm font-semibold" style={{ color: "var(--mkt-text)" }}>{t.name}</p>
-                        <p className="text-xs" style={{ color: "var(--mkt-muted)" }}>{t.role}</p>
+                        <p
+                          className="text-sm font-semibold"
+                          style={{ color: "var(--mkt-text)" }}
+                        >
+                          {t.name}
+                        </p>
+                        <p
+                          className="text-xs"
+                          style={{ color: "var(--mkt-muted)" }}
+                        >
+                          {t.role}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -494,21 +631,34 @@ export default function HomePage() {
       <section className="py-12 px-6 max-w-7xl mx-auto">
         <div
           className="rounded-3xl p-10 md:p-16 border"
-          style={{ background: "var(--mkt-card)", borderColor: "var(--mkt-border)" }}
+          style={{
+            background: "var(--mkt-card)",
+            borderColor: "var(--mkt-border)",
+          }}
         >
           <div className="flex flex-col lg:flex-row gap-8 justify-between items-start mb-16">
             <FadeUp>
-              <p className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: "var(--mkt-accent)" }}>
+              <p
+                className="text-xs font-semibold tracking-widest uppercase mb-4"
+                style={{ color: "var(--mkt-accent)" }}
+              >
                 Principles
               </p>
-              <h2 className="text-4xl md:text-5xl font-bold tracking-tight" style={{ color: "var(--mkt-text)" }}>
+              <h2
+                className="text-4xl md:text-5xl font-bold tracking-tight"
+                style={{ color: "var(--mkt-text)" }}
+              >
                 Our core values
               </h2>
             </FadeUp>
             <FadeUp delay={0.15} className="lg:w-1/3">
-              <p className="text-sm leading-relaxed mt-2 lg:mt-8" style={{ color: "var(--mkt-muted)" }}>
-                A co-op is only as honest as its books, ambitious as its members,
-                and durable as its values. We hold all these to a high bar.
+              <p
+                className="text-sm leading-relaxed mt-2 lg:mt-8"
+                style={{ color: "var(--mkt-muted)" }}
+              >
+                A co-op is only as honest as its books, ambitious as its
+                members, and durable as its values. We hold all these to a high
+                bar.
               </p>
             </FadeUp>
           </div>
@@ -524,11 +674,24 @@ export default function HomePage() {
                     className="group flex flex-col p-4 rounded-2xl cursor-default"
                     style={{}}
                   >
-                    <span className="text-xs font-mono mb-3" style={{ color: "var(--mkt-accent)" }}>{v.num}</span>
-                    <h3 className="font-bold mb-2 group-hover:text-[#facc15] transition-colors" style={{ color: "var(--mkt-text)" }}>
+                    <span
+                      className="text-xs font-mono mb-3"
+                      style={{ color: "var(--mkt-accent)" }}
+                    >
+                      {v.num}
+                    </span>
+                    <h3
+                      className="font-bold mb-2 group-hover:text-[#facc15] transition-colors"
+                      style={{ color: "var(--mkt-text)" }}
+                    >
                       {v.title}
                     </h3>
-                    <p className="text-sm leading-relaxed" style={{ color: "var(--mkt-muted)" }}>{v.desc}</p>
+                    <p
+                      className="text-sm leading-relaxed"
+                      style={{ color: "var(--mkt-muted)" }}
+                    >
+                      {v.desc}
+                    </p>
                   </div>
                 </HoverScale>
               </StaggerItem>
@@ -543,15 +706,28 @@ export default function HomePage() {
       <section className="py-24 px-6 max-w-7xl mx-auto">
         <div className="flex flex-col lg:flex-row gap-16">
           <FadeUp className="lg:w-1/3">
-            <p className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: "var(--mkt-accent)" }}>
+            <p
+              className="text-xs font-semibold tracking-widest uppercase mb-4"
+              style={{ color: "var(--mkt-accent)" }}
+            >
               — FAQs
             </p>
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight mb-6" style={{ color: "var(--mkt-text)" }}>
-              Common<br />questions,<br />and answers.
+            <h2
+              className="text-4xl md:text-5xl font-bold tracking-tight leading-tight mb-6"
+              style={{ color: "var(--mkt-text)" }}
+            >
+              Common
+              <br />
+              questions,
+              <br />
+              and answers.
             </h2>
-            <p className="text-sm leading-relaxed max-w-xs" style={{ color: "var(--mkt-muted)" }}>
-              If your question isn&apos;t covered here, message us — every member rep
-              is also a member.
+            <p
+              className="text-sm leading-relaxed max-w-xs"
+              style={{ color: "var(--mkt-muted)" }}
+            >
+              If your question isn&apos;t covered here, message us — every
+              member rep is also a member.
             </p>
           </FadeUp>
           <FadeIn delay={0.2} className="flex-1">
@@ -603,158 +779,62 @@ export default function HomePage() {
         </ScaleIn>
       </section>
 
-      {/* ══════════════════════════════════════════════════════════
-          11. CONTACT
-          ══════════════════════════════════════════════════════════ */}
       <section className="py-24 px-6" style={{ background: "var(--mkt-card)" }}>
         <div className="max-w-5xl mx-auto">
           <FadeUp className="text-center mb-16">
-            <p className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: "var(--mkt-accent)" }}>
+            <p
+              className="text-xs font-semibold tracking-widest uppercase mb-4"
+              style={{ color: "var(--mkt-accent)" }}
+            >
               Get In Touch
             </p>
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tight" style={{ color: "var(--mkt-text)" }}>
+            <h2
+              className="text-4xl md:text-5xl font-bold tracking-tight"
+              style={{ color: "var(--mkt-text)" }}
+            >
               We&apos;re here to help.
             </h2>
           </FadeUp>
 
           <div className="flex flex-col lg:flex-row justify-center gap-8 lg:gap-12 items-start">
             {/* Contact Form */}
-            <FadeUp delay={0.1} className="w-full lg:w-3/5">
-              <div
-                className="rounded-3xl p-10 lg:p-12 border"
-                style={{
-                  background: "var(--mkt-bg)",
-                  borderColor: "var(--mkt-border)",
-                }}
-              >
-                <p className="text-xs font-semibold tracking-widest text-indigo-500 uppercase mb-4">
-                  — Contact Form
-                </p>
-                <h3 className="text-3xl font-bold tracking-tight mb-10" style={{ color: "var(--mkt-text)" }}>
-                  Tell us how we can help.
-                </h3>
-
-                <form className="flex flex-col gap-6">
-                  <div className="flex flex-col sm:flex-row gap-6">
-                    <div className="flex-1">
-                      <label className="block text-xs font-semibold mb-2" style={{ color: "var(--mkt-text)" }}>
-                        Full name
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Alexandra Morgan"
-                        className="w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 transition-all text-sm"
-                        style={{
-                          background: "var(--mkt-card)",
-                          borderColor: "var(--mkt-border)",
-                          color: "var(--mkt-text)",
-                        }}
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <label className="block text-xs font-semibold mb-2" style={{ color: "var(--mkt-text)" }}>
-                        Email
-                      </label>
-                      <input
-                        type="email"
-                        placeholder="alex@example.com"
-                        className="w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 transition-all text-sm"
-                        style={{
-                          background: "var(--mkt-card)",
-                          borderColor: "var(--mkt-border)",
-                          color: "var(--mkt-text)",
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold mb-2" style={{ color: "var(--mkt-text)" }}>
-                      I&apos;d like to ask about
-                    </label>
-                    <div className="relative">
-                      <select
-                        className="w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 transition-all text-sm appearance-none"
-                        style={{
-                          background: "var(--mkt-card)",
-                          borderColor: "var(--mkt-border)",
-                          color: "var(--mkt-text)",
-                        }}
-                      >
-                        <option>Membership application</option>
-                        <option>General inquiries</option>
-                        <option>Investment information</option>
-                        <option>Loan queries</option>
-                      </select>
-                      <svg className="w-4 h-4 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--mkt-muted)" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold mb-2" style={{ color: "var(--mkt-text)" }}>
-                      Your message
-                    </label>
-                    <textarea
-                      rows={4}
-                      placeholder="I'd like to learn more about the Generations Trust scheme..."
-                      className="w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 transition-all text-sm resize-none"
-                      style={{
-                        background: "var(--mkt-card)",
-                        borderColor: "var(--mkt-border)",
-                        color: "var(--mkt-text)",
-                      }}
-                    />
-                    <p className="text-xs mt-2" style={{ color: "var(--mkt-muted)" }}>
-                      Avg response time: 8 hours on business days.
-                    </p>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mt-4 gap-6">
-                    <label className="flex items-center gap-3 cursor-pointer">
-                      <div
-                        className="w-5 h-5 rounded flex items-center justify-center shrink-0"
-                        style={{ background: "var(--fg)", color: "var(--bg)" }}
-                      >
-                        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
-                      </div>
-                      <span className="text-sm font-medium" style={{ color: "var(--mkt-muted)" }}>
-                        I agree to the privacy policy
-                      </span>
-                    </label>
-                    <button
-                      type="button"
-                      className="px-6 py-3 rounded-full font-semibold text-sm hover:scale-105 transition-transform flex items-center gap-2"
-                      style={{ background: "var(--fg)", color: "var(--bg)" }}
-                    >
-                      Send message <span>→</span>
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </FadeUp>
+            <FadeIn delay={0.1} className="w-full lg:w-3/5">
+              <HomeContactForm />
+            </FadeIn>
 
             {/* Contact Info */}
             <FadeUp delay={0.25} className="w-full lg:w-80 lg:mt-28">
               <div
                 className="rounded-3xl p-10 lg:p-12"
-                style={{ background: "var(--nav-bg)", border: "1px solid rgba(255,255,255,0.1)", color: "white" }}
+                style={{
+                  background: "var(--nav-bg)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  color: "white",
+                }}
               >
                 <p className="text-xs font-semibold tracking-widest text-gray-500 uppercase mb-8">
                   — Direct Lines
                 </p>
                 <div className="flex flex-col gap-8">
                   {[
-                    { label: "General inquiries", value: "support@likeminds.coop" },
-                    { label: "Member relations", value: "members@likeminds.coop" },
+                    {
+                      label: "General inquiries",
+                      value: "support@likeminds.coop",
+                    },
+                    {
+                      label: "Member relations",
+                      value: "members@likeminds.coop",
+                    },
                     { label: "Phone (toll-free)", value: "1—800—LIKEMIND" },
                   ].map((item) => (
-                    <div key={item.label} className="flex justify-between items-center border-b border-white/10 pb-6 last:border-none last:pb-0">
+                    <div
+                      key={item.label}
+                      className="flex justify-between items-center border-b border-white/10 pb-6 last:border-none last:pb-0"
+                    >
                       <div>
-                        <p className="text-xs text-gray-400 mb-1">{item.label}</p>
+                        <p className="text-xs text-gray-400 mb-1">
+                          {item.label}
+                        </p>
                         <p className="font-semibold text-sm">{item.value}</p>
                       </div>
                       <div className="text-[#facc15] text-xs">↗</div>
