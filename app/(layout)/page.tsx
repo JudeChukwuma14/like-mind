@@ -182,15 +182,14 @@ export default function HomePage() {
           </div>
 
           {/* Headline */}
-          <h1 className="animate-fade-up delay-100 text-5xl sm:text-6xl md:text-8xl font-extrabold text-white leading-[1.05] tracking-tight max-w-4xl">
-            Let&apos;s Build{" "}
-            <span className="shimmer-text">Wealth</span>
+          <h1 className="animate-fade-up delay-100 text-2xl sm:text-4xl md:text-5xl font-extrabold text-white leading-[1.05] tracking-tight max-w-4xl">
+            Let&apos;s Build{" "} Wealth Together
             <br />
-            Together
+            <span className="shimmer-text">With LikeMinds Multipurpose <br /> Cooperative Society </span>
           </h1>
 
           <p className="animate-fade-up delay-300 mt-8 text-lg sm:text-xl text-white/65 max-w-2xl mx-auto leading-relaxed font-light">
-            A member-owned co-op pooling capital across real estate, agriculture,
+            A member owned co-op pooling capital across real estate, agriculture,
             tech and welfare. Honest returns, no hidden fees, one member one vote.
           </p>
 
