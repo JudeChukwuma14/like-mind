@@ -13,9 +13,6 @@ import {
 import { getApiErrorMessage } from "@/app/lib/api-client";
 
 
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 type FormFields = {
   fullName: string;
   email: string;
