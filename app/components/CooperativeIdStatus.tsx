@@ -1,6 +1,7 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
+import { ApiErrorCard } from "@/app/components/ApiErrorCard";
 import { getApiErrorMessage } from "@/app/lib/api-client";
 
 type CooperativeIdSelection = {
@@ -24,14 +25,7 @@ export function CooperativeIdStatus({ selection }: { selection: CooperativeIdSel
     );
   }
   if (selection.isError) {
-    return (
-      <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-        <p>{getApiErrorMessage(selection.error)}</p>
-        <button type="button" onClick={() => selection.refetch()} className="mt-2 font-semibold underline">
-          Try again
-        </button>
-      </div>
-    );
+    return <ApiErrorCard message={getApiErrorMessage(selection.error)} onRetry={() => selection.refetch()} compact />;
   }
   return null;
 }

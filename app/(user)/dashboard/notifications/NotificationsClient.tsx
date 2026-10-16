@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { CheckCheck, ChevronLeft, ChevronRight, Inbox, Loader2, Megaphone, RefreshCw } from "lucide-react";
 import toast from "react-hot-toast";
+import { ApiErrorCard } from "@/app/components/ApiErrorCard";
 import { getApiErrorMessage } from "@/app/lib/api-client";
 import { INBOX_PAGE_SIZE, type InboxAnnouncement } from "@/app/lib/announcement-api";
 import {
@@ -246,13 +247,7 @@ export function NotificationsClient() {
       {inbox.isPending ? (
         <LoadingList />
       ) : inbox.isError && !data ? (
-        <div role="alert" className="card-dash rounded-3xl p-8 text-center">
-          <p className="text-sm font-semibold">We couldn&apos;t load your notifications.</p>
-          <p className="mt-1 text-sm dash-text-muted">{getApiErrorMessage(inbox.error)}</p>
-          <button type="button" onClick={() => inbox.refetch()} className="btn-primary mt-5 rounded-full px-5 py-2 text-xs font-semibold">
-            Try again
-          </button>
-        </div>
+        <ApiErrorCard title="We couldn't load your notifications." message={getApiErrorMessage(inbox.error)} onRetry={() => inbox.refetch()} />
       ) : groups.length === 0 ? (
         <div className="card-dash rounded-3xl p-10 text-center">
           <Inbox className="mx-auto h-8 w-8 dash-text-muted" />

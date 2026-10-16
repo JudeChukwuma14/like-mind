@@ -1,7 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { getUserAccess } from "@/app/lib/authorization-api";
+import { useAdminAccess } from "@/app/lib/useAdminAccess";
 import { useAdminAuth } from "@/app/providers/AdminAuthProvider";
 
 export type LoanAction =
@@ -35,11 +34,14 @@ const permissionCode: Record<LoanAction, string> = {
 };
 
 function normalizePermissionCode(value: unknown): string {
-  const code = typeof value === "string"
-    ? value
-    : value && typeof value === "object"
-      ? ["code", "permissionCode", "name"].map((key) => (value as Record<string, unknown>)[key]).find((item): item is string => typeof item === "string")
-      : undefined;
+  const code =
+    typeof value === "string"
+      ? value
+      : value && typeof value === "object"
+        ? ["code", "permissionCode", "name"]
+            .map((key) => (value as Record<string, unknown>)[key])
+            .find((item): item is string => typeof item === "string")
+        : undefined;
   if (!code) return "";
   if (code.trim() === "*") return "*";
   return code.replace(/[^a-z0-9]/gi, "").toLowerCase();
@@ -48,32 +50,38 @@ function normalizePermissionCode(value: unknown): string {
 function permissionClaims(claims: Record<string, unknown>): unknown[] {
   return Object.entries(claims)
     .filter(([key]) => /permission/i.test(key.split(/[/:]/).pop() ?? key))
-    .flatMap(([, value]) => Array.isArray(value) ? value : [value]);
+    .flatMap(([, value]) => (Array.isArray(value) ? value : [value]));
 }
 
-/** UI visibility only. Every mutation still relies on server authorization. */
+/**
+ * UI visibility only. Every mutation still relies on server authorization.
+ *
+ * Unlike the other three `use*Permissions` hooks, this one needs more than a
+ * simple `effectivePermissions` membership check — it also merges in raw JWT
+ * claims (permissionClaims) and a couple of extra UserAccess fields
+ * (granted, rolePermissions) the others don't use — so it reads `access`
+ * directly from useAdminAccess() instead of calling its `hasPermission`.
+ */
 export function useLoanPermissions() {
   const { user } = useAdminAuth();
-  const rootAdminFromToken = user?.role?.replace(/[\s_-]/g, "").toLowerCase() === "rootadmin";
-  const tokenId = typeof user?.claims.jti === "string" ? user.claims.jti : "";
-  const access = useQuery({
-    queryKey: ["admin-user-access", user?.id, tokenId],
-    queryFn: () => getUserAccess(user!.id!),
-    enabled: Boolean(user?.id) && !rootAdminFromToken,
-  });
-  const rootAdmin = rootAdminFromToken || access.data?.roleName?.replace(/[\s_-]/g, "").toLowerCase() === "rootadmin";
-  const accessRecord = access.data as (typeof access.data & { permissions?: unknown[] }) | undefined;
-  const granted = new Set([
-    ...permissionClaims(user?.claims ?? {}),
-    ...(access.data?.effectivePermissions ?? []),
-    ...(access.data?.granted ?? []),
-    ...(access.data?.rolePermissions ?? []),
-    ...(accessRecord?.permissions ?? []),
-  ].map(normalizePermissionCode));
+  const { rootAdmin, access, isLoading, error } = useAdminAccess();
+  const accessRecord = access as (typeof access & { permissions?: unknown[] }) | undefined;
+  const granted = new Set(
+    [
+      ...permissionClaims(user?.claims ?? {}),
+      ...(access?.effectivePermissions ?? []),
+      ...(access?.granted ?? []),
+      ...(access?.rolePermissions ?? []),
+      ...(accessRecord?.permissions ?? []),
+    ].map(normalizePermissionCode),
+  );
   return {
     isRootAdmin: Boolean(rootAdmin),
-    can: (action: LoanAction) => rootAdmin || granted.has("*") || granted.has(normalizePermissionCode(permissionCode[action])),
-    isLoading: !rootAdmin && access.isLoading,
-    error: rootAdmin ? null : access.error,
+    can: (action: LoanAction) =>
+      rootAdmin ||
+      granted.has("*") ||
+      granted.has(normalizePermissionCode(permissionCode[action])),
+    isLoading,
+    error,
   };
 }

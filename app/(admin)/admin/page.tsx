@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
+import { ApiErrorCard } from "@/app/components/ApiErrorCard";
 import { getApiErrorMessage } from "@/app/lib/api-client";
 import {
   getAnalyticsSummary,
@@ -79,12 +80,7 @@ function QueryBoundary({ isLoading, isError, error, onRetry, children }: { isLoa
     return <div className="flex h-48 items-center justify-center gap-2 text-sm" style={{ color: "var(--admin-muted)" }}><Loader2 className="h-4 w-4 animate-spin" /> Loading…</div>;
   }
   if (isError) {
-    return (
-      <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
-        <p>{getApiErrorMessage(error)}</p>
-        <button type="button" onClick={onRetry} className="mt-2 font-semibold underline">Retry</button>
-      </div>
-    );
+    return <ApiErrorCard message={getApiErrorMessage(error)} onRetry={onRetry} compact />;
   }
   return <>{children}</>;
 }

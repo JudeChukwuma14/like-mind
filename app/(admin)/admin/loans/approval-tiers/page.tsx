@@ -14,6 +14,7 @@ import {
   X,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { ApiErrorCard } from "@/app/components/ApiErrorCard";
 import { loanKeys } from "@/app/lib/loan-keys";
 import {
   getLoanApprovalTiers,
@@ -92,8 +93,6 @@ export default function LoanApprovalTiersPage() {
   const queryClient = useQueryClient();
   const permissions = useLoanPermissions();
   const { user } = useAdminAuth();
-  const canManage = permissions.can("approvalTiers");
-  const canReview = permissions.can("reviewApprovalTierChanges");
   const [draft, setDraft] = useState<LoanApprovalBand[] | null>(null);
   const [confirmProposal, setConfirmProposal] = useState(false);
   const [confirmReplace, setConfirmReplace] = useState(false);
@@ -103,12 +102,10 @@ export default function LoanApprovalTiersPage() {
   const live = useQuery({
     queryKey: loanKeys.approvalTiers,
     queryFn: getLoanApprovalTiers,
-    enabled: canManage || canReview,
   });
   const pending = useQuery({
     queryKey: loanKeys.approvalTierProposals,
     queryFn: getPendingLoanApprovalTierProposals,
-    enabled: canReview,
   });
 
   const working = draft ?? orderedTiers(live.data ?? []);
@@ -234,23 +231,7 @@ export default function LoanApprovalTiersPage() {
         </h1>
       </header>
 
-      {permissions.isLoading ? (
-        <div className="flex justify-center py-16">
-          <Loader2 className="h-7 w-7 animate-spin" />
-        </div>
-      ) : permissions.error ? (
-        <div
-          role="alert"
-          className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700"
-        >
-          {getLoanScreenError(permissions.error)}
-        </div>
-      ) : !canManage && !canReview ? (
-        <div className="card-admin rounded-3xl p-10 text-center text-sm admin-text-muted">
-          You do not have permission to manage or review loan approval tiers.
-        </div>
-      ) : (
-        <>
+      <>
           <section className="card-admin rounded-3xl p-5 md:p-7">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
@@ -271,18 +252,12 @@ export default function LoanApprovalTiersPage() {
             {live.isLoading ? (
               <Loader2 className="mt-7 h-6 w-6 animate-spin" />
             ) : live.isError ? (
-              <div
-                role="alert"
-                className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
-              >
-                {getLoanScreenError(live.error)}{" "}
-                <button
-                  onClick={() => live.refetch()}
-                  className="font-bold underline"
-                >
-                  Retry
-                </button>
-              </div>
+              <ApiErrorCard
+                message={getLoanScreenError(live.error)}
+                onRetry={() => live.refetch()}
+                compact
+                className="mt-5"
+              />
             ) : (
               <form onSubmit={submitProposal} className="mt-6 space-y-5">
                 <p className="text-sm leading-6 admin-text-muted">
@@ -355,7 +330,6 @@ export default function LoanApprovalTiersPage() {
                                   ? tier.minAmount
                                   : ""
                               }
-                              disabled={!canManage}
                               onChange={(event) =>
                                 edit(index, {
                                   minAmount: numberInput(event.target.value),
@@ -364,7 +338,7 @@ export default function LoanApprovalTiersPage() {
                               onBlur={() => resortIfSafe(working)}
                               className="input-admin min-w-0 rounded-xl px-3 py-2.5 text-sm disabled:opacity-60"
                             />
-                            {canManage && boundaryMismatch && previousInOrder && (
+                            {boundaryMismatch && previousInOrder && (
                               <button
                                 type="button"
                                 onClick={() => {
@@ -392,7 +366,6 @@ export default function LoanApprovalTiersPage() {
                                   ? tier.maxAmount
                                   : ""
                               }
-                              disabled={!canManage}
                               onChange={(event) =>
                                 edit(index, {
                                   maxAmount: optionalMaximum(
@@ -416,7 +389,6 @@ export default function LoanApprovalTiersPage() {
                                   ? tier.requiredApprovals
                                   : ""
                               }
-                              disabled={!canManage}
                               onChange={(event) =>
                                 edit(index, {
                                   requiredApprovals: numberInput(
@@ -427,23 +399,21 @@ export default function LoanApprovalTiersPage() {
                               className="input-admin min-w-0 rounded-xl px-3 py-2.5 text-sm disabled:opacity-60"
                             />
                           </label>
-                          {canManage && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setDraft(
-                                  working.filter(
-                                    (_, itemIndex) => itemIndex !== index,
-                                  ),
-                                );
-                                setFormError(null);
-                              }}
-                              className="self-end rounded-xl border border-red-200 p-3 text-red-600"
-                              aria-label={`Remove tier ${index + 1}`}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDraft(
+                                working.filter(
+                                  (_, itemIndex) => itemIndex !== index,
+                                ),
+                              );
+                              setFormError(null);
+                            }}
+                            className="self-end rounded-xl border border-red-200 p-3 text-red-600"
+                            aria-label={`Remove tier ${index + 1}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         </div>
                       </div>
                       );
@@ -457,7 +427,6 @@ export default function LoanApprovalTiersPage() {
                     </p>
                   )}
                 </div>
-                {canManage && (
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex flex-wrap gap-2">
                       <button
@@ -542,7 +511,6 @@ export default function LoanApprovalTiersPage() {
                       </button>
                     </div>
                   </div>
-                )}
                 {formError && !confirmProposal && !confirmReplace && !review && (
                   <p
                     role="alert"
@@ -555,8 +523,7 @@ export default function LoanApprovalTiersPage() {
             )}
           </section>
 
-          {canReview && (
-            <section className="card-admin rounded-3xl p-5 md:p-7">
+          <section className="card-admin rounded-3xl p-5 md:p-7">
               <div className="flex items-center gap-3">
                 <ShieldCheck className="h-5 w-5 text-(--accent-500)" />
                 <h2 className="text-xl font-semibold">Pending proposals</h2>
@@ -569,18 +536,12 @@ export default function LoanApprovalTiersPage() {
               {pending.isLoading ? (
                 <Loader2 className="mt-7 h-6 w-6 animate-spin" />
               ) : pending.isError ? (
-                <div
-                  role="alert"
-                  className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
-                >
-                  {getLoanScreenError(pending.error)}{" "}
-                  <button
-                    onClick={() => pending.refetch()}
-                    className="font-bold underline"
-                  >
-                    Retry
-                  </button>
-                </div>
+                <ApiErrorCard
+                  message={getLoanScreenError(pending.error)}
+                  onRetry={() => pending.refetch()}
+                  compact
+                  className="mt-5"
+                />
               ) : !pending.data?.length ? (
                 <p className="mt-5 text-sm admin-text-muted">
                   No proposals are waiting for review.
@@ -689,9 +650,7 @@ export default function LoanApprovalTiersPage() {
                 </div>
               )}
             </section>
-          )}
         </>
-      )}
 
       {confirmProposal && (
         <div

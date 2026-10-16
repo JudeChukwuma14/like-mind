@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { ChevronLeft, ChevronRight, Search, X, Upload, Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
+import { ApiErrorCard } from "@/app/components/ApiErrorCard";
 import { adminApiFetch, getApiErrorMessage, type ApiEnvelope } from "@/app/lib/api-client";
 import { bulkImportUsers, type BulkImportResult } from "@/app/lib/user-admin-api";
 
@@ -438,9 +439,8 @@ export default function MembersPage() {
         )}
 
         {isError && (
-          <div className="p-10 text-center text-sm" role="alert" style={{ color: "var(--admin-accent)" }}>
-            <p>{getApiErrorMessage(error)}</p>
-            <button type="button" onClick={() => queryClient.invalidateQueries({ queryKey: ["admin-users"] })} className="mt-3 font-semibold underline">Try again</button>
+          <div className="p-6">
+            <ApiErrorCard message={getApiErrorMessage(error)} onRetry={() => queryClient.invalidateQueries({ queryKey: ["admin-users"] })} />
           </div>
         )}
 

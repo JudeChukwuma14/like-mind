@@ -4,13 +4,13 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, Info, Loader2, Mail, Phone, Plus, Settings2, ShieldCheck, Trash2, X } from "lucide-react";
 import toast from "react-hot-toast";
+import { ApiErrorCard } from "@/app/components/ApiErrorCard";
 import { adminApiFetch, getApiErrorMessage } from "@/app/lib/api-client";
+import { apiErrorMessage } from "@/app/lib/show-api-error";
 import { useAdminAuth } from "@/app/providers/AdminAuthProvider";
 import { pluckMember, formatDate } from "@/app/lib/member-profile";
 import { getWithdrawalApprovalTiers, updateWithdrawalApprovalTiers, type ApprovalTier } from "@/app/lib/withdrawal-tiers-api";
 import { getLoanDisbursementTiers, updateLoanDisbursementTiers } from "@/app/lib/loan-api";
-import { useLoanPermissions } from "@/app/components/loans/useLoanPermissions";
-import { useWithdrawalPermissions } from "@/app/components/withdrawals/useWithdrawalPermissions";
 import { formatWithdrawalAmount } from "@/app/components/withdrawals/withdrawal-display";
 
 type TierDraft = { minAmount: string; maxAmount: string; requiredApprovals: string };
@@ -64,7 +64,7 @@ function validateTiers(rows: TierDraft[], allowOpenEnded: boolean): ApprovalTier
   return tiers;
 }
 
-function TierEditor({ id, title, description, queryKey, load, save, allowOpenEnded, canManage, permissionLoading }: {
+function TierEditor({ id, title, description, queryKey, load, save, allowOpenEnded }: {
   id: string;
   title: string;
   description: string;
@@ -72,11 +72,9 @@ function TierEditor({ id, title, description, queryKey, load, save, allowOpenEnd
   load: () => Promise<ApprovalTier[]>;
   save: (tiers: ApprovalTier[]) => Promise<unknown>;
   allowOpenEnded: boolean;
-  canManage: boolean;
-  permissionLoading: boolean;
 }) {
   const queryClient = useQueryClient();
-  const query = useQuery({ queryKey: [queryKey], queryFn: load, enabled: canManage });
+  const query = useQuery({ queryKey: [queryKey], queryFn: load });
   const [draft, setDraft] = useState<TierDraft[] | null>(null);
   const [confirm, setConfirm] = useState<ApprovalTier[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -89,7 +87,7 @@ function TierEditor({ id, title, description, queryKey, load, save, allowOpenEnd
       setConfirm(null); setDraft(null); setError(null);
       await queryClient.invalidateQueries({ queryKey: [queryKey] });
     },
-    onError: (reason) => setError(getApiErrorMessage(reason)),
+    onError: (reason) => setError(apiErrorMessage(reason)),
   });
 
   function update(index: number, field: keyof TierDraft, value: string) {
@@ -103,9 +101,9 @@ function TierEditor({ id, title, description, queryKey, load, save, allowOpenEnd
   }
 
   return <section id={id} className="card-admin scroll-mt-6 rounded-3xl p-5 md:p-7" aria-labelledby={`${id}-title`}>
-    <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-widest text-(--accent-600)">Approval rules</p><h2 id={`${id}-title`} className="mt-1 text-xl font-bold">{title}</h2><p className="mt-2 max-w-2xl text-sm leading-6 admin-text-muted">{description}</p></div>{canManage && <div className="flex flex-wrap gap-2"><button type="button" onClick={() => { setDraft([...rows, { minAmount: "0", maxAmount: "", requiredApprovals: "1" }]); setError(null); }} disabled={mutation.isPending || query.isLoading || query.isError} className="inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-semibold disabled:opacity-50" style={{ borderColor: "var(--admin-border)" }}><Plus className="h-4 w-4" /> Add tier</button>{rows.length > 1 && <button type="button" onClick={() => { setDraft(sortDrafts(rows)); setError(null); }} disabled={mutation.isPending} className="rounded-full border px-4 py-2.5 text-sm font-semibold disabled:opacity-50" style={{ borderColor: "var(--admin-border)" }}>Sort by amount</button>}</div>}</div>
+    <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-widest text-(--accent-600)">Approval rules</p><h2 id={`${id}-title`} className="mt-1 text-xl font-bold">{title}</h2><p className="mt-2 max-w-2xl text-sm leading-6 admin-text-muted">{description}</p></div><div className="flex flex-wrap gap-2"><button type="button" onClick={() => { setDraft([...rows, { minAmount: "0", maxAmount: "", requiredApprovals: "1" }]); setError(null); }} disabled={mutation.isPending || query.isLoading || query.isError} className="inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-semibold disabled:opacity-50" style={{ borderColor: "var(--admin-border)" }}><Plus className="h-4 w-4" /> Add tier</button>{rows.length > 1 && <button type="button" onClick={() => { setDraft(sortDrafts(rows)); setError(null); }} disabled={mutation.isPending} className="rounded-full border px-4 py-2.5 text-sm font-semibold disabled:opacity-50" style={{ borderColor: "var(--admin-border)" }}>Sort by amount</button>}</div></div>
     <div className="mt-5 flex items-start gap-2 rounded-xl border border-(--accent-200) bg-(--accent-50) p-4 text-xs leading-5 text-(--accent-900)"><Info className="mt-0.5 h-4 w-4 shrink-0" /><p>{allowOpenEnded ? "Saving replaces the full tier list. Withdrawal approval changes apply to new requests; existing requests keep the approval count assigned when submitted." : "Saving replaces the full tier list. Review every amount band before applying changes to future loan disbursement requests."}</p></div>
-    {permissionLoading ? <p role="status" className="mt-6 flex items-center gap-2 text-sm admin-text-muted"><Loader2 className="h-4 w-4 animate-spin" /> Checking access…</p> : !canManage ? <p className="mt-6 text-sm admin-text-muted">You do not have permission to manage these approval tiers.</p> : query.isLoading ? <p role="status" className="mt-6 flex items-center gap-2 text-sm admin-text-muted"><Loader2 className="h-4 w-4 animate-spin" /> Loading tiers…</p> : query.isError ? <div role="alert" className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"><p>{getApiErrorMessage(query.error)}</p><button type="button" onClick={() => query.refetch()} className="mt-2 font-semibold underline">Retry</button></div> : <>
+    {query.isLoading ? <p role="status" className="mt-6 flex items-center gap-2 text-sm admin-text-muted"><Loader2 className="h-4 w-4 animate-spin" /> Loading tiers…</p> : query.isError ? <ApiErrorCard message={getApiErrorMessage(query.error)} onRetry={() => query.refetch()} compact className="mt-6" /> : <>
       {rows.length === 0 ? <div className="mt-6 rounded-2xl border border-dashed p-8 text-center text-sm admin-text-muted" style={{ borderColor: "var(--admin-border)" }}>No tiers configured. Add one to define approval requirements.</div> : <div className="mt-6 space-y-3">{rows.map((row, index) => {
         const isFinal = row === ordered[ordered.length - 1];
         const sortedIndex = ordered.indexOf(row);
@@ -141,14 +139,12 @@ function MyAccountCard() {
 }
 
 export function SettingsClient() {
-  const withdrawalPermissions = useWithdrawalPermissions();
-  const loanPermissions = useLoanPermissions();
   return <div className="mx-auto max-w-6xl space-y-6 pb-14 admin-text">
     <header className="relative overflow-hidden rounded-3xl bg-[#181817] p-6 text-white md:p-8"><div className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-(--accent-400)/15 blur-3xl" /><div className="relative"><p className="text-xs font-bold uppercase tracking-[0.18em] text-(--accent-300)">Administration</p><h1 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">System settings</h1><p className="mt-3 max-w-2xl text-sm leading-6 text-white/70">Review your account and manage approval rules backed by the live API. Changes to tier lists are reviewed before you save them.</p></div></header>
     <nav aria-label="Settings sections" className="grid gap-3 sm:grid-cols-3">{[{ href: "#my-account", title: "My account", detail: "Identity and profile" }, { href: "#withdrawal-approval-tiers", title: "Withdrawal approvals", detail: "Withdrawal and deduction bands" }, { href: "#loan-disbursement-tiers", title: "Loan disbursement", detail: "Disbursement approval bands" }].map((item) => <a key={item.href} href={item.href} className="card-admin flex items-center justify-between gap-3 rounded-2xl p-4 transition hover:-translate-y-0.5 hover:shadow-sm"><span><strong className="text-sm">{item.title}</strong><span className="mt-1 block text-xs admin-text-muted">{item.detail}</span></span><ArrowRight className="h-4 w-4 shrink-0 text-(--accent-600)" /></a>)}</nav>
     <MyAccountCard />
-    <TierEditor id="withdrawal-approval-tiers" title="Withdrawal approval tiers" description="Set the amount bands and distinct approvals required for new withdrawal or cooperative-deduction requests." queryKey="withdrawal-approval-tiers" load={getWithdrawalApprovalTiers} save={updateWithdrawalApprovalTiers} allowOpenEnded canManage={withdrawalPermissions.can("manageTiers")} permissionLoading={withdrawalPermissions.isLoading} />
-    <TierEditor id="loan-disbursement-tiers" title="Loan disbursement tiers" description="Set the amount bands and approval counts used by new loan disbursement requests." queryKey="loan-disbursement-tiers" load={getLoanDisbursementTiers} save={(tiers) => updateLoanDisbursementTiers(tiers.map((tier) => ({ minAmount: tier.minAmount, maxAmount: tier.maxAmount, requiredApprovals: tier.requiredApprovals })))} allowOpenEnded canManage={loanPermissions.can("approvalTiers")} permissionLoading={loanPermissions.isLoading} />
+    <TierEditor id="withdrawal-approval-tiers" title="Withdrawal approval tiers" description="Set the amount bands and distinct approvals required for new withdrawal or cooperative-deduction requests." queryKey="withdrawal-approval-tiers" load={getWithdrawalApprovalTiers} save={updateWithdrawalApprovalTiers} allowOpenEnded />
+    <TierEditor id="loan-disbursement-tiers" title="Loan disbursement tiers" description="Set the amount bands and approval counts used by new loan disbursement requests." queryKey="loan-disbursement-tiers" load={getLoanDisbursementTiers} save={(tiers) => updateLoanDisbursementTiers(tiers.map((tier) => ({ minAmount: tier.minAmount, maxAmount: tier.maxAmount, requiredApprovals: tier.requiredApprovals })))} allowOpenEnded />
     <p className="flex items-start gap-2 rounded-2xl border p-4 text-xs leading-5 admin-text-muted" style={{ borderColor: "var(--admin-border)" }}><Settings2 className="mt-0.5 h-4 w-4 shrink-0" /> General platform fields, feature switches, and destructive actions are not shown until their backend contracts and save flows exist.</p>
   </div>;
 }

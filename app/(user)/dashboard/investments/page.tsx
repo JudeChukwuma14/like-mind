@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, RefreshCw, TrendingUp } from "lucide-react";
+import { ApiErrorCard } from "@/app/components/ApiErrorCard";
 import {
   getMyInvestments,
   increaseInvestmentContribution,
@@ -172,7 +173,7 @@ export default function InvestmentsPage() {
         {investments.isLoading ? (
           <p role="status" className="mt-4 flex items-center gap-2 text-sm dash-text-muted"><Loader2 className="h-4 w-4 animate-spin" /> Loading…</p>
         ) : investments.isError ? (
-          <p role="alert" className="mt-4 text-sm text-red-700">{getApiErrorMessage(investments.error)}</p>
+          <ApiErrorCard message={getApiErrorMessage(investments.error)} onRetry={() => investments.refetch()} compact className="mt-4" />
         ) : (
           <p className="mt-3 text-4xl font-bold tracking-tight">{investments.data?.totalCount ?? investments.data?.investments.length ?? 0}</p>
         )}
@@ -195,10 +196,7 @@ export default function InvestmentsPage() {
         {investments.isLoading ? (
           <div className="card-dash rounded-3xl p-10 text-center text-sm dash-text-muted">Loading your investments…</div>
         ) : investments.isError ? (
-          <div role="alert" className="card-dash rounded-3xl p-10 text-center text-sm text-red-700">
-            <p>{getApiErrorMessage(investments.error)}</p>
-            <button type="button" onClick={() => investments.refetch()} className="mt-3 font-semibold underline">Retry</button>
-          </div>
+          <ApiErrorCard message={getApiErrorMessage(investments.error)} onRetry={() => investments.refetch()} />
         ) : !investments.data?.investments.length ? (
           <div className="card-dash rounded-3xl p-10 text-center text-sm dash-text-muted">
             You&apos;re not participating in any investment pool yet.

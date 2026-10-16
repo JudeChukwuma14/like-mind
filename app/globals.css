@@ -557,6 +557,63 @@ html {
   color: var(--admin-text);
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   FORM CONTROL LEGIBILITY
+   Keeps typed text and placeholders high-contrast on every
+   input / textarea / select, in BOTH light and dark themes.
+
+   Why this exists: most controls here are painted with a hardcoded
+   light background (bg-white) but set no text colour, so the typed
+   text falls back to the inherited theme colour (Tailwind preflight
+   makes form controls `color: inherit`). In dark mode that inherited
+   colour is light — light text on a white field, which is almost
+   unreadable (exactly the "can't see what I'm typing" bug). These
+   rules pin the text colour to the control's real background instead
+   of letting it inherit.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* 1 ── Theme-aware default. Themed controls (.input-dash/.input-admin/
+   .input-theme) set their own colour and still win on specificity;
+   this only catches controls that would otherwise inherit, and makes
+   them follow the active theme foreground (dark text in light mode,
+   light text on a dark surface in dark mode). */
+input,
+textarea,
+select {
+  color: var(--fg);
+}
+input::placeholder,
+textarea::placeholder {
+  color: var(--fg-muted);
+  opacity: 1; /* Firefox fades placeholders otherwise */
+}
+
+/* 2 ── Controls painted with a hardcoded light background never follow
+   data-theme, so their text must stay dark in BOTH themes — otherwise
+   dark mode leaves light text on a white field. Covers the control
+   itself and any control nested inside a white container (e.g. a
+   bg-transparent input inside a .bg-white card). */
+input.bg-white,
+textarea.bg-white,
+select.bg-white,
+.bg-white :is(input, textarea, select) {
+  color: #111827; /* slate-900 — always legible on a light field */
+  -webkit-text-fill-color: #111827; /* keep value visible through autofill */
+}
+input.bg-white::placeholder,
+textarea.bg-white::placeholder,
+.bg-white :is(input, textarea)::placeholder {
+  color: #6b7280; /* slate-500 — clearly secondary, still ~4.8:1 on white */
+  opacity: 1;
+}
+
+/* 3 ── Autofilled light-backed controls keep legible dark text instead
+   of the browser's washed-out default. */
+input.bg-white:-webkit-autofill,
+.bg-white :is(input):-webkit-autofill {
+  -webkit-text-fill-color: #111827;
+}
+
 /* ── Admin workload card (Server Component safe hover) ──────── */
 .admin-workload-card {
   background: var(--admin-surface);

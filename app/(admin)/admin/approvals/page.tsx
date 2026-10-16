@@ -23,6 +23,7 @@ import {
   type ApprovalRequest,
 } from "@/app/lib/approvals-api";
 import { adminApiFetch, getApiErrorMessage, type ApiEnvelope } from "@/app/lib/api-client";
+import { showApiError } from "@/app/lib/show-api-error";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -655,7 +656,7 @@ export default function ApprovalsPage() {
       setDialog(null);
       queryClient.invalidateQueries({ queryKey: ["admin-approvals"] });
     },
-    onError: (err) => toast.error(getApiErrorMessage(err)),
+    onError: (err) => showApiError(err),
   });
 
   // ── Reject mutation ──
@@ -672,7 +673,7 @@ export default function ApprovalsPage() {
       setDialog(null);
       queryClient.invalidateQueries({ queryKey: ["admin-approvals"] });
     },
-    onError: (err) => toast.error(getApiErrorMessage(err)),
+    onError: (err) => showApiError(err),
   });
 
   // ── Reassign mutation ──
@@ -685,7 +686,7 @@ export default function ApprovalsPage() {
       setDialog(null);
       queryClient.invalidateQueries({ queryKey: ["admin-approvals"] });
     },
-    onError: (err) => toast.error(getApiErrorMessage(err)),
+    onError: (err) => showApiError(err),
   });
 
   const anyMutating =

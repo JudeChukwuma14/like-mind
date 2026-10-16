@@ -2,7 +2,8 @@
 
 import { type FormEvent, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Loader2, RefreshCw } from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
+import { ApiErrorCard } from "@/app/components/ApiErrorCard";
 import {
   calculateLoan,
   LOAN_CALCULATOR_LIMITS,
@@ -134,13 +135,12 @@ export default function LoanCalculatorPage() {
       </form>
 
       {error && (
-        <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
-          <p>{error.message}</p>
-          {error.reference && <p className="mt-2 text-xs text-red-600/75">Support reference: {error.reference}</p>}
-          <button type="button" onClick={() => submit()} disabled={loading} className="mt-3 inline-flex items-center gap-2 font-semibold">
-            <RefreshCw className="h-4 w-4" /> Retry
-          </button>
-        </div>
+        <ApiErrorCard
+          message={error.reference ? `${error.message} (Support reference: ${error.reference})` : error.message}
+          onRetry={() => submit()}
+          retryLabel="Retry"
+          compact
+        />
       )}
 
       {result && (

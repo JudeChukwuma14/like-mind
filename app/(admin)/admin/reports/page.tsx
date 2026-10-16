@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowDownToLine, BarChart3, CalendarDays, FileSpreadsheet, Loader2, RefreshCw, WalletCards } from "lucide-react";
 import toast from "react-hot-toast";
+import { ApiErrorCard } from "@/app/components/ApiErrorCard";
 import { CooperativeIdStatus } from "@/app/components/CooperativeIdStatus";
 import { ReportViewer } from "@/app/components/reports/ReportViewer";
 import { getApiErrorMessage } from "@/app/lib/api-client";
@@ -37,10 +38,7 @@ function DateField({ label, value, onChange }: { label: string; value: string; o
 
 function ReportResult({ data, error, loading, refreshing, onRetry }: { data: unknown; error: unknown; loading: boolean; refreshing: boolean; onRetry: () => void }) {
   if (loading) return <div className="card-admin flex min-h-56 items-center justify-center gap-3 rounded-3xl text-sm admin-text-muted"><Loader2 className="h-5 w-5 animate-spin text-(--accent-500)" /> Loading report…</div>;
-  if (error) return <div role="alert" className="rounded-3xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">
-    <p className="font-semibold">Could not load this report</p><p className="mt-1 whitespace-pre-line">{getApiErrorMessage(error)}</p>
-    <button onClick={onRetry} className="mt-4 rounded-full bg-red-700 px-4 py-2 font-semibold text-white">Try again</button>
-  </div>;
+  if (error) return <ApiErrorCard title="Could not load this report" message={getApiErrorMessage(error)} onRetry={onRetry} />;
   return <section className="card-admin rounded-3xl p-5 md:p-7">
     <div className="mb-6 flex items-center justify-between gap-3 border-b pb-5" style={{ borderColor: "var(--admin-border)" }}>
       <div><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-(--accent-600)">Live backend data</p><h2 className="mt-1 text-xl font-semibold">Report results</h2></div>

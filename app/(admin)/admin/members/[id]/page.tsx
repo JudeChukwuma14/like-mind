@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
+import { ApiErrorCard } from "@/app/components/ApiErrorCard";
 import {
   ArrowLeft,
   Check,
@@ -2457,12 +2458,7 @@ export default function MemberDetailPage() {
           <Loader2 className="h-5 w-5 animate-spin" /> Loading member…
         </div>
       )}
-      {isError && (
-        <div role="alert" className="rounded-3xl border border-red-200 bg-red-50 p-8 text-center text-sm text-red-700">
-          <p>{getApiErrorMessage(error)}</p>
-          <button type="button" onClick={() => refetch()} className="mt-3 font-semibold underline">Try again</button>
-        </div>
-      )}
+      {isError && <ApiErrorCard message={getApiErrorMessage(error)} onRetry={() => refetch()} />}
       {!isLoading && !isError && !member && <div className="card-admin rounded-3xl p-10 text-center"><h1 className="text-lg font-semibold">Member not found</h1><p className="mt-2 text-sm admin-text-muted">This account may be unavailable or the backend returned an empty record.</p></div>}
 
       {member && (

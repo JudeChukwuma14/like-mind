@@ -8,13 +8,14 @@ import {
   Loader2,
   Plus,
   Search,
-  ShieldAlert,
   Trash2,
   X,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { ApiErrorCard } from "@/app/components/ApiErrorCard";
 import { CooperativeIdStatus } from "@/app/components/CooperativeIdStatus";
 import { getApiErrorMessage } from "@/app/lib/api-client";
+import { showApiError } from "@/app/lib/show-api-error";
 import {
   INTERVAL_UNITS,
   PARTICIPATION_MODES,
@@ -24,7 +25,6 @@ import {
   type ParticipationMode,
 } from "@/app/lib/investment-pool-api";
 import { useCooperativeId } from "@/app/lib/useCooperativeId";
-import { useInvestmentPoolPermissions } from "@/app/lib/useInvestmentPoolPermissions";
 import {
   useApproveInvestmentPool,
   useCreateInvestmentPool,
@@ -220,7 +220,7 @@ function NewPoolForm({
         },
         onError: (error) => {
           setConfirmOpen(false);
-          toast.error(getApiErrorMessage(error));
+          showApiError(error);
         },
       },
     );
@@ -424,7 +424,6 @@ function NewPoolForm({
 
 function PoolDetail({ poolId }: { poolId: string }) {
   const pool = useInvestmentPool(poolId);
-  const permissions = useInvestmentPoolPermissions();
   const approve = useApproveInvestmentPool();
   const reject = useRejectInvestmentPool();
   const [confirmAction, setConfirmAction] = useState<"approve" | "reject" | null>(null);
@@ -441,7 +440,7 @@ function PoolDetail({ poolId }: { poolId: string }) {
           setConfirmAction(null);
           setNote("");
         },
-        onError: (error) => toast.error(getApiErrorMessage(error)),
+        onError: (error) => showApiError(error),
       },
     );
   }
@@ -450,16 +449,11 @@ function PoolDetail({ poolId }: { poolId: string }) {
     return <div className="card-admin flex items-center gap-3 rounded-3xl p-8 text-sm admin-text-muted"><Loader2 className="h-4 w-4 animate-spin" /> Loading pool…</div>;
   }
   if (pool.isError) {
-    return (
-      <div role="alert" className="rounded-3xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">
-        <p>{getApiErrorMessage(pool.error)}</p>
-        <button type="button" onClick={() => pool.refetch()} className="mt-3 font-semibold underline">Try again</button>
-      </div>
-    );
+    return <ApiErrorCard message={getApiErrorMessage(pool.error)} onRetry={() => pool.refetch()} />;
   }
   const data = pool.data!;
   const status = data.status ?? "Unknown";
-  const canReview = status === "PendingApproval" && permissions.canReview;
+  const canReview = status === "PendingApproval";
   const busy = approve.isPending || reject.isPending;
 
   return (
@@ -480,10 +474,6 @@ function PoolDetail({ poolId }: { poolId: string }) {
         <div><dt className="text-[10px] font-bold uppercase tracking-widest admin-text-muted">Participants</dt><dd className="mt-1 font-medium">{data.participantCount ?? "—"}</dd></div>
         <div><dt className="text-[10px] font-bold uppercase tracking-widest admin-text-muted">Indicative yield</dt><dd className="mt-1 font-medium">{data.indicativeYieldPercent === null ? "—" : `${data.indicativeYieldPercent}%`}</dd></div>
       </dl>
-
-      {status === "PendingApproval" && !permissions.canReview && !permissions.isLoading && (
-        <p className="flex items-center gap-2 text-xs admin-text-muted"><ShieldAlert className="h-4 w-4" /> You don&apos;t have permission to approve or reject pools.</p>
-      )}
 
       {canReview && (
         <div className="flex flex-wrap gap-3 border-t pt-5" style={{ borderColor: "var(--admin-border)" }}>
@@ -630,10 +620,7 @@ function AllPoolsTab() {
       {pools.isPending ? (
         <div className="card-admin flex items-center gap-3 rounded-3xl p-8 text-sm admin-text-muted"><Loader2 className="h-4 w-4 animate-spin" /> Loading pools…</div>
       ) : pools.isError ? (
-        <div role="alert" className="rounded-3xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">
-          <p>{getApiErrorMessage(pools.error)}</p>
-          <button type="button" onClick={() => pools.refetch()} className="mt-3 font-semibold underline">Try again</button>
-        </div>
+        <ApiErrorCard message={getApiErrorMessage(pools.error)} onRetry={() => pools.refetch()} />
       ) : pools.data.pools.length === 0 ? (
         <div className="card-admin rounded-3xl p-8 text-center text-sm admin-text-muted">No pools match this filter.</div>
       ) : (

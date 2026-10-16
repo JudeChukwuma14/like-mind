@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, ArrowUpRight, Check, CheckCircle2, Copy, FileUp, Loader2, RefreshCw, Wallet } from "lucide-react";
 import toast from "react-hot-toast";
+import { ApiErrorCard } from "@/app/components/ApiErrorCard";
 import {
   getMemberDisbursementApprovals,
   getMemberInstallments,
@@ -25,7 +26,7 @@ type Tab = "overview" | "installments" | "activity";
 type RepaymentMethod = "savings" | "proof";
 
 function QueryError({ error, retry }: { error: unknown; retry: () => void }) {
-  return <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700"><p>{getLoanScreenError(error)}</p><button onClick={retry} className="mt-3 font-bold underline underline-offset-2">Try again</button></div>;
+  return <ApiErrorCard message={getLoanScreenError(error)} onRetry={retry} />;
 }
 
 function RepaymentDialog({ installment, loanId, onClose }: { installment: LoanRecord; loanId: string; onClose: () => void }) {

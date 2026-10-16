@@ -1,8 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { getUserAccess } from "@/app/lib/authorization-api";
-import { useAdminAuth } from "@/app/providers/AdminAuthProvider";
+import { useAdminAccess } from "@/app/lib/useAdminAccess";
 
 /**
  * UI visibility only; the backend remains authoritative and additionally
@@ -13,19 +11,10 @@ import { useAdminAuth } from "@/app/providers/AdminAuthProvider";
  * ApiError from the server instead of being pre-empted here.
  */
 export function useInvestmentPoolPermissions() {
-  const { user } = useAdminAuth();
-  const rootFromToken = user?.role?.replace(/[\s_-]/g, "").toLowerCase() === "rootadmin";
-  const tokenId = typeof user?.claims.jti === "string" ? user.claims.jti : "";
-  const access = useQuery({
-    queryKey: ["admin-user-access", user?.id, tokenId],
-    queryFn: () => getUserAccess(user!.id!),
-    enabled: Boolean(user?.id) && !rootFromToken,
-  });
-  const rootAdmin = rootFromToken || access.data?.roleName?.replace(/[\s_-]/g, "").toLowerCase() === "rootadmin";
-  const permissions = new Set((access.data?.effectivePermissions ?? []).map((code) => code.toLowerCase()));
+  const { hasPermission, isLoading, error } = useAdminAccess();
   return {
-    canReview: Boolean(rootAdmin || permissions.has("*") || permissions.has("approveinvestmentpool")),
-    isLoading: !rootAdmin && access.isLoading,
-    error: rootAdmin ? null : access.error,
+    canReview: hasPermission("approveinvestmentpool"),
+    isLoading,
+    error,
   };
 }

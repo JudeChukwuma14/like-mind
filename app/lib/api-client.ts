@@ -65,6 +65,11 @@ export class ApiError extends Error {
   }
 }
 
+/** True when the backend rejected a request specifically for lack of permission. */
+export function isPermissionDenied(error: unknown): boolean {
+  return error instanceof ApiError && error.status === 403;
+}
+
 /** Some endpoints return HTTP 200 with a failed application-level envelope. */
 export function ensureApiSuccess<T extends ApiEnvelope<unknown>>(
   response: T,

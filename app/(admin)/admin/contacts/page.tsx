@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
+import { ApiErrorCard } from "@/app/components/ApiErrorCard";
 import {
   ChevronLeft,
   ChevronRight,
@@ -12,7 +13,6 @@ import {
   Loader2,
   MessageSquare,
   ShieldCheck,
-  AlertCircle,
   RefreshCw,
   Mail,
   User,
@@ -189,7 +189,7 @@ function ContactDrawer({
 }) {
   const queryClient = useQueryClient();
 
-  const { data: message, isLoading, isError, error } = useQuery({
+  const { data: message, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["admin-contact-message", messageId],
     queryFn: () => getContactMessage(messageId),
     staleTime: 30_000,
@@ -295,14 +295,8 @@ function ContactDrawer({
 
           {/* Error */}
           {isError && (
-            <div className="flex flex-col items-center gap-3 py-12 text-center">
-              <AlertCircle className="w-8 h-8" style={{ color: "var(--admin-accent)" }} />
-              <p className="text-sm font-semibold" style={{ color: "var(--admin-text)" }}>
-                Unable to load this message
-              </p>
-              <p className="text-xs" style={{ color: "var(--admin-muted)" }}>
-                {getApiErrorMessage(error)}
-              </p>
+            <div className="py-6">
+              <ApiErrorCard title="Unable to load this message" message={getApiErrorMessage(error)} onRetry={() => refetch()} />
             </div>
           )}
 
@@ -623,25 +617,8 @@ export default function ContactMessagesPage() {
 
           {/* Error state */}
           {isError && (
-            <div className="p-10 flex flex-col items-center gap-4 text-center">
-              <AlertCircle className="w-8 h-8" style={{ color: "var(--admin-accent)" }} />
-              <div>
-                <p className="text-sm font-semibold" style={{ color: "var(--admin-text)" }}>
-                  Unable to load contact messages
-                </p>
-                <p className="text-xs mt-1" style={{ color: "var(--admin-muted)" }}>
-                  {getApiErrorMessage(error)}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => refetch()}
-                className="flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-medium transition-colors"
-                style={{ borderColor: "var(--admin-border)", color: "var(--admin-text)" }}
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-                Try again
-              </button>
+            <div className="p-6">
+              <ApiErrorCard title="Unable to load contact messages" message={getApiErrorMessage(error)} onRetry={() => refetch()} />
             </div>
           )}
 
